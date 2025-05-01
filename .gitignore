@@ -89,6 +89,6 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-#jupyter notebook
+# Jupyter notebook
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
