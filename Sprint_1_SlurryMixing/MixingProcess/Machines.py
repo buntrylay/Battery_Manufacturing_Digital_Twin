@@ -69,6 +69,6 @@ class MixingMachine(Machine):
             time.sleep(pause_sec)
     
     def run(self, step_percent=0.02, pause_sec=1):
-        self.turn_on()
-        for comp in ["PVDF", "CB", "AM"]:
-            self._mix_component(comp, step_percent, pause_sec)
+        if self.is_on:
+            for comp in ["PVDF", "CB", "AM"]:
+                self._mix_component(comp, step_percent, pause_sec)
