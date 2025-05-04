@@ -4,5 +4,7 @@ from Machines import MixingMachine
 
 slurry = Slurry(200)
 factory = Factory(slurry)
-factory.add_machine(MixingMachine(slurry))
+anode_mixing_machine = MixingMachine(slurry)
+
+factory.add_machine(anode_mixing_machine)
 factory.start_simulation()
