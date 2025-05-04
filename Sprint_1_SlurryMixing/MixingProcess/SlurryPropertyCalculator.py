@@ -6,3 +6,9 @@ class SlurryPropertyCalculator:
 
     def __init__(self, slurry: Slurry):
         self.slurry = slurry
+    
+    def calculate_density(self):
+        m = lambda x: getattr(self.slurry, x) * self.RHO[x]
+        total_mass = sum(m(c) for c in self.RHO)
+        volume = self.slurry.get_total_volume()
+        return total_mass / volume if volume else 0
