@@ -10,3 +10,7 @@ class Machine(ABC):
 
     def turn_off(self):
         self.is_on = False
+
+    @abstractmethod
+    def run(self):
+        pass
