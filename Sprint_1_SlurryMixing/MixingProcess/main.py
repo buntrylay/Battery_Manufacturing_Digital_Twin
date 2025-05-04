@@ -1,4 +1,8 @@
 from Factory import Factory
+from Slurry import Slurry
+from Machines import MixingMachine
 
-factory = Factory()
+slurry = Slurry(200)
+factory = Factory(slurry)
+factory.add_machine(MixingMachine(slurry))
 factory.start_simulation()
