@@ -2,10 +2,8 @@ from Slurry import Slurry
 from Machines import MixingMachine
 
 class Factory:
-    def __init__(self):
+    def __init__(self, slurry):
         self.machines = []
-        self.slurry = Slurry(volume=200)
-        self.mixer = MixingMachine(self.slurry)
 
     def add_machine(self, machine):
         self.machines.append(machine)
