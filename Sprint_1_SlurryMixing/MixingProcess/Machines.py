@@ -63,6 +63,8 @@ class MixingMachine(Machine):
                         json.dump(result, f, indent=4)
                 except Exception as e:
                     print(f"Error writing result to file: {e}")
+                
+                last_saved_time = now  # Update the last saved time
 
             time.sleep(pause_sec)
     
