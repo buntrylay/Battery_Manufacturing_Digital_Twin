@@ -45,6 +45,10 @@ class MixingMachine(Machine):
                 "YieldStress": round(self.calculator.calculate_yield_stress(), 2)
             }
             self.results.append(result)
+            print(f"{result['Time']} | {result['Component']} | "
+                  f"Density: {result['Density']} | "
+                  f"Viscosity: {result['Viscosity']} | "
+                  f"Yield Stress: {result['YieldStress']}")
             time.sleep(pause_sec)
     
     def run(self, step_percent=0.02, pause_sec=1):
