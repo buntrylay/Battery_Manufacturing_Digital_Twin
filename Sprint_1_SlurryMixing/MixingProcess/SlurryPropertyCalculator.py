@@ -20,3 +20,10 @@ class SlurryPropertyCalculator:
         if phi >= max_solid_fraction:
             phi = max_solid_fraction - 0.001
         return (1 - (phi / max_solid_fraction)) ** (-intrinsic_viscosity * max_solid_fraction) * 2
+    
+    def calculate_yield_stress(self):
+        m = lambda x: getattr(self.slurry, x) * self.RHO[x]
+        return (self.WEIGHTS['a'] * m("AM") +
+                self.WEIGHTS['b'] * m("PVDF") +
+                self.WEIGHTS['c'] * m("CB") +
+                self.WEIGHTS['s'] * m("NMP"))
