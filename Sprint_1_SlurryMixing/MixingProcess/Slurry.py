@@ -8,3 +8,6 @@ class Slurry:
 
     def add(self, component, amount):
         setattr(self, component, getattr(self, component) + amount)
+
+    def get_total_volume(self):
+        return self.AM + self.CB + self.PVDF + self.NMP
