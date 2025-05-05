@@ -2,14 +2,20 @@ import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 function App() {
+  // State for inputs and user settings
   const [cathodeInputs, setCathodeInputs] = useState({ NMP: "", PVDF: "", CB: "", LMNC: "" });
   const [anodeInputs, setAnodeInputs] = useState({ Water: "", PVDF: "", CB: "", Graphite: "" });
   const [batteries, setBatteries] = useState("");
+
+  // Timer and stage state
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [stage, setStage] = useState("");
   const intervalRef = useRef(null);
 
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // Input handling (percentage, max 100)
   const handleInputChange = (setter, key) => (e) => {
     let value = e.target.value;
     if (/^\d{0,3}(\.\d{0,2})?$/.test(value) && Number(value) <= 100) {
@@ -17,10 +23,21 @@ function App() {
     }
   };
 
+  // Allow only valid numbers/floats for batteries input
+  const handleBatteriesChange = (e) => {
+    const val = e.target.value;
+    if (/^\d*(\.\d*)?$/.test(val)) setBatteries(val);
+  };
+
+  // Sum all percentages for validation
   const sumPercentages = (inputs) => {
     return Object.values(inputs).reduce((sum, val) => sum + Number(val || 0), 0);
   };
 
+  const cathodeTotal = sumPercentages(cathodeInputs);
+  const anodeTotal = sumPercentages(anodeInputs);
+
+  // Timer effect when simulation is running
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
@@ -32,13 +49,15 @@ function App() {
     return () => clearInterval(intervalRef.current);
   }, [isRunning]);
 
+  // Auto stage update based on elapsed time
   useEffect(() => {
-    if (time < 20) setStage("Binder + Solvent");
-    else if (time < 40) setStage("Add Active Material");
-    else if (time < 60) setStage("Final Mixing");
-    else setStage("Complete");
+    if (time < 10) setStage("Solvent + Binder");
+    else if (time < 20) setStage("Conductive Additive");
+    else if (time < 30) setStage("Active Material");
+    else setStage("Mixing Completed");
   }, [time]);
 
+  // Format timer output
   const formatTime = (seconds) => {
     const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
     const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
@@ -46,16 +65,26 @@ function App() {
     return `${h}:${m}:${s}`;
   };
 
-  const handleStart = () => setIsRunning(true);
+  // Control button functions
+  const handleStart = () => {
+    if (!batteries) {
+      setErrorMsg("Please enter the number of batteries before starting.");
+    } else if (cathodeTotal !== 100 || anodeTotal !== 100) {
+      setErrorMsg("Both Cathode and Anode inputs must total exactly 100% before starting.");
+    } else {
+      setErrorMsg("");
+      setIsRunning(true);
+    }
+  };
+
   const handlePause = () => setIsRunning(false);
+
   const handleReset = () => {
     setIsRunning(false);
     setTime(0);
     setStage("");
+    setErrorMsg("");
   };
-
-  const cathodeTotal = sumPercentages(cathodeInputs);
-  const anodeTotal = sumPercentages(anodeInputs);
 
   return (
     <div className="container">
@@ -64,10 +93,12 @@ function App() {
         <input
           type="text"
           value={batteries}
-          onChange={(e) => setBatteries(e.target.value)}
+          onChange={handleBatteriesChange}
           className="input"
         />
       </div>
+
+      {errorMsg && <p className="error">{errorMsg}</p>}
 
       <div className="section-row">
         {/* Cathode Section */}
@@ -84,22 +115,12 @@ function App() {
                 className="input-box"
               />
             ))}
-            <p className="warning">Total: {cathodeTotal}% {cathodeTotal > 100 && "(Over 100%!)"}</p>
+            <p className="warning">Total: {cathodeTotal}% {cathodeTotal !== 100 && "(Needs to be 100%)"}</p>
           </div>
 
           <div className="output-box">
-            <p className="sub-label">Live Outputs:</p>
+            <p className="sub-label">Final Outputs:</p>
             {["Density", "Viscosity", "Yield Stress"].map((label) => (
-              <div key={label} className="output-row">
-                <span>{label}</span>
-                <span>Auto</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="output-box">
-            <p className="sub-label">Factors:</p>
-            {["Temperature", "RPM", "Pressure"].map((label) => (
               <div key={label} className="output-row">
                 <span>{label}</span>
                 <span>Auto</span>
@@ -131,22 +152,12 @@ function App() {
                 className="input-box"
               />
             ))}
-            <p className="warning">Total: {anodeTotal}% {anodeTotal > 100 && "(Over 100%!)"}</p>
+            <p className="warning">Total: {anodeTotal}% {anodeTotal !== 100 && "(Needs to be 100%)"}</p>
           </div>
 
           <div className="output-box">
-            <p className="sub-label">Live Outputs:</p>
+            <p className="sub-label">Final Outputs:</p>
             {["Density", "Viscosity", "Yield Stress"].map((label) => (
-              <div key={label} className="output-row">
-                <span>{label}</span>
-                <span>Auto</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="output-box">
-            <p className="sub-label">Factors:</p>
-            {["Temperature", "RPM", "Pressure"].map((label) => (
               <div key={label} className="output-row">
                 <span>{label}</span>
                 <span>Auto</span>

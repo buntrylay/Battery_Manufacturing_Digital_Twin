@@ -142,3 +142,10 @@ body {
 .reset {
   background-color: #93c5fd;
 }
+
+.error {
+  color: #dc2626;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+}
