@@ -6,7 +6,7 @@ from Machines import MixingMachine
 # Ratios represent the volume fraction of each component in the final mixture
 user_input_anode = {
     "PVDF": 0.05,  # 5% PVDF binder
-    "CB": 0.045,   # 4.5% Conductive Additive
+    "CA": 0.045,   # 4.5% Conductive Additive
     "AM": 0.495,   # 49.5% Active Material
     "NMP": 0.41    # 41% NMP solvent
 }
