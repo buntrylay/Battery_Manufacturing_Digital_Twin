@@ -8,11 +8,11 @@ user_input_anode = {
     "PVDF": 0.05,  # 5% PVDF binder
     "CA": 0.045,   # 4.5% Conductive Additive
     "AM": 0.495,   # 49.5% Active Material
-    "NMP": 0.41    # 41% NMP solvent
+    "H2O": 0.41    # 41% H2O solvent
 }
 
 # Create a new slurry instance for anode with 200L total volume
-anode_slurry = Slurry("Anode", 200)
+anode_slurry = Slurry("Anode")
 
 # Initialize the factory for managing the manufacturing process
 factory = Factory()
