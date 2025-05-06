@@ -23,9 +23,11 @@ class Slurry:
         self.CA = 0  # Conductive Additive
         self.PVDF = 0  # PVDF Binder
         if electrode_type == "Anode":
+            self.electrode_type = "Anode"
             self.H2O = 0  # Solvent for anode
             self.solvent = "H2O"
         elif electrode_type == "Cathode":
+            self.electrode_type = "Cathode"
             self.NMP = 0  # Solvent for cathode
             self.solvent = "NMP"
 
