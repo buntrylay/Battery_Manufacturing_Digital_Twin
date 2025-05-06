@@ -5,35 +5,162 @@ from datetime import datetime
 import time
 import os
 import json
+import random
 
 class Machine(ABC):
-    def __init__(self):
+    """
+    Abstract base class representing a generic machine in the battery manufacturing process.
+    
+    Attributes:
+        id (str): Unique identifier for the machine
+        is_on (bool): Current operational status of the machine
+        calculator (SlurryPropertyCalculator): Calculator for slurry properties
+    """
+    
+    def __init__(self, id):
+        """
+        Initialise a new Machine instance.
+        
+        Args:
+            id (str): Unique identifier for the machine
+        """
+        self.id = id
         self.is_on = False
         self.calculator = None
 
     def turn_on(self):
+        """Turn on the machine."""
         self.is_on = True
 
     def turn_off(self):
+        """Turn off the machine."""
         self.is_on = False
 
     @abstractmethod
     def run(self):
+        """Abstract method that must be implemented by concrete machine classes."""
         pass
 
 class MixingMachine(Machine):
-    def __init__(self, slurry: Slurry):
-        super().__init__()
+    """
+    A machine class for simulating the mixing of battery slurry components.
+
+    This class handles the stepwise addition of components to a slurry, simulates
+    process parameters (temperature, pressure, RPM), and generates real-time
+    simulation data in JSON format. Utility methods are used for formatting results,
+    writing output files, and printing process information.
+
+    Attributes:
+        slurry (Slurry): The slurry being mixed.
+        electrode_type (str): Type of electrode being produced ("Anode" or "Cathode").
+        RHO_values (dict): Density values for different components.
+        WEIGHTS_values (dict): Weight coefficients for property calculations.
+        volume (float): Total volume of the slurry in litres.
+        ratios (dict): Mixing ratios for different components.
+        total_time (float): Total mixing time in seconds.
+        calculator (SlurryPropertyCalculator): Calculator for slurry properties.
+    """
+    
+    def __init__(self, id, electrode_type, slurry: Slurry, ratio_materials: dict):
+        """
+        Initialise a new MixingMachine instance.
+
+        Args:
+            id (str): Unique identifier for the machine.
+            electrode_type (str): Type of electrode ("Anode" or "Cathode").
+            slurry (Slurry): The slurry object to be mixed.
+            ratio_materials (dict): Dictionary containing mixing ratios for components.
+        """
+        super().__init__(id)
         self.slurry = slurry
-        self.calculator = SlurryPropertyCalculator(slurry)
-        self.volume = slurry.total_volume
-        self.ratios = {"PVDF": 0.05, "CB": 0.045, "AM": 0.495, "NMP": 0.41}
-        self.slurry.add("NMP", self.volume * self.ratios["NMP"])
+        self.electrode_type = electrode_type
+        self.volume = 200  # Default volume in litres
+        self.ratios = ratio_materials
+
+        # Set density values, weight coefficients and initial solvent volume based on electrode type
+        if self.electrode_type == "Anode":
+            self.RHO_values = {"AM": 2.26, "CA": 1.8, "PVDF": 1.17, "H2O": 1.0}
+            self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5}
+            self.slurry.add("H2O", self.volume * self.ratios["H2O"])
+        elif self.electrode_type == "Cathode":
+            self.RHO_values = {"AM": 2.11, "CA": 1.8, "PVDF": 1.78, "NMP": 1.03} ##To be reviewed
+            self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5} ##To be changed
+            self.slurry.add("NMP", self.volume * self.ratios["NMP"])
+
+        self.calculator = SlurryPropertyCalculator(self.RHO_values, self.WEIGHTS_values)
         self.total_time = 0
     
+    def _format_result(self, is_final=False):
+        """
+        Format the current or final process data as a dictionary.
+
+        Args:
+            is_final (bool): If True, formats the final result with nested composition and properties.
+
+        Returns:
+            dict: The formatted result data.
+        """
+        base = {
+            "TimeStamp": datetime.now().isoformat(),
+            "Duration": round(self.total_time, 5),
+            "Machine ID": self.id,
+            "Process": "Mixing",
+            "Electrode Type": self.electrode_type,
+        }
+        composition = {
+            "AM": round(self.slurry.AM, 3),
+            "CA": round(self.slurry.CA, 3),
+            "PVDF": round(self.slurry.PVDF, 3),
+            f"{self.slurry.solvent}": round(getattr(self.slurry, self.slurry.solvent), 3)
+        }
+        properties = {
+            "Density": round(self.calculator.calculate_density(self.slurry), 4),
+            "Viscosity": round(self.calculator.calculate_viscosity(self.slurry), 2),
+            "YieldStress": round(self.calculator.calculate_yield_stress(self.slurry), 2)
+        }
+        if is_final:
+            base["Final Composition"] = composition
+            base["Final Properties"] = properties
+        else:
+            base.update(composition)
+            base.update(properties)
+        return base
+
+    def _write_json(self, data, filename):
+        """
+        Write a dictionary to a JSON file.
+
+        Args:
+            data (dict): The data to write.
+            filename (str): The output filename.
+        """
+        try:
+            with open(filename, "w") as f:
+                json.dump(data, f, indent=4)
+            print(f"Results saved to {filename}")
+        except Exception as e:
+            print(f"Error writing result to file: {e}")
+
+    def _print_result(self, result):
+        """
+        Print the process result in a human-readable format.
+
+        Args:
+            result (dict): The result data to print.
+        """
+        print(" | ".join(f"{k}: {v}" for k, v in result.items()))
+
     def _mix_component(self, component, step_percent, pause_sec):
-        target_volume = self.volume * self.ratios[component]
-        step_volume = step_percent * target_volume
+        """
+        Gradually mix a single component into the slurry, simulating real-time process data.
+
+        Args:
+            component (str): Component to be mixed.
+            step_percent (float): Percentage of total volume to add in each step.
+            pause_sec (float): Time to pause between additions in seconds.
+        """
+        total_volume_to_add = self.volume * self.ratios[component]
+        step_volume = step_percent * total_volume_to_add
         steps = int(1 / step_percent)
         os.makedirs("simulation_output", exist_ok=True)
 
@@ -42,33 +169,42 @@ class MixingMachine(Machine):
         for _ in range(steps):
             self.total_time += pause_sec
             self.slurry.add(component, step_volume)
-            result = {
-                "Time": datetime.now().isoformat(),
-                "Component": component,
-                "Density": round(self.calculator.calculate_density(), 4),
-                "Viscosity": round(self.calculator.calculate_viscosity(), 2),
-                "YieldStress": round(self.calculator.calculate_yield_stress(), 2)
-            }
+
+            # Simulate machine parameters
+            temperature = round(random.uniform(20, 25), 2)
+            pressure = round(random.uniform(1, 2), 2)
+            rpm = random.randint(300, 600)
+
+            # Record process data
+            result = self._format_result()
             
+            # Save results every 5 seconds
             now = time.time()
-            if now - last_saved_time >= 10:
-                print(f"{result['Time']} | {result['Component']} | "
-                  f"Density: {result['Density']} | "
-                  f"Viscosity: {result['Viscosity']} | "
-                  f"Yield Stress: {result['YieldStress']}")
-                
+            if now - last_saved_time >= 5:
+                self._print_result(result)
                 filename = f"simulation_output/result_at_{round(self.total_time)}s.json"
-                try:
-                    with open(filename, "w") as f:
-                        json.dump(result, f, indent=4)
-                except Exception as e:
-                    print(f"Error writing result to file: {e}")
-                
-                last_saved_time = now  # Update the last saved time
+                self._write_json(result, filename)
+                last_saved_time = now
 
             time.sleep(pause_sec)
     
+    def _save_final_results(self):
+        """
+        Save the final mixing results to a JSON file.
+        """
+        final_result = self._format_result(is_final=True)
+        filename = f"simulation_output/final_results_{self.id}.json"
+        self._write_json(final_result, filename)
+
     def run(self, step_percent=0.02, pause_sec=1):
+        """
+        Run the mixing process for all components in the specified order.
+
+        Args:
+            step_percent (float): Percentage of total volume to add in each step.
+            pause_sec (float): Time to pause between additions in seconds.
+        """
         if self.is_on:
-            for comp in ["PVDF", "CB", "AM"]:
+            for comp in ["PVDF", "CA", "AM"]:
                 self._mix_component(comp, step_percent, pause_sec)
+            self._save_final_results()
