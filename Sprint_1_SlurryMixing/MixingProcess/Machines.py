@@ -64,7 +64,10 @@ class MixingMachine(Machine):
                 "Duration": round(self.total_time, 5),
                 "Machine ID": self.id,
                 "Process": "Mixing",
-                "Component": component,
+                "AM": round(self.slurry.AM, 3),
+                "CB": round(self.slurry.CA, 3),
+                "PVDF": round(self.slurry.PVDF, 3),
+                f"{self.slurry.solvent}": round(self.slurry.H2O, 3) if self.electrode_type == "Anode" else round(self.slurry.NMP, 3),
                 "Temperature": temperature,
                 "Pressure": pressure,
                 "Speed (RPM)": rpm,
@@ -75,10 +78,17 @@ class MixingMachine(Machine):
             
             now = time.time()
             if now - last_saved_time >= 5:
-                print(f"{result['Time']} | "
+                print(f"{result['TimeStamp']} | "
+                      f"{result['Duration']} | "
                     f"{result['Machine ID']} | "
                     f"{result['Process']} | "
-                    f"{result['Component']} | "
+                    f"{result['AM']} | "
+                    f"{result['CB']} | "
+                    f"{result['PVDF']} | "
+                    f"{result[f'{self.slurry.solvent}']} | "
+                    f"Temperature: {result['Temperature']} | "
+                    f"Pressure: {result['Pressure']} | "
+                    f"Speed (RPM): {result['Speed (RPM)']} | "
                     f"Density: {result['Density']} | "
                     f"Viscosity: {result['Viscosity']} | "
                     f"Yield Stress: {result['YieldStress']}")
