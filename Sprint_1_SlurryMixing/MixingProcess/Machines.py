@@ -43,27 +43,33 @@ class Machine(ABC):
 
 class MixingMachine(Machine):
     """
-    A concrete machine class for mixing battery slurry components.
-    
+    A machine class for simulating the mixing of battery slurry components.
+
+    This class handles the stepwise addition of components to a slurry, simulates
+    process parameters (temperature, pressure, RPM), and generates real-time
+    simulation data in JSON format. Utility methods are used for formatting results,
+    writing output files, and printing process information.
+
     Attributes:
-        slurry (Slurry): The slurry being mixed
-        electrode_type (str): Type of electrode being produced ("Anode" or "Cathode")
-        RHO_values (dict): Density values for different components
-        WEIGHTS_values (dict): Weight coefficients for property calculations
-        volume (float): Total volume of the slurry
-        ratios (dict): Mixing ratios for different components
-        total_time (float): Total mixing time in seconds
+        slurry (Slurry): The slurry being mixed.
+        electrode_type (str): Type of electrode being produced ("Anode" or "Cathode").
+        RHO_values (dict): Density values for different components.
+        WEIGHTS_values (dict): Weight coefficients for property calculations.
+        volume (float): Total volume of the slurry in litres.
+        ratios (dict): Mixing ratios for different components.
+        total_time (float): Total mixing time in seconds.
+        calculator (SlurryPropertyCalculator): Calculator for slurry properties.
     """
     
     def __init__(self, id, electrode_type, slurry: Slurry, ratio_materials: dict):
         """
         Initialise a new MixingMachine instance.
-        
+
         Args:
-            id (str): Unique identifier for the machine
-            electrode_type (str): Type of electrode ("Anode" or "Cathode")
-            slurry (Slurry): The slurry object to be mixed
-            ratio_materials (dict): Dictionary containing mixing ratios for components
+            id (str): Unique identifier for the machine.
+            electrode_type (str): Type of electrode ("Anode" or "Cathode").
+            slurry (Slurry): The slurry object to be mixed.
+            ratio_materials (dict): Dictionary containing mixing ratios for components.
         """
         super().__init__(id)
         self.slurry = slurry
@@ -85,6 +91,15 @@ class MixingMachine(Machine):
         self.total_time = 0
     
     def _format_result(self, is_final=False):
+        """
+        Format the current or final process data as a dictionary.
+
+        Args:
+            is_final (bool): If True, formats the final result with nested composition and properties.
+
+        Returns:
+            dict: The formatted result data.
+        """
         base = {
             "TimeStamp": datetime.now().isoformat(),
             "Duration": round(self.total_time, 5),
@@ -112,6 +127,13 @@ class MixingMachine(Machine):
         return base
 
     def _write_json(self, data, filename):
+        """
+        Write a dictionary to a JSON file.
+
+        Args:
+            data (dict): The data to write.
+            filename (str): The output filename.
+        """
         try:
             with open(filename, "w") as f:
                 json.dump(data, f, indent=4)
@@ -120,16 +142,22 @@ class MixingMachine(Machine):
             print(f"Error writing result to file: {e}")
 
     def _print_result(self, result):
+        """
+        Print the process result in a human-readable format.
+
+        Args:
+            result (dict): The result data to print.
+        """
         print(" | ".join(f"{k}: {v}" for k, v in result.items()))
 
     def _mix_component(self, component, step_percent, pause_sec):
         """
-        Mix a single component into the slurry gradually.
-        
+        Gradually mix a single component into the slurry, simulating real-time process data.
+
         Args:
-            component (str): Component to be mixed
-            step_percent (float): Percentage of total volume to add in each step
-            pause_sec (float): Time to pause between additions in seconds
+            component (str): Component to be mixed.
+            step_percent (float): Percentage of total volume to add in each step.
+            pause_sec (float): Time to pause between additions in seconds.
         """
         total_volume_to_add = self.volume * self.ratios[component]
         step_volume = step_percent * total_volume_to_add
@@ -161,17 +189,20 @@ class MixingMachine(Machine):
             time.sleep(pause_sec)
     
     def _save_final_results(self):
+        """
+        Save the final mixing results to a JSON file.
+        """
         final_result = self._format_result(is_final=True)
         filename = f"simulation_output/final_results_{self.id}.json"
         self._write_json(final_result, filename)
 
     def run(self, step_percent=0.02, pause_sec=1):
         """
-        Run the mixing process for all components.
-        
+        Run the mixing process for all components in the specified order.
+
         Args:
-            step_percent (float): Percentage of total volume to add in each step
-            pause_sec (float): Time to pause between additions in seconds
+            step_percent (float): Percentage of total volume to add in each step.
+            pause_sec (float): Time to pause between additions in seconds.
         """
         if self.is_on:
             for comp in ["PVDF", "CA", "AM"]:
