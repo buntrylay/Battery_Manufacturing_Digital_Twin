@@ -55,11 +55,19 @@ class MixingMachine(Machine):
             self.total_time += pause_sec
             self.slurry.add(component, step_volume)
 
+            temperature = round(random.uniform(20, 25), 2)
+            pressure = round(random.uniform(1, 2), 2)
+            rpm = random.randint(300, 600)
+
             result = {
-                "Time": datetime.now().isoformat(),
+                "TimeStamp": datetime.now().isoformat(),
+                "Duration": round(self.total_time, 5),
                 "Machine ID": self.id,
                 "Process": "Mixing",
                 "Component": component,
+                "Temperature": temperature,
+                "Pressure": pressure,
+                "Speed (RPM)": rpm,
                 "Density": round(self.calculator.calculate_density(), 4),
                 "Viscosity": round(self.calculator.calculate_viscosity(), 2),
                 "YieldStress": round(self.calculator.calculate_yield_stress(), 2)
