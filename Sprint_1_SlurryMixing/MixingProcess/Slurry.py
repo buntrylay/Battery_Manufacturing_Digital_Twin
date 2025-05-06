@@ -1,17 +1,18 @@
 class Slurry:
     """
     A class representing a battery slurry mixture containing active material (AM), 
-    conductive additive (CA), PVDF binder, and solvent (SV).
+    conductive additive (CA), PVDF binder, and solvent (H2O or NMP).
     
     Attributes:
         total_volume (float): The target total volume of the slurry
         AM (float): Amount of active material in the slurry
         CA (float): Amount of conductive additive in the slurry
         PVDF (float): Amount of PVDF binder in the slurry
-        SV (float): Amount of solvent in the slurry
+        H2O (float): Amount of solvent for anode slurry
+        NMP (float): Amount of solvent for cathode slurry
     """
     
-    def __init__(self, volume):
+    def __init__(self, electrode_type, volume):
         """
         Initialize a new Slurry instance.
         
@@ -22,14 +23,17 @@ class Slurry:
         self.AM = 0  # Active Material
         self.CA = 0  # Conductive Additive
         self.PVDF = 0  # PVDF Binder
-        self.SV = 0  # Solvent
+        if electrode_type == "Anode":
+            self.H2O = 0  # Solvent for anode
+        elif electrode_type == "Cathode":
+            self.NMP = 0  # Solvent for cathode
 
     def add(self, component, amount):
         """
         Add a specified amount of a component to the slurry.
         
         Args:
-            component (str): The component to add ('AM', 'CA', 'PVDF', or 'SV')
+            component (str): The component to add ('AM', 'CA', 'PVDF', or 'H2O' or 'NMP')
             amount (float): The amount of the component to add
         """
         setattr(self, component, getattr(self, component) + amount)
@@ -39,6 +43,6 @@ class Slurry:
         Calculate the current total volume of all components in the slurry.
         
         Returns:
-            float: The sum of all components (AM + CA + PVDF + SV)
+            float: The sum of all components (AM + CA + PVDF + H2O or NMP)
         """
-        return self.AM + self.CA + self.PVDF + self.SV
+        return self.AM + self.CA + self.PVDF + (self.H2O if self.electrode_type == "Anode" else self.NMP)
