@@ -1,11 +1,11 @@
 from Slurry import Slurry
 
 class SlurryPropertyCalculator:
-    RHO = {"AM": 2.26, "CB": 1.8, "PVDF": 1.78, "NMP": 1.0}
-    WEIGHTS = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5}
 
-    def __init__(self, slurry: Slurry):
+    def __init__(self, slurry: Slurry, RHO_values: dict, WEIGHTS_values: dict):
         self.slurry = slurry
+        self.RHO = RHO_values
+        self.WEIGHTS = WEIGHTS_values
     
     def calculate_density(self):
         m = lambda x: getattr(self.slurry, x) * self.RHO[x]
@@ -25,5 +25,5 @@ class SlurryPropertyCalculator:
         m = lambda x: getattr(self.slurry, x) * self.RHO[x]
         return (self.WEIGHTS['a'] * m("AM") +
                 self.WEIGHTS['b'] * m("PVDF") +
-                self.WEIGHTS['c'] * m("CB") +
-                self.WEIGHTS['s'] * m("NMP"))
+                self.WEIGHTS['c'] * m("CA") +
+                self.WEIGHTS['s'] * m("SV"))
