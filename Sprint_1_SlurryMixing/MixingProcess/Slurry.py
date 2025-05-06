@@ -25,8 +25,10 @@ class Slurry:
         self.PVDF = 0  # PVDF Binder
         if electrode_type == "Anode":
             self.H2O = 0  # Solvent for anode
+            self.solvent = "H2O"
         elif electrode_type == "Cathode":
             self.NMP = 0  # Solvent for cathode
+            self.solvent = "NMP"
 
     def add(self, component, amount):
         """
