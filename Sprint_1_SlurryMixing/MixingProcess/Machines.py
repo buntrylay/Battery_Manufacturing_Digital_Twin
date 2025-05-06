@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from Slurry import Slurry
 from SlurryPropertyCalculator import SlurryPropertyCalculator
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import os
 import json
@@ -80,7 +80,7 @@ class MixingMachine(Machine):
         # Set density values, weight coefficients and initial solvent volume based on electrode type
         if self.electrode_type == "Anode":
             self.RHO_values = {"AM": 2.26, "CA": 1.8, "PVDF": 1.17, "H2O": 1.0}
-            self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5}
+            self.WEIGHTS_values = {"a": 0.85, "b": 2.2, "c": 0.3, "s": -0.4}
             self.slurry.add("H2O", self.volume * self.ratios["H2O"])
         elif self.electrode_type == "Cathode":
             self.RHO_values = {"AM": 2.11, "CA": 1.8, "PVDF": 1.78, "NMP": 1.03} ##To be reviewed
@@ -89,6 +89,7 @@ class MixingMachine(Machine):
 
         self.calculator = SlurryPropertyCalculator(self.RHO_values, self.WEIGHTS_values)
         self.total_time = 0
+        self.start_datetime = datetime.now()
     
     def _format_result(self, is_final=False):
         """
@@ -101,8 +102,8 @@ class MixingMachine(Machine):
             dict: The formatted result data.
         """
         base = {
-            "TimeStamp": datetime.now().isoformat(),
-            "Duration": round(self.total_time, 5),
+            "TimeStamp" : (self.start_datetime + timedelta(seconds=self.total_time)).isoformat(),
+            "Duration": self.total_time,
             "Machine ID": self.id,
             "Process": "Mixing",
             "Electrode Type": self.electrode_type,
@@ -162,12 +163,11 @@ class MixingMachine(Machine):
         total_volume_to_add = self.volume * self.ratios[component]
         step_volume = step_percent * total_volume_to_add
         steps = int(1 / step_percent)
-        os.makedirs("simulation_output", exist_ok=True)
 
         last_saved_time = time.time()
 
         for _ in range(steps):
-            self.total_time += pause_sec
+            self.total_time == 0
             self.slurry.add(component, step_volume)
 
             # Simulate machine parameters
@@ -180,12 +180,12 @@ class MixingMachine(Machine):
             
             # Save results every 5 seconds
             now = time.time()
-            if now - last_saved_time >= 5:
+            if now - last_saved_time >= 0.5:
                 self._print_result(result)
                 filename = f"simulation_output/result_at_{round(self.total_time)}s.json"
                 self._write_json(result, filename)
                 last_saved_time = now
-
+            self.total_time += 5
             time.sleep(pause_sec)
     
     def _save_final_results(self):
@@ -196,7 +196,7 @@ class MixingMachine(Machine):
         filename = f"simulation_output/final_results_{self.id}.json"
         self._write_json(final_result, filename)
 
-    def run(self, step_percent=0.02, pause_sec=1):
+    def run(self, step_percent=0.02, pause_sec=0.1):
         """
         Run the mixing process for all components in the specified order.
 
