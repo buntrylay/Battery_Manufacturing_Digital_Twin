@@ -55,10 +55,13 @@ class MixingMachine(Machine):
             
             now = time.time()
             if now - last_saved_time >= 5:
-                print(f"{result['Time']} | {result['Component']} | "
-                  f"Density: {result['Density']} | "
-                  f"Viscosity: {result['Viscosity']} | "
-                  f"Yield Stress: {result['YieldStress']}")
+                print(f"{result['Time']} | "
+                    f"{result['Machine ID']} | "
+                    f"{result['Process']} | "
+                    f"{result['Component']} | "
+                    f"Density: {result['Density']} | "
+                    f"Viscosity: {result['Viscosity']} | "
+                    f"Yield Stress: {result['YieldStress']}")
                 
                 filename = f"simulation_output/result_at_{round(self.total_time)}s.json"
                 try:
