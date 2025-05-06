@@ -56,8 +56,8 @@ class SlurryPropertyCalculator:
         """
         total_volume = slurry.get_total_volume()
 
-        # Calculate solid volume (sum of AM, CB, and PVDF)
-        solid_volume = slurry.AM + slurry.CB + slurry.PVDF
+        # Calculate solid volume (sum of AM, CA, and PVDF)
+        solid_volume = slurry.AM + slurry.CA + slurry.PVDF
 
         # Calculate solid fraction
         phi = solid_volume / total_volume if total_volume else 0
@@ -87,4 +87,4 @@ class SlurryPropertyCalculator:
         return (self.WEIGHTS['a'] * m("AM") +  # Active Material contribution
                 self.WEIGHTS['b'] * m("PVDF") + # PVDF Binder contribution
                 self.WEIGHTS['c'] * m("CA") +   # Conductive Additive contribution
-                self.WEIGHTS['s'] * m("SV"))    # Solvent contribution
+                self.WEIGHTS['s'] * (m("H2O") if slurry.electrode_type == "Anode" else m("NMP")))    # Solvent contribution
