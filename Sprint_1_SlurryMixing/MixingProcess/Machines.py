@@ -23,13 +23,22 @@ class Machine(ABC):
         pass
 
 class MixingMachine(Machine):
-    def __init__(self, id, slurry: Slurry):
+    def __init__(self, id, electrode_type, slurry: Slurry, ratio_materials: dict):
         super().__init__(id)
         self.slurry = slurry
-        self.calculator = SlurryPropertyCalculator(slurry)
+        self.electrode_type = electrode_type
+
+        if self.electrode_type == "Anode":
+            self.RHO_values = {"AM": 2.26, "CA": 2.26, "PVDF": 1.78, "SV": 1.0}
+            self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5}
+        elif self.electrode_type == "Cathode":
+            self.RHO_values = {"AM": 2.26, "CA": 2.26, "PVDF": 1.78, "SV": 1.0} ##To be changed
+            self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5} ##To be changed
+
+        self.calculator = SlurryPropertyCalculator(slurry, self.RHO_values, self.WEIGHTS_values)
         self.volume = slurry.total_volume
-        self.ratios = {"PVDF": 0.05, "CB": 0.045, "AM": 0.495, "NMP": 0.41}
-        self.slurry.add("NMP", self.volume * self.ratios["NMP"])
+        self.ratios = ratio_materials
+        self.slurry.add("SV", self.volume * self.ratios["SV"])
         self.total_time = 0
     
     def _mix_component(self, component, step_percent, pause_sec):
@@ -76,5 +85,5 @@ class MixingMachine(Machine):
     
     def run(self, step_percent=0.02, pause_sec=1):
         if self.is_on:
-            for comp in ["PVDF", "CB", "AM"]:
+            for comp in ["PVDF", "CA", "AM"]:
                 self._mix_component(comp, step_percent, pause_sec)
