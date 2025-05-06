@@ -5,6 +5,7 @@ from datetime import datetime
 import time
 import os
 import json
+import random
 
 class Machine(ABC):
     def __init__(self, id):
@@ -29,21 +30,22 @@ class MixingMachine(Machine):
         self.electrode_type = electrode_type
 
         if self.electrode_type == "Anode":
-            self.RHO_values = {"AM": 2.26, "CA": 2.26, "PVDF": 1.78, "SV": 1.0}
+            self.RHO_values = {"AM": 2.26, "CA": 1.8, "PVDF": 1.78, "H2O": 1.0}
             self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5}
+            self.slurry.add("H2O", self.volume * self.ratios["H2O"])
         elif self.electrode_type == "Cathode":
-            self.RHO_values = {"AM": 2.26, "CA": 2.26, "PVDF": 1.78, "SV": 1.0} ##To be changed
+            self.RHO_values = {"AM": 2.26, "CA": 2.26, "PVDF": 1.78, "NMP": 1.0} ##To be changed
             self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5} ##To be changed
+            self.slurry.add("NMP", self.volume * self.ratios["NMP"])
 
         self.calculator = SlurryPropertyCalculator(slurry, self.RHO_values, self.WEIGHTS_values)
-        self.volume = slurry.total_volume
+        self.volume = 200
         self.ratios = ratio_materials
-        self.slurry.add("SV", self.volume * self.ratios["SV"])
         self.total_time = 0
     
     def _mix_component(self, component, step_percent, pause_sec):
-        target_volume = self.volume * self.ratios[component]
-        step_volume = step_percent * target_volume
+        total_volume_to_add = self.volume * self.ratios[component]
+        step_volume = step_percent * total_volume_to_add
         steps = int(1 / step_percent)
         os.makedirs("simulation_output", exist_ok=True)
 
@@ -52,6 +54,7 @@ class MixingMachine(Machine):
         for _ in range(steps):
             self.total_time += pause_sec
             self.slurry.add(component, step_volume)
+
             result = {
                 "Time": datetime.now().isoformat(),
                 "Machine ID": self.id,
