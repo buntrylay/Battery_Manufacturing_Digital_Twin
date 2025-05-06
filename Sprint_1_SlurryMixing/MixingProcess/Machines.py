@@ -79,11 +79,11 @@ class MixingMachine(Machine):
 
         # Set density values, weight coefficients and initial solvent volume based on electrode type
         if self.electrode_type == "Anode":
-            self.RHO_values = {"AM": 2.26, "CA": 1.8, "PVDF": 1.78, "H2O": 1.0}
+            self.RHO_values = {"AM": 2.26, "CA": 1.8, "PVDF": 1.17, "H2O": 1.0}
             self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5}
             self.slurry.add("H2O", self.volume * self.ratios["H2O"])
         elif self.electrode_type == "Cathode":
-            self.RHO_values = {"AM": 2.26, "CA": 2.26, "PVDF": 1.78, "NMP": 1.0} ##To be changed
+            self.RHO_values = {"AM": 2.11, "CA": 1.8, "PVDF": 1.78, "NMP": 1.03} ##To be reviewed
             self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5} ##To be changed
             self.slurry.add("NMP", self.volume * self.ratios["NMP"])
 
