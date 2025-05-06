@@ -84,6 +84,44 @@ class MixingMachine(Machine):
         self.calculator = SlurryPropertyCalculator(self.RHO_values, self.WEIGHTS_values)
         self.total_time = 0
     
+    def _format_result(self, is_final=False):
+        base = {
+            "TimeStamp": datetime.now().isoformat(),
+            "Duration": round(self.total_time, 5),
+            "Machine ID": self.id,
+            "Process": "Mixing",
+            "Electrode Type": self.electrode_type,
+        }
+        composition = {
+            "AM": round(self.slurry.AM, 3),
+            "CA": round(self.slurry.CA, 3),
+            "PVDF": round(self.slurry.PVDF, 3),
+            f"{self.slurry.solvent}": round(getattr(self.slurry, self.slurry.solvent), 3)
+        }
+        properties = {
+            "Density": round(self.calculator.calculate_density(self.slurry), 4),
+            "Viscosity": round(self.calculator.calculate_viscosity(self.slurry), 2),
+            "YieldStress": round(self.calculator.calculate_yield_stress(self.slurry), 2)
+        }
+        if is_final:
+            base["Final Composition"] = composition
+            base["Final Properties"] = properties
+        else:
+            base.update(composition)
+            base.update(properties)
+        return base
+
+    def _write_json(self, data, filename):
+        try:
+            with open(filename, "w") as f:
+                json.dump(data, f, indent=4)
+            print(f"Results saved to {filename}")
+        except Exception as e:
+            print(f"Error writing result to file: {e}")
+
+    def _print_result(self, result):
+        print(" | ".join(f"{k}: {v}" for k, v in result.items()))
+
     def _mix_component(self, component, step_percent, pause_sec):
         """
         Mix a single component into the slurry gradually.
@@ -110,80 +148,22 @@ class MixingMachine(Machine):
             rpm = random.randint(300, 600)
 
             # Record process data
-            result = {
-                "TimeStamp": datetime.now().isoformat(),
-                "Duration": round(self.total_time, 5),
-                "Machine ID": self.id,
-                "Process": "Mixing",
-                "AM": round(self.slurry.AM, 3),
-                "CB": round(self.slurry.CA, 3),
-                "PVDF": round(self.slurry.PVDF, 3),
-                f"{self.slurry.solvent}": round(self.slurry.H2O, 3) if self.electrode_type == "Anode" else round(self.slurry.NMP, 3),
-                "Temperature": temperature,
-                "Pressure": pressure,
-                "Speed (RPM)": rpm,
-                "Density": round(self.calculator.calculate_density(self.slurry), 4),
-                "Viscosity": round(self.calculator.calculate_viscosity(self.slurry), 2),
-                "YieldStress": round(self.calculator.calculate_yield_stress(self.slurry), 2)
-            }
+            result = self._format_result()
             
             # Save results every 5 seconds
             now = time.time()
             if now - last_saved_time >= 5:
-                print(f"{result['TimeStamp']} | "
-                      f"{result['Duration']} | "
-                    f"{result['Machine ID']} | "
-                    f"{result['Process']} | "
-                    f"{result['AM']} | "
-                    f"{result['CB']} | "
-                    f"{result['PVDF']} | "
-                    f"{result[f'{self.slurry.solvent}']} | "
-                    f"Temperature: {result['Temperature']} | "
-                    f"Pressure: {result['Pressure']} | "
-                    f"Speed (RPM): {result['Speed (RPM)']} | "
-                    f"Density: {result['Density']} | "
-                    f"Viscosity: {result['Viscosity']} | "
-                    f"Yield Stress: {result['YieldStress']}")
-                
+                self._print_result(result)
                 filename = f"simulation_output/result_at_{round(self.total_time)}s.json"
-                try:
-                    with open(filename, "w") as f:
-                        json.dump(result, f, indent=4)
-                except Exception as e:
-                    print(f"Error writing result to file: {e}")
-                
+                self._write_json(result, filename)
                 last_saved_time = now
 
             time.sleep(pause_sec)
     
     def _save_final_results(self):
-        """Save the final mixing results to a JSON file."""
-        final_result = {
-            "TimeStamp": datetime.now().isoformat(),
-            "Duration": round(self.total_time, 5),
-            "Machine ID": self.id,
-            "Process": "Mixing",
-            "Electrode Type": self.electrode_type,
-            "Final Composition": {
-                "AM": round(self.slurry.AM, 3),
-                "CB": round(self.slurry.CA, 3),
-                "PVDF": round(self.slurry.PVDF, 3),
-                f"{self.slurry.solvent}": round(self.slurry.H2O, 3) if self.electrode_type == "Anode" else round(self.slurry.NMP, 3)
-            },
-            "Final Properties": {
-                "Density": round(self.calculator.calculate_density(self.slurry), 4),
-                "Viscosity": round(self.calculator.calculate_viscosity(self.slurry), 2),
-                "YieldStress": round(self.calculator.calculate_yield_stress(self.slurry), 2)
-            }
-        }
-        
+        final_result = self._format_result(is_final=True)
         filename = f"simulation_output/final_results_{self.id}.json"
-        try:
-            with open(filename, "w") as f:
-                json.dump(final_result, f, indent=4)
-            print(f"\nFinal results saved to {filename}")
-        except Exception as e:
-            print(f"Error saving final results: {e}")
+        self._write_json(final_result, filename)
 
     def run(self, step_percent=0.02, pause_sec=1):
         """
