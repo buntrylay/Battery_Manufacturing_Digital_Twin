@@ -68,6 +68,8 @@ class MixingMachine(Machine):
         super().__init__(id)
         self.slurry = slurry
         self.electrode_type = electrode_type
+        self.volume = 200  # Default volume in litres
+        self.ratios = ratio_materials
 
         # Set density values, weight coefficients and initial solvent volume based on electrode type
         if self.electrode_type == "Anode":
@@ -80,8 +82,6 @@ class MixingMachine(Machine):
             self.slurry.add("NMP", self.volume * self.ratios["NMP"])
 
         self.calculator = SlurryPropertyCalculator(self.RHO_values, self.WEIGHTS_values)
-        self.volume = 200  # Default volume in litres
-        self.ratios = ratio_materials
         self.total_time = 0
     
     def _mix_component(self, component, step_percent, pause_sec):
