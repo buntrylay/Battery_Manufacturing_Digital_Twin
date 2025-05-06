@@ -7,7 +7,8 @@ import os
 import json
 
 class Machine(ABC):
-    def __init__(self):
+    def __init__(self, id):
+        self.id = id
         self.is_on = False
         self.calculator = None
 
@@ -22,8 +23,8 @@ class Machine(ABC):
         pass
 
 class MixingMachine(Machine):
-    def __init__(self, slurry: Slurry):
-        super().__init__()
+    def __init__(self, id, slurry: Slurry):
+        super().__init__(id)
         self.slurry = slurry
         self.calculator = SlurryPropertyCalculator(slurry)
         self.volume = slurry.total_volume
@@ -44,6 +45,8 @@ class MixingMachine(Machine):
             self.slurry.add(component, step_volume)
             result = {
                 "Time": datetime.now().isoformat(),
+                "Machine ID": self.id,
+                "Process": "Mixing",
                 "Component": component,
                 "Density": round(self.calculator.calculate_density(), 4),
                 "Viscosity": round(self.calculator.calculate_viscosity(), 2),
@@ -51,7 +54,7 @@ class MixingMachine(Machine):
             }
             
             now = time.time()
-            if now - last_saved_time >= 10:
+            if now - last_saved_time >= 5:
                 print(f"{result['Time']} | {result['Component']} | "
                   f"Density: {result['Density']} | "
                   f"Viscosity: {result['Viscosity']} | "
