@@ -8,25 +8,22 @@ class SlurryPropertyCalculator:
     based on the composition and physical properties of the slurry components.
     
     Attributes:
-        slurry (Slurry): The slurry object containing component amounts
         RHO (dict): Dictionary of density values for each component (g/cm³)
         WEIGHTS (dict): Dictionary of weight coefficients for yield stress calculation
     """
 
-    def __init__(self, slurry: Slurry, RHO_values: dict, WEIGHTS_values: dict):
+    def __init__(self, RHO_values: dict, WEIGHTS_values: dict):
         """
         Initialise a new SlurryPropertyCalculator instance.
         
         Args:
-            slurry (Slurry): The slurry object to calculate properties for
             RHO_values (dict): Dictionary of density values for each component
             WEIGHTS_values (dict): Dictionary of weight coefficients for calculations
         """
-        self.slurry = slurry
         self.RHO = RHO_values
         self.WEIGHTS = WEIGHTS_values
     
-    def calculate_density(self):
+    def calculate_density(self, slurry: Slurry):
         """
         Calculate the density of the slurry.
         
@@ -37,12 +34,12 @@ class SlurryPropertyCalculator:
             float: The calculated density in g/cm³, or 0 if total volume is 0
         """
         # Lambda function to calculate mass of a component (volume * density)
-        m = lambda x: getattr(self.slurry, x) * self.RHO[x]
+        m = lambda x: getattr(slurry, x) * self.RHO[x]
         total_mass = sum(m(c) for c in self.RHO)
-        volume = self.slurry.get_total_volume()
+        volume = slurry.get_total_volume()
         return total_mass / volume if volume else 0
     
-    def calculate_viscosity(self, max_solid_fraction=0.63, intrinsic_viscosity=3):
+    def calculate_viscosity(self, slurry: Slurry, max_solid_fraction=0.63, intrinsic_viscosity=3):
         """
         Calculate the viscosity of the slurry using the Krieger-Dougherty model.
         
@@ -50,16 +47,17 @@ class SlurryPropertyCalculator:
         the Krieger-Dougherty equation: η = (1 - φ/φm)^(-[η]φm)
         
         Args:
+            slurry (Slurry): The slurry object containing component amounts
             max_solid_fraction (float): Maximum packing fraction (default: 0.63)
             intrinsic_viscosity (float): Intrinsic viscosity parameter (default: 3)
             
         Returns:
             float: The calculated viscosity in Pa·s
         """
-        total_volume = self.slurry.get_total_volume()
+        total_volume = slurry.get_total_volume()
 
         # Calculate solid volume (sum of AM, CB, and PVDF)
-        solid_volume = self.slurry.AM + self.slurry.CB + self.slurry.PVDF
+        solid_volume = slurry.AM + slurry.CB + slurry.PVDF
 
         # Calculate solid fraction
         phi = solid_volume / total_volume if total_volume else 0
@@ -67,11 +65,11 @@ class SlurryPropertyCalculator:
         # Cap solid fraction to prevent infinite viscosity
         if phi >= max_solid_fraction:
             phi = max_solid_fraction - 0.001
-            
+
         # Apply Krieger-Dougherty equation with scaling factor of 2
         return (1 - (phi / max_solid_fraction)) ** (-intrinsic_viscosity * max_solid_fraction) * 2
     
-    def calculate_yield_stress(self):
+    def calculate_yield_stress(self, slurry: Slurry):
         """
         Calculate the yield stress of the slurry.
         
@@ -83,7 +81,7 @@ class SlurryPropertyCalculator:
             float: The calculated yield stress in Pa
         """
         # Lambda function to calculate mass of a component (volume * density)
-        m = lambda x: getattr(self.slurry, x) * self.RHO[x]
+        m = lambda x: getattr(slurry, x) * self.RHO[x]
 
         # Calculate weighted sum of component masses
         return (self.WEIGHTS['a'] * m("AM") +  # Active Material contribution

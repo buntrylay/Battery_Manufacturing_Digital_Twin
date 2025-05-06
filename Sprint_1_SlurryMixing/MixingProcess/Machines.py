@@ -79,7 +79,7 @@ class MixingMachine(Machine):
             self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5} ##To be changed
             self.slurry.add("NMP", self.volume * self.ratios["NMP"])
 
-        self.calculator = SlurryPropertyCalculator(slurry, self.RHO_values, self.WEIGHTS_values)
+        self.calculator = SlurryPropertyCalculator(self.RHO_values, self.WEIGHTS_values)
         self.volume = 200  # Default volume in litres
         self.ratios = ratio_materials
         self.total_time = 0
@@ -122,9 +122,9 @@ class MixingMachine(Machine):
                 "Temperature": temperature,
                 "Pressure": pressure,
                 "Speed (RPM)": rpm,
-                "Density": round(self.calculator.calculate_density(), 4),
-                "Viscosity": round(self.calculator.calculate_viscosity(), 2),
-                "YieldStress": round(self.calculator.calculate_yield_stress(), 2)
+                "Density": round(self.calculator.calculate_density(self.slurry), 4),
+                "Viscosity": round(self.calculator.calculate_viscosity(self.slurry), 2),
+                "YieldStress": round(self.calculator.calculate_yield_stress(self.slurry), 2)
             }
             
             # Save results every 5 seconds
@@ -171,9 +171,9 @@ class MixingMachine(Machine):
                 f"{self.slurry.solvent}": round(self.slurry.H2O, 3) if self.electrode_type == "Anode" else round(self.slurry.NMP, 3)
             },
             "Final Properties": {
-                "Density": round(self.calculator.calculate_density(), 4),
-                "Viscosity": round(self.calculator.calculate_viscosity(), 2),
-                "YieldStress": round(self.calculator.calculate_yield_stress(), 2)
+                "Density": round(self.calculator.calculate_density(self.slurry), 4),
+                "Viscosity": round(self.calculator.calculate_viscosity(self.slurry), 2),
+                "YieldStress": round(self.calculator.calculate_yield_stress(self.slurry), 2)
             }
         }
         
