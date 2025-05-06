@@ -104,7 +104,36 @@ class MixingMachine(Machine):
 
             time.sleep(pause_sec)
     
+    def _save_final_results(self):
+        final_result = {
+            "TimeStamp": datetime.now().isoformat(),
+            "Duration": round(self.total_time, 5),
+            "Machine ID": self.id,
+            "Process": "Mixing",
+            "Electrode Type": self.electrode_type,
+            "Final Composition": {
+                "AM": round(self.slurry.AM, 3),
+                "CB": round(self.slurry.CA, 3),
+                "PVDF": round(self.slurry.PVDF, 3),
+                f"{self.slurry.solvent}": round(self.slurry.H2O, 3) if self.electrode_type == "Anode" else round(self.slurry.NMP, 3)
+            },
+            "Final Properties": {
+                "Density": round(self.calculator.calculate_density(), 4),
+                "Viscosity": round(self.calculator.calculate_viscosity(), 2),
+                "YieldStress": round(self.calculator.calculate_yield_stress(), 2)
+            }
+        }
+        
+        filename = f"simulation_output/final_results_{self.id}.json"
+        try:
+            with open(filename, "w") as f:
+                json.dump(final_result, f, indent=4)
+            print(f"\nFinal results saved to {filename}")
+        except Exception as e:
+            print(f"Error saving final results: {e}")
+
     def run(self, step_percent=0.02, pause_sec=1):
         if self.is_on:
             for comp in ["PVDF", "CA", "AM"]:
                 self._mix_component(comp, step_percent, pause_sec)
+            self._save_final_results()
