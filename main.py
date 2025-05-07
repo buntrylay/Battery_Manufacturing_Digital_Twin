@@ -1,10 +1,9 @@
-import sys
 from threading import Thread
 from flask import Flask, jsonify
 
-from Machine import MixingMachine
-import Factory
-import Slurry
+from Sprint_1_SlurryMixing.MixingProcess import Slurry
+from Sprint_1_SlurryMixing.MixingProcess import Factory
+from Sprint_1_SlurryMixing.MixingProcess import MixingMachine
 
 app = Flask(__name__)
 
@@ -30,7 +29,7 @@ def start_simulation():
     factory = Factory()
     anode_mixing_machine = MixingMachine(slurry)
     factory.add_machine(anode_mixing_machine) # the mixing machine should already be in the factory
-    simulation_thread = Thread(target=anode_mixing_machine.start_simulation)
+    simulation_thread = Thread(target=factory.start_simulation)
     simulation_thread.start()
     return jsonify({
         'status': 'simulation started'

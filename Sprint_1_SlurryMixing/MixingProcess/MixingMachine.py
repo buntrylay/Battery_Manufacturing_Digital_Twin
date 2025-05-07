@@ -1,25 +1,10 @@
-from abc import ABC, abstractmethod
-from Slurry import Slurry
-from SlurryPropertyCalculator import SlurryPropertyCalculator
+from .Machine import Machine
+from .SlurryPropertyCalculator import SlurryPropertyCalculator
+from .Slurry import Slurry
 from datetime import datetime
 import time
 import os
 import json
-
-class Machine(ABC):
-    def __init__(self):
-        self.is_on = False
-        self.calculator = None
-
-    def turn_on(self):
-        self.is_on = True
-
-    def turn_off(self):
-        self.is_on = False
-
-    @abstractmethod
-    def run(self):
-        pass
 
 class MixingMachine(Machine):
     def __init__(self, slurry: Slurry):

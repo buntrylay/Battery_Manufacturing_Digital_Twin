@@ -1,4 +1,4 @@
-from Slurry import Slurry
+from .Slurry import Slurry
 
 class SlurryPropertyCalculator:
     RHO = {"AM": 2.26, "CB": 1.8, "PVDF": 1.78, "NMP": 1.0}
