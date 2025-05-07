@@ -1,0 +1,212 @@
+[
+  {
+    "timestamp": "2025-05-07 19:41:23.589409",
+    "duration": 0,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:41:28.589409",
+    "duration": 5,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:41:33.589409",
+    "duration": 10,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:41:38.589409",
+    "duration": 15,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:41:43.589409",
+    "duration": 20,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:41:48.589409",
+    "duration": 25,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:41:53.589409",
+    "duration": 30,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:41:58.589409",
+    "duration": 35,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:03.589409",
+    "duration": 40,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:08.589409",
+    "duration": 45,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:13.589409",
+    "duration": 50,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:18.589409",
+    "duration": 55,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:23.589409",
+    "duration": 60,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:28.589409",
+    "duration": 65,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:33.589409",
+    "duration": 70,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:38.589409",
+    "duration": 75,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:43.589409",
+    "duration": 80,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:48.589409",
+    "duration": 85,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:53.589409",
+    "duration": 90,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:42:58.589409",
+    "duration": 95,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  },
+  {
+    "timestamp": "2025-05-07 19:43:03.589409",
+    "duration": 100,
+    "shear_rate_1_per_s": 500.0,
+    "viscosity_Pa_s": 2.11,
+    "wet_thickness_m": 0.0001,
+    "dry_thickness_m": 0.0001,
+    "defect_risk": false,
+    "uniformity_std": 0.01
+  }
+]
