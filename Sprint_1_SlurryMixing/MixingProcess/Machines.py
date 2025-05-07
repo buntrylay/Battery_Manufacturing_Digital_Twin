@@ -182,7 +182,7 @@ class MixingMachine(Machine):
             now = time.time()
             if now - last_saved_time >= 5:
                 self._print_result(result)
-                filename = f"simulation_output/result_at_{round(self.total_time)}s.json"
+                filename = f"simulation_output/{self.id}_{datetime.now().isoformat()}_result_at_{round(self.total_time)}s.json" 
                 self._write_json(result, filename)
                 last_saved_time = now
 

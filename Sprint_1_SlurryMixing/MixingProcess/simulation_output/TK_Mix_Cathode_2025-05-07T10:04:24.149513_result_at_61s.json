@@ -1,0 +1,14 @@
+{
+    "TimeStamp": "2025-05-07T10:04:24.149396",
+    "Duration": 61,
+    "Machine ID": "TK_Mix_Cathode",
+    "Process": "Mixing",
+    "Electrode Type": "Cathode",
+    "AM": 0,
+    "CA": 1.716,
+    "PVDF": 2.6,
+    "NMP": 70.0,
+    "Density": 1.074,
+    "Viscosity": 2.4,
+    "YieldStress": -23.55
+}
