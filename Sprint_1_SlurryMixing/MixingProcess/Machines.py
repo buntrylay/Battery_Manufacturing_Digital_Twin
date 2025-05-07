@@ -180,7 +180,7 @@ class MixingMachine(Machine):
             
             # Save results every 5 seconds
             now = time.time()
-            if now - last_saved_time >= 0.5:
+            if now - last_saved_time >= 0.1: ##Change for testing 
                 self._print_result(result)
                 filename = f"simulation_output/result_at_{round(self.total_time)}s.json"
                 self._write_json(result, filename)
