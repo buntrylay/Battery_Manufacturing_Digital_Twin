@@ -1,6 +1,6 @@
-from Factory import Factory
-from Slurry import Slurry
-from machines.mixingMachine import MixingMachine
+from MixingProcess.Factory import Factory
+from MixingProcess.Slurry import Slurry
+from MixingProcess.machines.mixingMachine import MixingMachine
 
 # Define the mixing ratios for anode slurry components
 # Ratios represent the volume fraction of each component in the final mixture

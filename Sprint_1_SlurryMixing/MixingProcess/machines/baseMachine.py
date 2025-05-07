@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class Machine(ABC):
+class BaseMachine(ABC):
     """
     Abstract base class representing a generic machine in the battery manufacturing process.
     

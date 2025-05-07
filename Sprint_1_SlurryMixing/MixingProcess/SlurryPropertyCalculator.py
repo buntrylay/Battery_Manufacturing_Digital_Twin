@@ -1,4 +1,4 @@
-from Slurry import Slurry
+from MixingProcess.Slurry import Slurry
 
 class SlurryPropertyCalculator:
     """

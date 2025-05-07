@@ -1,14 +1,15 @@
-from Machines import Machine
+from .baseMachine import BaseMachine
 from datetime import datetime
-from SlurryPropertyCalculator import SlurryPropertyCalculator
-from Slurry import Slurry
+from MixingProcess.SlurryPropertyCalculator import SlurryPropertyCalculator
+from MixingProcess.Slurry import Slurry
 import json
 import os
 import random
 import time
+from datetime import timedelta
 
  
-class MixingMachine(Machine):
+class MixingMachine(BaseMachine):
     """
     A machine class for simulating the mixing of battery slurry components.
  
