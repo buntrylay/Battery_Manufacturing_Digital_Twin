@@ -7,68 +7,6 @@ import os
 import random
 import time
 
-class MixingMachine(Machine):
-    """
-    A machine class for simulating the mixing of battery slurry components.
-
-    This class handles the stepwise addition of components to a slurry, simulates
-    process parameters (temperature, pressure, RPM), and generates real-time
-    simulation data in JSON format. Utility methods are used for formatting results,
-    writing output files, and printing process information.
-
-    Attributes:
-        slurry (Slurry): The slurry being mixed.
-        electrode_type (str): Type of electrode being produced ("Anode" or "Cathode").
-        RHO_values (dict): Density values for different components.
-        WEIGHTS_values (dict): Weight coefficients for property calculations.
-        volume (float): Total volume of the slurry in litres.
-        ratios (dict): Mixing ratios for different components.
-        total_time (float): Total mixing time in seconds.
-        calculator (SlurryPropertyCalculator): Calculator for slurry properties.
-    """
-    
-    from abc import ABC, abstractmethod
-from Slurry import Slurry
-from SlurryPropertyCalculator import SlurryPropertyCalculator
-from datetime import datetime, timedelta
-import time
-import os
-import json
-import random
- 
-class Machine(ABC):
-    """
-    Abstract base class representing a generic machine in the battery manufacturing process.
-   
-    Attributes:
-        id (str): Unique identifier for the machine
-        is_on (bool): Current operational status of the machine
-        calculator (SlurryPropertyCalculator): Calculator for slurry properties
-    """
-   
-    def __init__(self, id):
-        """
-        Initialise a new Machine instance.
-       
-        Args:
-            id (str): Unique identifier for the machine
-        """
-        self.id = id
-        self.is_on = False
-        self.calculator = None
- 
-    def turn_on(self):
-        """Turn on the machine."""
-        self.is_on = True
- 
-    def turn_off(self):
-        """Turn off the machine."""
-        self.is_on = False
- 
-    @abstractmethod
-    def run(self):
-        """Abstract method that must be implemented by concrete machine classes."""
-        pass
  
 class MixingMachine(Machine):
     """
