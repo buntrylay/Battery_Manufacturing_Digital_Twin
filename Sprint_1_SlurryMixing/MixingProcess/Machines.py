@@ -193,7 +193,7 @@ class MixingMachine(Machine):
         Save the final mixing results to a JSON file.
         """
         final_result = self._format_result(is_final=True)
-        filename = f"simulation_output/final_results_{self.id}.json"
+        filename = f"simulation_output/{self.id}_{datetime.now().isoformat()}_final_results.json"
         self._write_json(final_result, filename)
 
     def run(self, step_percent=0.02, pause_sec=1):

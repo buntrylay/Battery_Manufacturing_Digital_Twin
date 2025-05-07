@@ -4,7 +4,7 @@
 /node_modules
 /.pnp
 .pnp.js
-
+../Sprint_1_SlurryMixing/MixingProcess/simulation_output
 # testing
 /coverage
 
