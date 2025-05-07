@@ -45,6 +45,11 @@ class MixingMachine(BaseMachine):
         self.volume = 200  # Default volume in litres
         self.ratios = ratio_materials
  
+        # Create simulation_output directory in the current working directory
+        self.output_dir = os.path.join(os.getcwd(), "simulation_output")
+        os.makedirs(self.output_dir, exist_ok=True)
+        print(f"Output directory created at: {self.output_dir}")
+ 
         # Set density values, weight coefficients and initial solvent volume based on electrode type
         if self.electrode_type == "Anode":
             self.RHO_values = {"AM": 2.26, "CA": 1.8, "PVDF": 1.17, "H2O": 1.0}
@@ -104,9 +109,10 @@ class MixingMachine(BaseMachine):
             filename (str): The output filename.
         """
         try:
-            with open(filename, "w") as f:
+            filepath = os.path.join(self.output_dir, filename)
+            with open(filepath, "w") as f:
                 json.dump(data, f, indent=4)
-            print(f"Results saved to {filename}")
+            print(f"Results saved to {filepath}")
         except Exception as e:
             print(f"Error writing result to file: {e}")
  
@@ -150,7 +156,9 @@ class MixingMachine(BaseMachine):
             now = time.time()
             if now - last_saved_time >= 0.1: ##Change for testing
                 self._print_result(result)
-                filename = f"simulation_output/{self.id}_{datetime.now().isoformat()}_result_at_{round(self.total_time)}s.json" 
+                # Create a Windows-safe filename by replacing colons with hyphens
+                timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                filename = f"{self.id}_{timestamp}_result_at_{round(self.total_time)}s.json" 
                 self._write_json(result, filename)
                 last_saved_time = now
             self.total_time += 5
@@ -161,7 +169,7 @@ class MixingMachine(BaseMachine):
         Save the final mixing results to a JSON file.
         """
         final_result = self._format_result(is_final=True)
-        filename = f"simulation_output/final_results_{self.id}.json"
+        filename = f"final_results_{self.id}.json"
         self._write_json(final_result, filename)
  
     def run(self, step_percent=0.02, pause_sec=0.1):
