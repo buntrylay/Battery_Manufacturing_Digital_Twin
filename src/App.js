@@ -1,186 +1,75 @@
-import React, { useState, useEffect, useRef } from "react";
-import "./App.css";
+// App.js
+import React, { useState } from "react";
+import axios from "axios";
+import "./App.css"; // <-- Import the CSS file
 
 function App() {
-  // State for inputs and user settings
-  const [cathodeInputs, setCathodeInputs] = useState({ NMP: "", PVDF: "", CB: "", LMNC: "" });
-  const [anodeInputs, setAnodeInputs] = useState({ Water: "", PVDF: "", CB: "", Graphite: "" });
-  const [batteries, setBatteries] = useState("");
+  const [anode, setAnode] = useState({ PVDF: "", CA: "", AM: "", Solvent: "" });
+  const [cathode, setCathode] = useState({ PVDF: "", CA: "", AM: "", Solvent: "" });
+  const [status, setStatus] = useState("");
 
-  // Timer and stage state
-  const [time, setTime] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [stage, setStage] = useState("");
-  const intervalRef = useRef(null);
+  const handleChange = (type, field, value) => {
+    if (type === "Anode") setAnode(prev => ({ ...prev, [field]: value }));
+    else setCathode(prev => ({ ...prev, [field]: value }));
+  };
 
-  const [errorMsg, setErrorMsg] = useState("");
+  const startSimulation = async (type) => {
+    const data = type === "Anode"
+      ? { ...anode, electrode_type: "Anode" }
+      : { ...cathode, electrode_type: "Cathode" };
 
-  // Input handling (percentage, max 100)
-  const handleInputChange = (setter, key) => (e) => {
-    let value = e.target.value;
-    if (/^\d{0,3}(\.\d{0,2})?$/.test(value) && Number(value) <= 100) {
-      setter((prev) => ({ ...prev, [key]: value }));
+    try {
+      const response = await axios.post("http://localhost:8000/start", data);
+      setStatus(response.data.message);
+    } catch (err) {
+      setStatus("Error: " + (err.response?.data?.detail || err.message));
     }
   };
 
-  // Allow only valid numbers/floats for batteries input
-  const handleBatteriesChange = (e) => {
-    const val = e.target.value;
-    if (/^\d*(\.\d*)?$/.test(val)) setBatteries(val);
-  };
-
-  // Sum all percentages for validation
-  const sumPercentages = (inputs) => {
-    return Object.values(inputs).reduce((sum, val) => sum + Number(val || 0), 0);
-  };
-
-  const cathodeTotal = sumPercentages(cathodeInputs);
-  const anodeTotal = sumPercentages(anodeInputs);
-
-  // Timer effect when simulation is running
-  useEffect(() => {
-    if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        setTime((prev) => prev + 1);
-      }, 1000);
-    } else {
-      clearInterval(intervalRef.current);
-    }
-    return () => clearInterval(intervalRef.current);
-  }, [isRunning]);
-
-  // Auto stage update based on elapsed time
-  useEffect(() => {
-    if (time < 10) setStage("Solvent + Binder");
-    else if (time < 20) setStage("Conductive Additive");
-    else if (time < 30) setStage("Active Material");
-    else setStage("Mixing Completed");
-  }, [time]);
-
-  // Format timer output
-  const formatTime = (seconds) => {
-    const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
-    const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-    const s = String(seconds % 60).padStart(2, '0');
-    return `${h}:${m}:${s}`;
-  };
-
-  // Control button functions
-  const handleStart = () => {
-    if (!batteries) {
-      setErrorMsg("Please enter the number of batteries before starting.");
-    } else if (cathodeTotal !== 100 || anodeTotal !== 100) {
-      setErrorMsg("Both Cathode and Anode inputs must total exactly 100% before starting.");
-    } else {
-      setErrorMsg("");
-      setIsRunning(true);
+  const resetSimulation = async () => {
+    try {
+      const response = await axios.post("http://localhost:8000/reset");
+      setStatus(response.data.message);
+    } catch (err) {
+      setStatus("Error: " + (err.response?.data?.detail || err.message));
     }
   };
 
-  const handlePause = () => setIsRunning(false);
-
-  const handleReset = () => {
-    setIsRunning(false);
-    setTime(0);
-    setStage("");
-    setErrorMsg("");
+  const downloadJson = () => {
+    window.open("http://localhost:8000/files", "_blank");
   };
 
   return (
     <div className="container">
-      <div className="battery-input">
-        <label className="label">Batteries:</label>
-        <input
-          type="text"
-          value={batteries}
-          onChange={handleBatteriesChange}
-          className="input"
-        />
-      </div>
+      <h2>Battery Slurry Mixing Simulation</h2>
 
-      {errorMsg && <p className="error">{errorMsg}</p>}
-
-      <div className="section-row">
-        {/* Cathode Section */}
-        <div className="section">
-          <h2 className="section-title">Cathode</h2>
-          <div className="input-group red-bg">
-            <p className="sub-label">Inputs:</p>
-            {Object.keys(cathodeInputs).map((item) => (
+      <div className="simulation-section">
+        {["Anode", "Cathode"].map(type => (
+          <div key={type} className="input-group">
+            <h3>{type} Input</h3>
+            {["PVDF", "CA", "AM", "Solvent"].map(field => (
               <input
-                key={item}
-                placeholder={`${item} (%)`}
-                value={cathodeInputs[item]}
-                onChange={handleInputChange(setCathodeInputs, item)}
-                className="input-box"
+                key={field}
+                type="number"
+                placeholder={`${field} ratio`}
+                value={type === "Anode" ? anode[field] : cathode[field]}
+                onChange={e => handleChange(type, field, e.target.value)}
+                step="0.01"
+                min="0"
+                max="1"
               />
             ))}
-            <p className="warning">Total: {cathodeTotal}% {cathodeTotal !== 100 && "(Needs to be 100%)"}</p>
+            <button onClick={() => startSimulation(type)}>Start {type}</button>
           </div>
-
-          <div className="output-box">
-            <p className="sub-label">Final Outputs:</p>
-            {["Density", "Viscosity", "Yield Stress"].map((label) => (
-              <div key={label} className="output-row">
-                <span>{label}</span>
-                <span>Auto</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="meta">
-            <label className="bold-label">Time:</label>
-            <input className="input" value={formatTime(time)} readOnly />
-          </div>
-          <div className="meta">
-            <label className="bold-label">Current Stage:</label>
-            <input className="input" value={stage} readOnly />
-          </div>
-        </div>
-
-        {/* Anode Section */}
-        <div className="section">
-          <h2 className="section-title">Anode</h2>
-          <div className="input-group blue-bg">
-            <p className="sub-label">Inputs:</p>
-            {Object.keys(anodeInputs).map((item) => (
-              <input
-                key={item}
-                placeholder={`${item} (%)`}
-                value={anodeInputs[item]}
-                onChange={handleInputChange(setAnodeInputs, item)}
-                className="input-box"
-              />
-            ))}
-            <p className="warning">Total: {anodeTotal}% {anodeTotal !== 100 && "(Needs to be 100%)"}</p>
-          </div>
-
-          <div className="output-box">
-            <p className="sub-label">Final Outputs:</p>
-            {["Density", "Viscosity", "Yield Stress"].map((label) => (
-              <div key={label} className="output-row">
-                <span>{label}</span>
-                <span>Auto</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="meta">
-            <label className="bold-label">Time:</label>
-            <input className="input" value={formatTime(time)} readOnly />
-          </div>
-          <div className="meta">
-            <label className="bold-label">Current Stage:</label>
-            <input className="input" value={stage} readOnly />
-          </div>
-        </div>
+        ))}
       </div>
 
-      <div className="button-row">
-        <button className="button pause" onClick={handlePause}>Pause</button>
-        <button className="button start" onClick={handleStart}>Start</button>
-        <button className="button reset" onClick={handleReset}>Reset</button>
+      <div className="actions">
+        <button onClick={resetSimulation}>Reset & Delete JSON</button>
+        <button onClick={downloadJson}>Download Results</button>
       </div>
+
+      <p className="status-message">{status}</p>
     </div>
   );
 }

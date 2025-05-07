@@ -1,0 +1,14 @@
+{
+    "TimeStamp": "2025-05-07T18:15:32.825114",
+    "Duration": 50,
+    "Machine ID": "Mix_Anode",
+    "Process": "Mixing",
+    "Electrode Type": "Anode",
+    "AM": 0,
+    "CA": 0,
+    "PVDF": 8.8,
+    "H2O": 80.0,
+    "Density": 1.0168,
+    "Viscosity": 2.76,
+    "YieldStress": -9.35
+}

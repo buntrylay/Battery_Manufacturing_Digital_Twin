@@ -12,21 +12,22 @@ class Slurry:
         NMP (float): Amount of solvent for cathode slurry
     """
     
-    def __init__(self, electrode_type, volume):
+    def __init__(self, electrode_type):
         """
         Initialize a new Slurry instance.
         
         Args:
             volume (float): The target total volume of the slurry
         """
-        self.total_volume = volume
         self.AM = 0  # Active Material
         self.CA = 0  # Conductive Additive
         self.PVDF = 0  # PVDF Binder
         if electrode_type == "Anode":
+            self.electrode_type = "Anode"
             self.H2O = 0  # Solvent for anode
             self.solvent = "H2O"
         elif electrode_type == "Cathode":
+            self.electrode_type = "Cathode"
             self.NMP = 0  # Solvent for cathode
             self.solvent = "NMP"
 
