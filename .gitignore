@@ -26,19 +26,19 @@ wheels/
 
 # React/Node
 node_modules/
-/battery-digital-twin-simulation/node_modules
-/battery-digital-twin-simulation/.pnp
-/battery-digital-twin-simulation/.pnp.js
-/battery-digital-twin-simulation/coverage
-/battery-digital-twin-simulation/build
-/battery-digital-twin-simulation/.DS_Store
-/battery-digital-twin-simulation/.env.local
-/battery-digital-twin-simulation/.env.development.local
-/battery-digital-twin-simulation/.env.test.local
-/battery-digital-twin-simulation/.env.production.local
-/battery-digital-twin-simulation/npm-debug.log*
-/battery-digital-twin-simulation/yarn-debug.log*
-/battery-digital-twin-simulation/yarn-error.log*
+**/node_modules
+**/.pnp
+**/.pnp.js
+**/coverage
+**/build
+**/.DS_Store
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
 
 # Project specific
 Sprint_1_SlurryMixing/MixingProcess/simulation_output/
