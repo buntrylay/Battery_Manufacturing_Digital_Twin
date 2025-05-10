@@ -1,2 +1,71 @@
-# Simulation output files
-Sprint_1_SlurryMixing/MixingProcess/simulation_output/ 
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# React/Node
+node_modules/
+/battery-digital-twin-simulation/node_modules
+/battery-digital-twin-simulation/.pnp
+/battery-digital-twin-simulation/.pnp.js
+/battery-digital-twin-simulation/coverage
+/battery-digital-twin-simulation/build
+/battery-digital-twin-simulation/.DS_Store
+/battery-digital-twin-simulation/.env.local
+/battery-digital-twin-simulation/.env.development.local
+/battery-digital-twin-simulation/.env.test.local
+/battery-digital-twin-simulation/.env.production.local
+/battery-digital-twin-simulation/npm-debug.log*
+/battery-digital-twin-simulation/yarn-debug.log*
+/battery-digital-twin-simulation/yarn-error.log*
+
+# Project specific
+Sprint_1_SlurryMixing/MixingProcess/simulation_output/
+*.log
+.DS_Store
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# IDE specific
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+coverage.xml
+*.cover 
