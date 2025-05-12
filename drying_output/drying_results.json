@@ -1,0 +1,1012 @@
+[
+  {
+    "timestamp": "2025-05-12 17:34:59.936764",
+    "duration": 0,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.104,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00019,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:00.936764",
+    "duration": 1,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.118,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000207,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:01.936764",
+    "duration": 2,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.132,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000225,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:02.936764",
+    "duration": 3,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.146,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000243,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:03.936764",
+    "duration": 4,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.16,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00026,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:04.936764",
+    "duration": 5,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.174,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000278,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:05.936764",
+    "duration": 6,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.188,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000295,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:06.936764",
+    "duration": 7,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.202,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000313,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:07.936764",
+    "duration": 8,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.216,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00033,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:08.936764",
+    "duration": 9,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.23,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000348,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:09.936764",
+    "duration": 10,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.244,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000365,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:10.936764",
+    "duration": 11,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.258,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000383,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:11.936764",
+    "duration": 12,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.272,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.0004,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:12.936764",
+    "duration": 13,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.286,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000418,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:13.936764",
+    "duration": 14,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.3,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000435,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:14.936764",
+    "duration": 15,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.314,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000453,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:15.936764",
+    "duration": 16,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.328,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00047,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:16.936764",
+    "duration": 17,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.342,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000488,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:17.936764",
+    "duration": 18,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.356,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000505,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:18.936764",
+    "duration": 19,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.37,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000523,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:19.936764",
+    "duration": 20,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.384,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00054,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:20.936764",
+    "duration": 21,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.398,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000558,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:21.936764",
+    "duration": 22,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.412,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000575,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:22.936764",
+    "duration": 23,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.426,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000593,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:23.936764",
+    "duration": 24,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.44,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00061,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:24.936764",
+    "duration": 25,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.454,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000628,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:25.936764",
+    "duration": 26,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.468,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000645,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:26.936764",
+    "duration": 27,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.482,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000663,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:27.936764",
+    "duration": 28,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.496,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00068,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:28.936764",
+    "duration": 29,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.51,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000698,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:29.936764",
+    "duration": 30,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.524,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000715,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:30.936764",
+    "duration": 31,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.538,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000733,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:31.936764",
+    "duration": 32,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.552,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00075,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:32.936764",
+    "duration": 33,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.566,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000768,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:33.936764",
+    "duration": 34,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.58,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000785,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:34.936764",
+    "duration": 35,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.594,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000803,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:35.936764",
+    "duration": 36,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.608,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00082,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:36.936764",
+    "duration": 37,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.622,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000838,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:37.936764",
+    "duration": 38,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.636,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000855,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:38.936764",
+    "duration": 39,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.65,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000873,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:39.936764",
+    "duration": 40,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.664,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00089,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:40.936764",
+    "duration": 41,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.678,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000908,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:41.936764",
+    "duration": 42,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.692,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000925,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:42.936764",
+    "duration": 43,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.706,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000943,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:43.936764",
+    "duration": 44,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.72,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00096,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:44.936764",
+    "duration": 45,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.734,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000978,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:45.936764",
+    "duration": 46,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.748,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.000995,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:46.936764",
+    "duration": 47,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.762,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001013,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:47.936764",
+    "duration": 48,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.776,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00103,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:48.936764",
+    "duration": 49,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.79,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001048,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:49.936764",
+    "duration": 50,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.804,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001065,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:50.936764",
+    "duration": 51,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.818,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001083,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:51.936764",
+    "duration": 52,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.832,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.0011,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:52.936764",
+    "duration": 53,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.846,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001118,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:53.936764",
+    "duration": 54,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.86,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001135,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:54.936764",
+    "duration": 55,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.874,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001153,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:55.936764",
+    "duration": 56,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.888,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00117,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:56.936764",
+    "duration": 57,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.902,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001188,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:57.936764",
+    "duration": 58,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.916,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001205,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:58.936764",
+    "duration": 59,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.93,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001223,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:35:59.936764",
+    "duration": 60,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.944,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00124,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:00.936764",
+    "duration": 61,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.958,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001258,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:01.936764",
+    "duration": 62,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.972,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001275,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:02.936764",
+    "duration": 63,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 0.986,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001293,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:03.936764",
+    "duration": 64,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.0,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00131,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:04.936764",
+    "duration": 65,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.014,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001328,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:05.936764",
+    "duration": 66,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.028,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001345,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:06.936764",
+    "duration": 67,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.042,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001363,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:07.936764",
+    "duration": 68,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.056,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00138,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:08.936764",
+    "duration": 69,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.07,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001398,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:09.936764",
+    "duration": 70,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.084,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001415,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:10.936764",
+    "duration": 71,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.098,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001433,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:11.936764",
+    "duration": 72,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.112,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00145,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:12.936764",
+    "duration": 73,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.126,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001468,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:13.936764",
+    "duration": 74,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.14,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001485,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:14.936764",
+    "duration": 75,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.154,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001503,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:15.936764",
+    "duration": 76,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.168,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00152,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:16.936764",
+    "duration": 77,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.182,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001538,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:17.936764",
+    "duration": 78,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.196,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001555,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:18.936764",
+    "duration": 79,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.21,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001573,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:19.936764",
+    "duration": 80,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.224,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00159,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:20.936764",
+    "duration": 81,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.238,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001608,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:21.936764",
+    "duration": 82,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.252,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001625,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:22.936764",
+    "duration": 83,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.266,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001643,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:23.936764",
+    "duration": 84,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.28,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00166,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:24.936764",
+    "duration": 85,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.294,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001678,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:25.936764",
+    "duration": 86,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.308,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001695,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:26.936764",
+    "duration": 87,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.322,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001713,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:27.936764",
+    "duration": 88,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.336,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00173,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:28.936764",
+    "duration": 89,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.35,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001748,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:29.936764",
+    "duration": 90,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.364,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001765,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:30.936764",
+    "duration": 91,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.378,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001783,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:31.936764",
+    "duration": 92,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.392,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.0018,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:32.936764",
+    "duration": 93,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.406,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001818,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:33.936764",
+    "duration": 94,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.42,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001835,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:34.936764",
+    "duration": 95,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.434,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001853,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:35.936764",
+    "duration": 96,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.448,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00187,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:36.936764",
+    "duration": 97,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.462,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001888,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:37.936764",
+    "duration": 98,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.476,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001905,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:38.936764",
+    "duration": 99,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.49,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.001923,
+    "defect_risk": true
+  },
+  {
+    "timestamp": "2025-05-12 17:36:39.936764",
+    "duration": 100,
+    "wet_thickness_m": 0.00012,
+    "dry_thickness_m": 6e-05,
+    "M_solvent_kg_m2": 1.504,
+    "evaporation_rate_kg_s": -0.007,
+    "coating_thickness_m": 0.00194,
+    "defect_risk": true
+  }
+]
