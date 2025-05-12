@@ -13,7 +13,7 @@ This project implements a digital twin for battery manufacturing processes, with
 ``` txt
 Battery_Manufacturing_Digital_Twin/
 ├── backend/               # Python backend
-│   ├── src/
+│   ├── src/               # Frontend source code
 │   │   ├── simulation/    # Simulation package
 │   │   └── server/        # API server
 │   ├── tests/             # Backend tests
