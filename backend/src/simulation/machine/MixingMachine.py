@@ -1,13 +1,11 @@
-from .baseMachine import BaseMachine
-from datetime import datetime
-from MixingProcess.SlurryPropertyCalculator import SlurryPropertyCalculator
-from MixingProcess.Slurry import Slurry
+import time
+from datetime import datetime, timedelta
+from simulation.machine.BaseMachine import BaseMachine
+from simulation.sensor.SlurryPropertyCalculator import SlurryPropertyCalculator
+from simulation.battery_model.Slurry import Slurry
 import json
 import os
 import random
-import time
-from datetime import timedelta
-
  
 class MixingMachine(BaseMachine):
     """

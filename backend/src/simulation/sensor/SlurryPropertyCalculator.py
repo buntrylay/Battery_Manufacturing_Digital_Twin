@@ -1,4 +1,4 @@
-from MixingProcess.Slurry import Slurry
+from simulation.battery_model import Slurry
 
 class SlurryPropertyCalculator:
     """

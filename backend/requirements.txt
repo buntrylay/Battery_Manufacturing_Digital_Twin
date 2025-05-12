@@ -41,6 +41,8 @@ pyzmq==26.4.0
 referencing==0.36.2
 requests==2.32.3
 rpds-py==0.24.0
+setuptools==80.4.0
+-e git+https://github.com/buntrylay/Battery_Manufacturing_Digital_Twin.git@6a974390b06081fe805e1f902ff96ea375d5aa45#egg=simulation&subdirectory=backend
 six==1.17.0
 soupsieve==2.7
 stack-data==0.6.3

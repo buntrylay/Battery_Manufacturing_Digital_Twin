@@ -1,71 +1,104 @@
-# Python
+# Python backend
 **/__pycache__/
 **/*.py[cod]
 **/*$py.class
-*.so
-.Python
-.venv/
-venv/
-ENV/
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+**/*.so
+**/.Python
+**/.venv/
+**/*venv/
+**/*ENV/
+**/*env/
+**/*build/
+**/*develop-eggs/
+**/*dist/
+**/*downloads/
+**/*eggs/
+**/*lib/
+**/*lib64/
+**/*parts/
+**/*sdist/
+**/*var/
+**/*wheels/
+**/*.egg-info/
+**/.installed.cfg
+**/*.egg
+**/.pytest_cache/
+**/.coverage
+**/htmlcov/
+**/.tox/
+**/.nox/
+**/coverage.xml
+**/*.cover
+**/.mypy_cache/
+**/.ruff_cache/
+**/.hypothesis/
 
-# React/Node
-node_modules/
-**/node_modules
-**/.pnp
-**/.pnp.js
-**/coverage
-**/build
+# React/Node frontend
+**/node_modules/
+**/coverage/
+**/build/
 **/.DS_Store
-**/.env.local
-**/.env.development.local
-**/.env.test.local
-**/.env.production.local
+**/.env*
 **/npm-debug.log*
 **/yarn-debug.log*
 **/yarn-error.log*
+**/.pnp/
+**/.pnp.js
+**/.next/
+**/out/
+**/.cache/
+**/.parcel-cache/
+**/.eslintcache
+**/.stylelintcache
+**/.babel-cache/
 
-# Project specific
-Sprint_1_SlurryMixing/MixingProcess/simulation_output/
-*.log
-.DS_Store
-.env
-.env.local
-.env.development
-.env.test
-.env.production
+# Project specific, not needed for deployment
+**/*.log
+**/.DS_Store
+**/.env*
+**/simulation_output/
 
-# IDE specific
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
+# IDE and editor files
+**/.idea/
+**/.vscode/
+**/*.swp
+**/*.swo
+**/*~
+**/.project
+**/.classpath
+**/.settings/
+**/*.sublime-workspace
+**/*.sublime-project
 
 # Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
+**/.ipynb_checkpoints
+**/*.ipynb_checkpoints/
 
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
-.tox/
-.nox/
-coverage.xml
-*.cover 
+# System files
+**/.DS_Store
+**/Thumbs.db
+**/desktop.ini
+
+# Temporary files
+**/*.tmp
+**/*.temp
+**/*.bak
+**/*.swp
+**/*.swo
+**/*~
+**/.fuse_hidden*
+**/.Trash-*
+**/.nfs*
+
+# Logs and databases
+**/*.log
+**/*.sqlite
+**/*.sqlite3
+**/*.db
+**/logs/
+**/log/
+
+# Local development
+**/.local/
+**/local_settings.py
+**/local.py 
