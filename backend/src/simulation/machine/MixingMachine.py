@@ -184,5 +184,3 @@ class MixingMachine(BaseMachine):
             self._save_final_results()
  
  
-
-
