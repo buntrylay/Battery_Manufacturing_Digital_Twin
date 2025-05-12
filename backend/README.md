@@ -59,6 +59,21 @@ pytest tests/
 3. Run tests to ensure nothing is broken
 4. Submit a pull request
 
+## 🚀 Running the Backend Server (FastAPI)
+
+Make sure you are in the `backend/src` directory before starting the server.
+
+### 🛠️ Prerequisites
+Ensure you have the following installed:
+- Python 3.8+
+- `uvicorn` and `fastapi`
+
+Install dependencies if not already:
+
+```bash
+pip install fastapi uvicorn
+
+
 ## License
 
 [Your License Here]
