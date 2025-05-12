@@ -62,6 +62,10 @@ pytest tests/
 ## 🚀 Running the Backend Server (FastAPI)
 
 Make sure you are in the `backend/src` directory before starting the server.
+Then run:
+```bash
+python -m uvicorn server.main:app --reload
+```
 
 ### 🛠️ Prerequisites
 Ensure you have the following installed:
