@@ -79,6 +79,8 @@ def reset_simulation():
 @app.get("/files/{electrode_type}")
 def download_result_zip(electrode_type: str):
     try:
+        
+        #Only use this when you only want to download the final json file alone
         '''
         json_file = RESULTS_PATH / f"{electrode_type}_result.json"
         if not json_file.exists():
@@ -88,6 +90,7 @@ def download_result_zip(electrode_type: str):
         with ZipFile(zip_path, "w") as zipf:
             zipf.write(json_file, arcname=json_file.name)
         '''
+
         zip_path = RESULTS_PATH / f"{electrode_type}.zip"
 
         with ZipFile(zip_path, "w") as zipf:
@@ -99,8 +102,8 @@ def download_result_zip(electrode_type: str):
         raise HTTPException(status_code=404, detail=str(e))
     
 
-    
-#this one is not included yet, we can put this if it's needed later
+
+#This one is not included yet, we can put this if it's needed later
 '''
 @app.get("/files/all")
 def download_all_results():
