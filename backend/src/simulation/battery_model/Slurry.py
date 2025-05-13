@@ -17,7 +17,7 @@ class Slurry:
         Initialize a new Slurry instance.
         
         Args:
-            volume (float): The target total volume of the slurry
+            electrode_type (str): The type of electrode ("Anode" or "Cathode")
         """
         self.AM = 0  # Active Material
         self.CA = 0  # Conductive Additive
