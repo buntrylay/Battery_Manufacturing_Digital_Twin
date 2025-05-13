@@ -1,7 +1,7 @@
 from simulation.factory.Factory import Factory
 from simulation.battery_model.Slurry import Slurry
 from simulation.machine.MixingMachine import MixingMachine
-
+from simulation.machine.CoatingMachine import CoatingMachine
 # Define the mixing ratios for anode slurry components
 # Ratios represent the volume fraction of each component in the final mixture
 user_input_anode = {
@@ -22,7 +22,6 @@ user_input_cathode = {
 anode_slurry = Slurry("Anode")
 cathode_slurry = Slurry("Cathode")
 # Initialize the factory for managing the manufacturing process
-factory = Factory()
 
 # Create a mixing machine instance for anode slurry
 # Parameters:
@@ -31,12 +30,12 @@ factory = Factory()
 #   - Slurry: anode_slurry instance
 #   - Ratios: user_input_anode dictionary
 anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode)
-
 cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slurry, user_input_cathode)
-
-# Add the mixing machine to the factory
-factory.add_machine(anode_mixing_machine)
-factory.add_machine(cathode_mixing_machine)
-
+coating_machine = CoatingMachine("Coating_Machine")
+factory = Factory()
+factory.add_machine(anode_mixing_machine)  # No dependencies
+factory.add_machine(cathode_mixing_machine)  # No dependencies
+factory.add_machine(coating_machine, 
+                   dependencies=["TK_Mix_Anode", "TK_Mix_Cathode"])  # Depends on both mixers
 # Start the simulation process
 factory.start_simulation()
