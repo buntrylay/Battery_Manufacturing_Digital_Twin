@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from simulation.factory.Factory import Factory
 from simulation.battery_model.Slurry import Slurry
 from simulation.machine.MixingMachine import MixingMachine
+from simulation.machine.CoatingMachine import CoatingMachine
 from pathlib import Path
 from zipfile import ZipFile
 import json
@@ -41,6 +42,14 @@ machines = {}
 @app.post("/start-both")
 def start_both_simulation(payload: DualInput):
     try:
+        # Reset factory and clear any existing machines
+        factory.stop_simulation()
+        factory.machines = []
+        factory.threads = []
+        factory.machine_status = {}
+        factory.machine_locks = {}
+        factory.machine_events = {}
+        #Create mixing machines
         for data in [payload.anode, payload.cathode]:
             slurry = Slurry(data.electrode_type)
             ratios = {
@@ -54,14 +63,45 @@ def start_both_simulation(payload: DualInput):
             mixing_machine = MixingMachine(machine_id, data.electrode_type, slurry, ratios)
             factory.add_machine(mixing_machine)
             machines[data.electrode_type] = mixing_machine
-            factory.start_simulation()
 
-            final_result = mixing_machine._format_result(is_final=True)
+        # Create and add coating machine with dependencies
+        coating_machine = CoatingMachine("Coating_Machine")
+        factory.add_machine(coating_machine, dependencies=["TK_Mix_Anode", "TK_Mix_Cathode"])
+        machines["Coating"] = coating_machine
+
+        # Start simulation for all machines
+        factory.start_simulation()
+
+        # Wait for all machines to complete
+        for thread in factory.threads:
+            thread.join()
+
+        # Check if all machines completed successfully
+        all_completed = all(factory.machine_status.values())
+        if not all_completed:
+            raise Exception("Not all machines completed successfully")
+
+        # Save final results
+        for data in [payload.anode, payload.cathode]:
+            machine = machines[data.electrode_type]
+            final_result = machine._format_result(is_final=True)
             result_path = RESULTS_PATH / f"{data.electrode_type}_result.json"
             with open(result_path, "w") as f:
                 json.dump(final_result, f, indent=4)
 
-        return {"message": "Both simulations completed."}
+        # Get completion status for each machine
+        completion_status = {
+            machine_id: {
+                "completed": status,
+                "timestamp": machines[data.electrode_type]._format_result(is_final=True)["TimeStamp"] if machine_id != "Coating_Machine" else "N/A"
+            }
+            for machine_id, status in factory.machine_status.items()
+        }
+
+        return {
+            "message": "All processes completed successfully.",
+            "completion_status": completion_status
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
