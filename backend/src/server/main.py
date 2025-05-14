@@ -65,9 +65,13 @@ def start_both_simulation(payload: DualInput):
             machines[data.electrode_type] = mixing_machine
 
         # Create and add coating machine with dependencies
-        coating_machine = CoatingMachine("Coating_Machine")
-        factory.add_machine(coating_machine, dependencies=["TK_Mix_Anode", "TK_Mix_Cathode"])
-        machines["Coating"] = coating_machine
+        coating_machine_cathode = CoatingMachine("Coating_Machine_Cathode")
+        coating_machine_anode = CoatingMachine("Coating_Machine_Anode")
+
+        factory.add_machine(coating_machine_cathode, dependencies=["TK_Mix_Cathode"])
+        factory.add_machine(coating_machine_anode, dependencies=["TK_Mix_Anode"])
+        machines["Coating_Machine_Cathode"] = coating_machine_cathode
+        machines["Coating_Machine_Anode"] = coating_machine_anode
 
         # Start simulation for all machines
         factory.start_simulation()
@@ -104,6 +108,8 @@ def start_both_simulation(payload: DualInput):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
 
 @app.post("/reset")
 def reset_simulation():
