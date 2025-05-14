@@ -1,4 +1,4 @@
-from Slurry import Slurry
+from simulation.battery_model import Slurry
 
 class SlurryPropertyCalculator:
     """
@@ -67,7 +67,7 @@ class SlurryPropertyCalculator:
             phi = max_solid_fraction - 0.001
 
         # Apply Krieger-Dougherty equation with scaling factor of 2
-        return (1 - (phi / max_solid_fraction)) ** (-intrinsic_viscosity * max_solid_fraction) * 2
+        return (1 - (phi / max_solid_fraction)) ** (-intrinsic_viscosity * max_solid_fraction) * 0.017
     
     def calculate_yield_stress(self, slurry: Slurry):
         """
