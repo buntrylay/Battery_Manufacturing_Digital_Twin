@@ -49,7 +49,8 @@ def start_both_simulation(payload: DualInput):
         factory.machine_status = {}
         factory.machine_locks = {}
         factory.machine_events = {}
-        #Create mixing machines
+
+        # Create mixing machines
         for data in [payload.anode, payload.cathode]:
             slurry = Slurry(data.electrode_type)
             ratios = {
