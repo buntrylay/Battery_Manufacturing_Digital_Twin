@@ -1,6 +1,5 @@
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.CoatingPropertyCalculator import CoatingPropertyCalculator
-from simulation.battery_model.Slurry import Slurry
 import time
 from datetime import datetime, timedelta
 import json
@@ -19,7 +18,7 @@ class CoatingMachine(BaseMachine):
     - Real-time data logging
     """
     
-    def __init__(self, id, machine_parameters: dict, in_viscosity: float, solidContent: float):
+    def __init__(self, id, machine_parameters: dict):
         """
         Initialize the coating machine.
         
@@ -46,8 +45,8 @@ class CoatingMachine(BaseMachine):
         self.coating_width = machine_parameters["coating_width"] # m (possibly fixed)
         
         # Variables from Mixing
-        self.viscosity_pa = in_viscosity
-        self.solid_content = solidContent  # fraction (e.g., 0.55 for 55%)
+        self.viscosity_pa = 0
+        self.solid_content = 0  # fraction (e.g., 0.55 for 55%)
 
     def _format_result(self, step=None, is_final=False):
         """
@@ -132,4 +131,23 @@ class CoatingMachine(BaseMachine):
             filename = f"final_results_{self.id}.json"
             self._write_json(final_result, filename)
             
-            print(f"Coating process completed on {self.id}\n") 
+            print(f"Coating process completed on {self.id}\n")
+
+    def update_from_slurry(self, slurry):
+        """
+        Update coating machine properties from a slurry object.
+        
+        Args:
+            slurry (Slurry): The slurry object from the mixing machine
+        """
+        with self.lock:
+            # Calculate total volume of solids
+            total_solids = slurry.AM + slurry.CA + slurry.PVDF
+            total_volume = total_solids + getattr(slurry, slurry.solvent)
+            self.solid_content = total_solids / total_volume if total_volume > 0 else 0
+            
+            # Get viscosity from the slurry's calculator
+            self.viscosity_pa = slurry.viscosity
+            
+            print(f"Updated {self.id} with properties from slurry")
+            print(f"Viscosity: {self.viscosity_pa:.2f} Pa·s, Solid Content: {self.solid_content:.2%}") 

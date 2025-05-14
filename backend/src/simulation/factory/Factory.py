@@ -1,5 +1,7 @@
 import threading
 from typing import List, Dict
+from simulation.machine.MixingMachine import MixingMachine
+from simulation.machine.CoatingMachine import CoatingMachine
 import time
 
 """
@@ -45,16 +47,23 @@ class Factory:
 
     def wait_for_dependencies(self, machine):
         """
-        Wait for all dependencies to complete
+        Wait for all dependencies to complete and pass their outputs if needed.
         """
         for dependency_id in machine.dependencies:
             print(f"Waiting for dependency: {dependency_id} to be completed")
             self.machine_events[dependency_id].wait()
             print(f"Dependency: {dependency_id} has been completed")
+            
+            # If this is a mixing machine and the current machine is a coating machine
+            dependency_machine = next((m for m in self.machines if m.id == dependency_id), None)
+            if isinstance(dependency_machine, MixingMachine) and isinstance(machine, CoatingMachine):
+                # Get the final slurry and pass it to the coating machine
+                final_slurry = dependency_machine.get_final_slurry()
+                machine.update_from_slurry(final_slurry)
 
         if "coating_machine" in machine.dependencies:
             print("Coating machine is dependent on the mixing machines")
-            time.sleep(10) # 10 second delay
+            time.sleep(10)  # 10 second delay
             print("Coating machine is now ready to start")
     
     def run_machine(self, machine):
