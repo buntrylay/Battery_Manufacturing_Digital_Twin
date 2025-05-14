@@ -64,14 +64,27 @@ def start_both_simulation(payload: DualInput):
             factory.add_machine(mixing_machine)
             machines[data.electrode_type] = mixing_machine
 
-        # Create and add coating machine with dependencies
-        coating_machine_cathode = CoatingMachine("Coating_Machine_Cathode")
-        coating_machine_anode = CoatingMachine("Coating_Machine_Anode")
+        # Define the coating parameters
+        user_input_coating = {
+            "coating_speed": 0.05,  # m/s (0,05 - 5 m/s)
+            "gap_height": 200e-6, # meters (50e-6 to 300 e-6)
+            "flow_rate": 5e-6,  # m³/s (Possibly fixed)
+            "coating_width": 0.5  # m (possibly fixed)
+        }
 
-        factory.add_machine(coating_machine_cathode, dependencies=["TK_Mix_Cathode"])
-        factory.add_machine(coating_machine_anode, dependencies=["TK_Mix_Anode"])
-        machines["Coating_Machine_Cathode"] = coating_machine_cathode
-        machines["Coating_Machine_Anode"] = coating_machine_anode
+        # Create coating machine instances
+        anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
+        cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
+
+        factory.add_machine(anode_coating_machine, 
+                   dependencies=["TK_Mix_Anode"])  # Depends on anode mixer
+        print("Anode coating machine added")
+        factory.add_machine(cathode_coating_machine, 
+                   dependencies=["TK_Mix_Cathode"])  # Depends on cathode mixer
+        print("Cathode coating machine added")
+        
+        machines["Anode_Coating"] = anode_coating_machine
+        machines["Cathode_Coating"] = cathode_coating_machine
 
         # Start simulation for all machines
         factory.start_simulation()
@@ -108,8 +121,6 @@ def start_both_simulation(payload: DualInput):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
 
 @app.post("/reset")
 def reset_simulation():

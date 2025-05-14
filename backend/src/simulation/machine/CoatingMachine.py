@@ -97,6 +97,9 @@ class CoatingMachine(BaseMachine):
         Args:
             step (int): Current step number
         """
+        last_saved_time = time.time()
+        last_saved_result = None
+
         for t in range(0, end_time+1, 5):
             self.total_time = t
             self.shear_rate = self.calculator.calculate_shear_rate(self.coating_speed, self.gap_height)
@@ -110,7 +113,6 @@ class CoatingMachine(BaseMachine):
              # Save results periodically, but only if data has changed
             now = time.time()
             if now - last_saved_time >= 0.1 and result != last_saved_result:  # Check if data has changed
-                self._print_result(result)
                 filename = f"result_at_{round(self.total_time)}s.json"
                 self._write_json(result, filename)
                 last_saved_time = now
