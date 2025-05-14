@@ -102,7 +102,7 @@ class CoatingMachine(BaseMachine):
             self.shear_rate = self.calculator.calculate_shear_rate(self.coating_speed, self.gap_height)
             self.wet_thickness = self.calculator.calculate_wet_thickness(self.flow_rate, self.coating_speed, self.coating_width)
             self.dry_thickness = self.calculator.calculate_dry_thickness(self.wet_thickness, self.solid_content)
-            self.defect_risk = self.calculator.check_defect_risk(self.coating_speed, self.gap_height, self.shear_rate, self.viscosity_pa)
+            self.defect_risk = self.calculator.check_defect_risk(self.coating_speed, self.gap_height, self.viscosity_pa)
             self.uniformity_std = self.calculator.calculate_uniformity(self.shear_rate)
 
             result = self._format_result()

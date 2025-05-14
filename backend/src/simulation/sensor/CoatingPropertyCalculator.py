@@ -77,7 +77,7 @@ class CoatingPropertyCalculator:
         """
         return wet_thickness * solid_content
     
-    def check_defect_risk(self, coating_speed, gap_height, shear_rate, viscosity):
+    def check_defect_risk(self, coating_speed, gap_height, viscosity):
         """
         Assess the risk of coating defects based on process parameters.
         
