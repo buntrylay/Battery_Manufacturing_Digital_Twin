@@ -1,7 +1,14 @@
+import sys
+import os
+
+# Add the src directory to the Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from simulation.factory.Factory import Factory
 from simulation.battery_model.Slurry import Slurry
 from simulation.machine.MixingMachine import MixingMachine
 from simulation.machine.CoatingMachine import CoatingMachine
+
 # Define the mixing ratios for anode slurry components
 # Ratios represent the volume fraction of each component in the final mixture
 user_input_anode = {
@@ -27,28 +34,28 @@ user_input_coating = {
     "coating_width": 0.5  # m (possibly fixed)
 }
 
-
 # Create a new slurry instance for anode with 200L total volume
 anode_slurry = Slurry("Anode")
 cathode_slurry = Slurry("Cathode")
-# Initialize the factory for managing the manufacturing process
 
-# Create a mixing machine instance for anode slurry
-# Parameters:
-#   - ID: "TK_Mix_Anode" (Tank Mixer for Anode)
-#   - Type: "Anode"
-#   - Slurry: anode_slurry instance
-#   - Ratios: user_input_anode dictionary
+# Create mixing machine instances
 anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode)
 cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slurry, user_input_cathode)
+
+# Create coating machine instances
 anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
 cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
+
+# Initialize the factory
 factory = Factory()
+
+# Add machines to factory with dependencies
 factory.add_machine(anode_mixing_machine)  # No dependencies
 factory.add_machine(cathode_mixing_machine)  # No dependencies
 factory.add_machine(anode_coating_machine, 
                    dependencies=["TK_Mix_Anode"])  # Depends on anode mixer
 factory.add_machine(cathode_coating_machine, 
                    dependencies=["TK_Mix_Cathode"])  # Depends on cathode mixer
+
 # Start the simulation process
 factory.start_simulation()
