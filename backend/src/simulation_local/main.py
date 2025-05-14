@@ -18,6 +18,16 @@ user_input_cathode = {
     "AM": 0.598,   # 59.8% Active Material - LNMC?
     "NMP": 0.35    # 35% H2O solvent
 }
+
+# Define the coating parameters
+user_input_coating = {
+    "coating_speed": 0.05,  # m/s (0,05 - 5 m/s)
+    "gap_height": 200e-6, # meters (50e-6 to 300 e-6)
+    "flow_rate": 5e-6,  # m³/s (Possibly fixed)
+    "coating_width": 0.5  # m (possibly fixed)
+}
+
+
 # Create a new slurry instance for anode with 200L total volume
 anode_slurry = Slurry("Anode")
 cathode_slurry = Slurry("Cathode")
@@ -31,11 +41,14 @@ cathode_slurry = Slurry("Cathode")
 #   - Ratios: user_input_anode dictionary
 anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode)
 cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slurry, user_input_cathode)
-coating_machine = CoatingMachine("Coating_Machine")
+anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
+cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
 factory = Factory()
 factory.add_machine(anode_mixing_machine)  # No dependencies
 factory.add_machine(cathode_mixing_machine)  # No dependencies
-factory.add_machine(coating_machine, 
-                   dependencies=["TK_Mix_Anode", "TK_Mix_Cathode"])  # Depends on both mixers
+factory.add_machine(anode_coating_machine, 
+                   dependencies=["TK_Mix_Anode"])  # Depends on anode mixer
+factory.add_machine(cathode_coating_machine, 
+                   dependencies=["TK_Mix_Cathode"])  # Depends on cathode mixer
 # Start the simulation process
 factory.start_simulation()

@@ -174,12 +174,23 @@ class MixingMachine(BaseMachine):
                 last_saved_result = result
 
             time.sleep(pause_sec)
-   
+
+    def get_final_slurry(self):
+        """
+        Get the final slurry after mixing is complete.
+        
+        Returns:
+            Slurry: The final mixed slurry object
+        """
+        with self.lock:
+            return self.slurry
+
     def _save_final_results(self):
         """
-        Save the final mixing results to a JSON file.
+        Save the final mixing results to a JSON file and update the slurry properties
         """
         final_result = self._format_result(is_final=True)
+        self.slurry.update_properties(final_result["Viscosity"], final_result["Density"], final_result["YieldStress"])
         filename = f"final_results_{self.id}.json"
         self._write_json(final_result, filename)
  
