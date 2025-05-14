@@ -38,6 +38,7 @@ class Factory:
         self.machine_status[machine.id] = False
         self.machine_locks[machine.id] = threading.Lock()
         self.machine_events[machine.id] = threading.Event()
+        # List of machine IDs that must complete before this machine starts
         if dependencies:
             machine.dependencies = dependencies
         else:
