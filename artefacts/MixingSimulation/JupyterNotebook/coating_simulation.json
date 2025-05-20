@@ -1,6 +1,6 @@
 [
   {
-    "timestamp": "2025-05-13 11:33:12.776666",
+    "timestamp": "2025-05-14 14:54:47.799212",
     "duration": 0,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -10,7 +10,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:33:17.776666",
+    "timestamp": "2025-05-14 14:54:52.799212",
     "duration": 5,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -20,7 +20,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:33:22.776666",
+    "timestamp": "2025-05-14 14:54:57.799212",
     "duration": 10,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -30,7 +30,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:33:27.776666",
+    "timestamp": "2025-05-14 14:55:02.799212",
     "duration": 15,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -40,7 +40,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:33:32.776666",
+    "timestamp": "2025-05-14 14:55:07.799212",
     "duration": 20,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -50,7 +50,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:33:37.776666",
+    "timestamp": "2025-05-14 14:55:12.799212",
     "duration": 25,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -60,7 +60,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:33:42.776666",
+    "timestamp": "2025-05-14 14:55:17.799212",
     "duration": 30,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -70,7 +70,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:33:47.776666",
+    "timestamp": "2025-05-14 14:55:22.799212",
     "duration": 35,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -80,7 +80,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:33:52.776666",
+    "timestamp": "2025-05-14 14:55:27.799212",
     "duration": 40,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -90,7 +90,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:33:57.776666",
+    "timestamp": "2025-05-14 14:55:32.799212",
     "duration": 45,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -100,7 +100,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:34:02.776666",
+    "timestamp": "2025-05-14 14:55:37.799212",
     "duration": 50,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -110,7 +110,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:34:07.776666",
+    "timestamp": "2025-05-14 14:55:42.799212",
     "duration": 55,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -120,7 +120,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:34:12.776666",
+    "timestamp": "2025-05-14 14:55:47.799212",
     "duration": 60,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -130,7 +130,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:34:17.776666",
+    "timestamp": "2025-05-14 14:55:52.799212",
     "duration": 65,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -140,7 +140,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:34:22.776666",
+    "timestamp": "2025-05-14 14:55:57.799212",
     "duration": 70,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -150,7 +150,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:34:27.776666",
+    "timestamp": "2025-05-14 14:56:02.799212",
     "duration": 75,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -160,7 +160,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:34:32.776666",
+    "timestamp": "2025-05-14 14:56:07.799212",
     "duration": 80,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -170,7 +170,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:34:37.776666",
+    "timestamp": "2025-05-14 14:56:12.799212",
     "duration": 85,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -180,7 +180,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:34:42.776666",
+    "timestamp": "2025-05-14 14:56:17.799212",
     "duration": 90,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -190,7 +190,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:34:47.776666",
+    "timestamp": "2025-05-14 14:56:22.799212",
     "duration": 95,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
@@ -200,7 +200,7 @@
     "uniformity_std": 0.005
   },
   {
-    "timestamp": "2025-05-13 11:34:52.776666",
+    "timestamp": "2025-05-14 14:56:27.799212",
     "duration": 100,
     "shear_rate_1_per_s": 250.0,
     "viscosity_Pa_s": 3.11,
