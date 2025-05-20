@@ -1,5 +1,8 @@
 import threading
 from typing import List, Dict
+from simulation.machine.MixingMachine import MixingMachine
+from simulation.machine.CoatingMachine import CoatingMachine
+from simulation.machine.CalendaringMachine import CalendaringMachine
 import time
 
 """
@@ -25,6 +28,7 @@ class Factory:
         self.machine_status = {}
         self.machine_locks = {}
         self.machine_events = {}
+        self.shutdown_event = threading.Event()
 
     def add_machine(self, machine, dependencies=None):
         """
@@ -45,17 +49,24 @@ class Factory:
 
     def wait_for_dependencies(self, machine):
         """
-        Wait for all dependencies to complete
+        Wait for all dependencies to complete and pass their outputs if needed.
         """
         for dependency_id in machine.dependencies:
             print(f"Waiting for dependency: {dependency_id} to be completed")
             self.machine_events[dependency_id].wait()
             print(f"Dependency: {dependency_id} has been completed")
-
-        if "coating_machine" in machine.dependencies:
-            print("Coating machine is dependent on the mixing machines")
-            time.sleep(10) # 10 second delay
-            print("Coating machine is now ready to start")
+            
+            # If this is a mixing machine and the current machine is a coating machine
+            dependency_machine = next((m for m in self.machines if m.id == dependency_id), None)
+            if isinstance(dependency_machine, MixingMachine) and isinstance(machine, CoatingMachine):
+                # Get the final slurry and pass it to the coating machine
+                final_slurry = dependency_machine.get_final_slurry()
+                machine.update_from_slurry(final_slurry)
+                
+            if isinstance(dependency_machine, CoatingMachine) and isinstance(machine, CalendaringMachine):
+                # Get the final coating and pass it to the calendaring machine
+                final_coating = dependency_machine.get_final_coating()
+                machine.update_from_coating(final_coating)
     
     def run_machine(self, machine):
         """
@@ -79,11 +90,13 @@ class Factory:
             print(f"Completed {machine.id}")
         except Exception as e:
             print(f"Error in {machine.id}: {str(e)}")
+        finally:
+            # Ensure the event is set even if there's an error
+            self.machine_events[machine.id].set()
 
     def start_simulation(self):
         """
         Start the simulation
-
         """
         self.is_running = True
         print("Starting factory simulation...")
@@ -92,16 +105,30 @@ class Factory:
             thread = threading.Thread(
                 target=self.run_machine,
                 args=(machine,),
-                daemon=True
+                daemon=False  # Make threads non-daemon
             )
             thread.start()
             self.threads.append(thread)
 
     def stop_simulation(self):
         """
-        Stop all running machines.
+        Stop all running machines and wait for threads to complete.
         """
         self.is_running = False
+        self.shutdown_event.set()
+        
+        # Wait for all threads to complete
         for thread in self.threads:
-            thread.join()
-        print("Factory simulation stopped.") 
+            thread.join(timeout=5.0)  # Wait up to 5 seconds for each thread
+        
+        # Clear all events
+        for event in self.machine_events.values():
+            event.set()
+            
+        print("Factory simulation stopped.")
+
+    def __del__(self):
+        """
+        Cleanup when the factory is destroyed.
+        """
+        self.stop_simulation() 

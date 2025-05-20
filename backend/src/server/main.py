@@ -64,23 +64,10 @@ def start_both_simulation(payload: DualInput):
             factory.add_machine(mixing_machine)
             machines[data.electrode_type] = mixing_machine
 
-        """ # Create and add coating machine with dependencies
-        # Define the coating parameters
-        user_input_coating = {
-            "coating_speed": 0.05,  # m/s (0,05 - 5 m/s)
-            "gap_height": 200e-6, # meters (50e-6 to 300 e-6)
-            "flow_rate": 5e-6,  # m³/s (Possibly fixed)
-            "coating_width": 0.5  # m (possibly fixed)
-        }
-
-        anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
-        cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
-        factory.add_machine(anode_coating_machine)
-        factory.add_machine(cathode_coating_machine)
-        factory.add_machine(anode_coating_machine, 
-                   dependencies=["TK_Mix_Anode"])  # Depends on anode mixer
-        factory.add_machine(cathode_coating_machine, 
-                   dependencies=["TK_Mix_Cathode"])  # Depends on cathode mixer """
+        # Create and add coating machine with dependencies
+        coating_machine = CoatingMachine("Coating_Machine")
+        factory.add_machine(coating_machine, dependencies=["TK_Mix_Anode", "TK_Mix_Cathode"])
+        machines["Coating"] = coating_machine
 
         # Start simulation for all machines
         factory.start_simulation()
@@ -144,7 +131,7 @@ def download_result_zip(electrode_type: str):
         zip_path = RESULTS_PATH / f"{electrode_type}.zip"
 
         with ZipFile(zip_path, "w") as zipf:
-            for file in (Path.cwd() / "simulation_output").glob(f"*{electrode_type}*.json"):
+            for file in (Path.cwd() / "mixing_output").glob(f"*{electrode_type}*.json"):
                 zipf.write(file, arcname=file.name)
 
         return FileResponse(zip_path, media_type='application/zip', filename=f"{electrode_type}.zip")
