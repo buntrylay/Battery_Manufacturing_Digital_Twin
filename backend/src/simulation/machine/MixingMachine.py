@@ -190,10 +190,11 @@ class MixingMachine(BaseMachine):
         Save the final mixing results to a JSON file and update the slurry properties
         """
         final_result = self._format_result(is_final=True)
-        # Get properties from the final result
-        viscosity = final_result.get("Viscosity", 0.0)
-        density = final_result.get("Density", 0.0)
-        yield_stress = final_result.get("YieldStress", 0.0)
+        # Get properties from the final result's nested Final Properties
+        final_properties = final_result.get("Final Properties", {})
+        viscosity = final_properties.get("Viscosity", 0.0)
+        density = final_properties.get("Density", 0.0)
+        yield_stress = final_properties.get("YieldStress", 0.0)
         
         # Update slurry properties
         self.slurry.update_properties(viscosity, density, yield_stress)
@@ -201,6 +202,7 @@ class MixingMachine(BaseMachine):
         filename = f"final_results_{self.id}.json"
         self._write_json(final_result, filename)
         print(f"Final results saved for {self.id}")
+        print(f"Final properties - Viscosity: {viscosity:.2f}, Density: {density:.2f}, Yield Stress: {yield_stress:.2f}")
  
     def run(self, step_percent=0.02, pause_sec=0.1):
         """
