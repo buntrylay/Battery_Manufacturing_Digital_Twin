@@ -1,13 +1,13 @@
 {
-    "TimeStamp": "2025-05-14T12:34:05.010508",
+    "TimeStamp": "2025-05-20T14:22:59.022752",
     "Duration": 185,
     "AM": 0,
     "CB": 0,
     "PVDF": 7.6,
     "NMP": 82.0,
-    "Temperature": 23.94,
-    "Pressure": 1.32,
-    "Speed (RPM)": 511,
+    "Temperature": 23.31,
+    "Pressure": 1.81,
+    "Speed (RPM)": 579,
     "Density": 1.0662,
     "Viscosity": 0.02,
     "Yield Stress": -3.04
