@@ -30,7 +30,6 @@ class Slurry:
             self.electrode_type = "Cathode"
             self.NMP = 0  # Solvent for cathode
             self.solvent = "NMP"
-        
         self.viscosity = 0
         self.density = 0
         self.yield_stress = 0

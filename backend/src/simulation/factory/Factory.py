@@ -53,7 +53,6 @@ class Factory:
             print(f"Waiting for dependency: {dependency_id} to be completed")
             self.machine_events[dependency_id].wait()
             print(f"Dependency: {dependency_id} has been completed")
-            
             # If this is a mixing machine and the current machine is a coating machine
             dependency_machine = next((m for m in self.machines if m.id == dependency_id), None)
             if isinstance(dependency_machine, MixingMachine) and isinstance(machine, CoatingMachine):
