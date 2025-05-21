@@ -70,9 +70,9 @@ class Factory:
 
             # Coating → Calendaring
             if isinstance(dependency_machine, CoatingMachine) and isinstance(machine, CalendaringMachine):
-                dry_thickness, porosity = dependency_machine.get_final_coating()
+                dry_thickness = dependency_machine.get_final_coating()
                 print(f"[{machine.id}] Receiving coated data from {dependency_id}")
-                machine.update_from_coating(dry_thickness, porosity)
+                machine.update_from_coating(dry_thickness)
     
     def run_machine(self, machine):
         """
