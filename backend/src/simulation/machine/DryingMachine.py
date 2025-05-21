@@ -141,6 +141,7 @@ class DryingMachine(BaseMachine):
                 raise ValueError(f"[{self.id}] Cannot start drying: wet_thickness or solid_content is still None")
 
         print(f"[DEBUG] {self.id} - wet_thickness: {self.wet_thickness}, solid_content: {self.solid_content}")
+        print(f"Starting drying simulation for {self.id}...")
 
         self.dry_thickness = self.calculator.calculate_dry_thickness(self.wet_thickness, self.solid_content)
         self.M_solvent = self.calculator.calculate_initial_solvent_mass(self.wet_thickness, self.solid_content)
@@ -165,10 +166,13 @@ class DryingMachine(BaseMachine):
                 filepath = os.path.join(self.output_dir, filename)
                 with open(filepath, "w") as f:
                     json.dump(result, f, indent=4)
+                print(f"[{self.id}] Saved result at t={self.total_time}s | "
+                      f"EvapRate={evap_rate:.5f} | RemainingSolvent={self.M_solvent:.4f} | DefectRisk={defect_risk}")
                 last_saved_result = result
                 last_saved_time = now
 
             if self.M_solvent == 0:
+                print(f"[{self.id}] Solvent fully evaporated at t={self.total_time}s.")
                 break
             time.sleep(0.05)
 
