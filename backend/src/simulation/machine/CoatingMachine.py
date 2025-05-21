@@ -120,7 +120,11 @@ class CoatingMachine(BaseMachine):
             
             time.sleep(0.1)
 
-
+    def get_final_coating(self):
+        with self.lock:
+            dry_thickness = self.dry_thickness  # just use the float
+            return dry_thickness
+        
     def run(self):
         """
         Run the coating process with detailed step simulation.
@@ -153,3 +157,5 @@ class CoatingMachine(BaseMachine):
             
             print(f"Updated {self.id} with properties from slurry")
             print(f"Viscosity: {self.viscosity_pa:.2f} Pa·s, Solid Content: {self.solid_content:.2%}") 
+            
+    

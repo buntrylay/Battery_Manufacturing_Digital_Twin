@@ -88,3 +88,5 @@ class SlurryPropertyCalculator:
                 self.WEIGHTS['b'] * m("PVDF") + # PVDF Binder contribution
                 self.WEIGHTS['c'] * m("CA") +   # Conductive Additive contribution
                 self.WEIGHTS['s'] * (m("H2O") if slurry.electrode_type == "Anode" else m("NMP")))    # Solvent contribution
+        
+

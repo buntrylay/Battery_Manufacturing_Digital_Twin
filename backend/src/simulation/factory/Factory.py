@@ -2,6 +2,7 @@ import threading
 from typing import List, Dict
 from simulation.machine.MixingMachine import MixingMachine
 from simulation.machine.CoatingMachine import CoatingMachine
+from simulation.machine.CalendaringMachine import CalendaringMachine
 import time
 
 """
@@ -62,6 +63,11 @@ class Factory:
                 # Get the final slurry and pass it to the coating machine
                 final_slurry = dependency_machine.get_final_slurry()
                 machine.update_from_slurry(final_slurry)
+                
+            if isinstance(dependency_machine, CoatingMachine) and isinstance(machine, CalendaringMachine):
+                # Get the final coating and pass it to the calendaring machine
+                final_coating = dependency_machine.get_final_coating()
+                machine.update_from_coating(final_coating)
     
     def run_machine(self, machine):
         """
