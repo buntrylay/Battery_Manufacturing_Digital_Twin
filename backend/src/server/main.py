@@ -6,10 +6,13 @@ from simulation.factory.Factory import Factory
 from simulation.battery_model.Slurry import Slurry
 from simulation.machine.MixingMachine import MixingMachine
 from simulation.machine.CoatingMachine import CoatingMachine
+from simulation.machine.DryingMachine import DryingMachine
 from pathlib import Path
 from zipfile import ZipFile
 import json
 import shutil
+from glob import glob
+import time
 
 app = FastAPI()
 
@@ -98,6 +101,34 @@ def start_both_simulation(payload: DualInput):
         if not all_completed:
             raise Exception("Not all machines completed successfully")
 
+         # >>> ADDED: Drying stage 
+        for etype in ["Anode", "Cathode"]:
+            coat_id = f"MC_Coat_{etype}"
+            max_wait_time = 10  # seconds
+            waited = 0
+            coating_result_path = None
+            while waited < max_wait_time:
+                matching_files = sorted(glob(f"coating_output/*final_results_{coat_id}.json"), reverse=True)
+                if matching_files:
+                    coating_result_path = matching_files[0]
+                    break
+                time.sleep(0.5)
+                waited += 0.5
+
+            if not coating_result_path:
+                raise FileNotFoundError(f"No final coating result found for {coat_id} after waiting {max_wait_time} seconds.")
+
+            with open(coating_result_path) as f:
+                coating_data = json.load(f)
+
+            props = coating_data["Final Properties"]
+            wet_thickness = props["wet_thickness_m"]
+            solid_content = props["solid_content"]
+
+            drying_machine = DryingMachine(f"MC_Dry_{etype}", wet_thickness, solid_content, web_speed=0.5)
+            drying_machine.run()
+        # <<< END Drying stage        
+       
         # Save final results
         for data in [payload.anode, payload.cathode]:
             machine = machines[data.electrode_type]

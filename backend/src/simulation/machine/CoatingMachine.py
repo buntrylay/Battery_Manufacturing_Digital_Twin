@@ -66,7 +66,8 @@ class CoatingMachine(BaseMachine):
                 "wet_thickness_m": round(self.wet_thickness, 5),
                 "dry_thickness_m": round(self.dry_thickness, 5),
                 "defect_risk": self.defect_risk,
-                "uniformity_std": round(self.uniformity_std, 4)
+                "uniformity_std": round(self.uniformity_std, 4),
+                "solid_content": round(self.solid_content, 4)  # added field
             }
             
             if is_final:
