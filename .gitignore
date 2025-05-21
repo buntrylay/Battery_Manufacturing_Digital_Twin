@@ -57,6 +57,7 @@
 **/.DS_Store
 **/.env*
 **/simulation_output/
+**/coating_output/
 **/results/
 
 # IDE and editor files

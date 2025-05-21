@@ -8,7 +8,7 @@ import os
 import random
 import threading
 
-class CoatingMachine(BaseMachine):
+class CoatingMachineForNow(BaseMachine):
     """
     A coating machine that simulates the electrode coating process.
     
@@ -94,6 +94,15 @@ class CoatingMachine(BaseMachine):
         except Exception as e:
             print(f"Error writing result to file: {e}")
 
+    def _print_result(self, result):
+        """
+        Print the process result in a human-readable format.
+ 
+        Args:
+            result (dict): The result data to print.
+        """
+        print(" | ".join(f"{k}: {v}" for k, v in result.items()))
+    
     def _simulate(self, end_time=100):
         """
         Simulate a single coating step with process parameters and quality metrics.

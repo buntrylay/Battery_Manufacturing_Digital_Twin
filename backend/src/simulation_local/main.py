@@ -1,7 +1,7 @@
 import threading
-from simulation.battery_model import CollectorFoil
+from simulation.battery_model.CollectorFoil import CollectorFoil
 from simulation.battery_model.Slurry import Slurry
-from simulation.machine import CoatingMachineForNow
+from simulation.machine.CoatingMachineForNow import CoatingMachineForNow
 from simulation.machine.MixingMachine import MixingMachine
 
 def run_machine(machine):

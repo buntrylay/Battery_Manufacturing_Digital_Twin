@@ -210,10 +210,11 @@ class MixingMachine(BaseMachine):
         Save the final mixing results to a JSON file and update the slurry properties
         """
         final_result = self._format_result(is_final=True)
+        props = final_result["Final Properties"]  # <-- Fix: get nested properties
         self.slurry.update_properties(
-            final_result["Viscosity"],
-            final_result["Density"],
-            final_result["YieldStress"],
+            props["Viscosity"],
+            props["Density"],
+            props["YieldStress"],
         )
         filename = f"final_results_{self.id}.json"
         self._write_json(final_result, filename)
