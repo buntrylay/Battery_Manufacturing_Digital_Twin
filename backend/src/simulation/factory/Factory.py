@@ -52,21 +52,27 @@ class Factory:
         Wait for all dependencies to complete and pass their outputs if needed.
         """
         for dependency_id in machine.dependencies:
-            print(f"Waiting for dependency: {dependency_id} to be completed")
+            print(f"[{machine.id}] Waiting for dependency: {dependency_id} to complete...")
             self.machine_events[dependency_id].wait()
-            print(f"Dependency: {dependency_id} has been completed")
-            
-            # If this is a mixing machine and the current machine is a coating machine
+            print(f"[{machine.id}] Dependency {dependency_id} has been completed.")
+
+            # Get the machine instance for the dependency
             dependency_machine = next((m for m in self.machines if m.id == dependency_id), None)
+            if not dependency_machine:
+                print(f"[{machine.id}] Error: Dependency machine {dependency_id} not found.")
+                continue
+
+            # Mixing → Coating
             if isinstance(dependency_machine, MixingMachine) and isinstance(machine, CoatingMachine):
-                # Get the final slurry and pass it to the coating machine
                 final_slurry = dependency_machine.get_final_slurry()
+                print(f"[{machine.id}] Receiving slurry from {dependency_id}")
                 machine.update_from_slurry(final_slurry)
-                
+
+            # Coating → Calendaring
             if isinstance(dependency_machine, CoatingMachine) and isinstance(machine, CalendaringMachine):
-                # Get the final coating and pass it to the calendaring machine
-                final_coating = dependency_machine.get_final_coating()
-                machine.update_from_coating(final_coating)
+                dry_thickness, porosity = dependency_machine.get_final_coating()
+                print(f"[{machine.id}] Receiving coated data from {dependency_id}")
+                machine.update_from_coating(dry_thickness, porosity)
     
     def run_machine(self, machine):
         """
