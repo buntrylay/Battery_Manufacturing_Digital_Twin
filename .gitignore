@@ -104,3 +104,4 @@
 **/.local/
 **/local_settings.py
 **/local.py 
+*.json
