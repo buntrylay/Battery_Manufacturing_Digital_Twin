@@ -1,0 +1,14 @@
+{
+    "TimeStamp": "2025-05-25T17:00:02.921373",
+    "Duration": 7,
+    "Machine ID": "MC_Dry_Cathode",
+    "Process": "Drying",
+    "Final Properties": {
+        "Wet Thickness (m)": 0.0002,
+        "Dry Thickness (m)": 0.00018,
+        "Remaining Solvent (kg/m\u00b2)": 0,
+        "Evaporation Rate (kg/s)": 0.002,
+        "Current Coating Thickness (m)": 0.00018,
+        "Defect Risk": false
+    }
+}

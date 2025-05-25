@@ -46,8 +46,8 @@ class MixingMachine(BaseMachine):
         self.total_time = 0
         self.start_datetime = datetime.now()
 
-        # Create simulation_output directory in the current working directory
-        self.output_dir = os.path.join(os.getcwd(), "simulation_output")
+        # Create mixing_output directory in the current working directory
+        self.output_dir = os.path.join(os.getcwd(), "mixing_output")
         os.makedirs(self.output_dir, exist_ok=True)
         print(f"Output directory created at: {self.output_dir}")
  
@@ -113,7 +113,7 @@ class MixingMachine(BaseMachine):
         try:
             # Use the timestamp from the data instead of current time
             timestamp = data["TimeStamp"].replace(":", "-").replace(".", "-")
-            unique_filename = f"simulation_output/{self.id}_{timestamp}_{filename}"
+            unique_filename = f"mixing_output/{self.id}_{timestamp}_{filename}"
             
             # Check if file already exists to prevent duplicates
             if os.path.exists(unique_filename):
