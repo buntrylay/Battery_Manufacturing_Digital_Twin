@@ -27,7 +27,7 @@ class MixingMachine(BaseMachine):
         calculator (SlurryPropertyCalculator): Calculator for slurry properties.
     """
    
-    def __init__(self, id, electrode_type, slurry: Slurry, ratio_materials: dict):
+    def __init__(self, id, electrode_type, slurry: Slurry, ratio_materials: dict, connection_string=None):
         """
         Initialise a new MixingMachine instance.
  
@@ -37,7 +37,7 @@ class MixingMachine(BaseMachine):
             slurry (Slurry): The slurry object to be mixed.
             ratio_materials (dict): Dictionary containing mixing ratios for components.
         """
-        super().__init__(id)
+        super().__init__(id, connection_string)
         self.slurry = slurry
         self.electrode_type = electrode_type
         self.volume = 200  # Default volume in litres
@@ -123,6 +123,7 @@ class MixingMachine(BaseMachine):
                 with open(unique_filename, "w") as f:
                     json.dump(data, f, indent=4)
                 print(f"Results saved to {unique_filename}")
+                return data
         except Exception as e:
             print(f"Error writing result to file: {e}")
  
@@ -167,9 +168,11 @@ class MixingMachine(BaseMachine):
             # Save results periodically, but only if data has changed
             now = time.time()
             if now - last_saved_time >= 0.1 and result != last_saved_result:  # Check if data has changed
-                self._print_result(result)
                 filename = f"result_at_{round(self.total_time)}s.json"
-                self._write_json(result, filename)
+                data = self._write_json(result, filename)
+                if data:
+                    self.send_json_to_iothub(data)  # Send to IoT Hub
+                    self._print_result(data)  # Print to console
                 last_saved_time = now
                 last_saved_result = result
 
