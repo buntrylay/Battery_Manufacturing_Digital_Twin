@@ -3,6 +3,7 @@ from typing import List, Dict
 from simulation.machine.MixingMachine import MixingMachine
 from simulation.machine.CoatingMachine import CoatingMachine
 from simulation.machine.CalendaringMachine import CalendaringMachine
+from simulation.machine.DryingMachine import DryingMachine
 import time
 
 """
@@ -68,12 +69,18 @@ class Factory:
                 print(f"[{machine.id}] Receiving slurry from {dependency_id}")
                 machine.update_from_slurry(final_slurry)
 
-            # Coating → Calendaring
-            if isinstance(dependency_machine, CoatingMachine) and isinstance(machine, CalendaringMachine):
-                dry_thickness = dependency_machine.get_final_coating()
+            # Coating → Drying
+            if isinstance(dependency_machine, CoatingMachine) and isinstance(machine, DryingMachine):
+                wet_thickness, solid_content = dependency_machine.get_final_coating()
                 print(f"[{machine.id}] Receiving coated data from {dependency_id}")
-                machine.update_from_coating(dry_thickness)
-    
+                machine.update_from_coating(wet_thickness, solid_content)
+
+            # Drying → Calendaring
+            if isinstance(dependency_machine, DryingMachine) and isinstance(machine, CalendaringMachine):
+                dry_thickness = dependency_machine.get_final_drying()
+                print(f"[{machine.id}] Receiving dried data from {dependency_id}")
+                machine.update_from_drying(dry_thickness)
+
     def run_machine(self, machine):
         """
          Run a single machine within its own thread, handling dependencies.
