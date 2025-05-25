@@ -12,7 +12,7 @@ class DryingMachine(BaseMachine):
     Removes solvent from the coated electrode to form a dry film.
     """
 
-    def __init__(self, id, web_speed = 0.5):
+    def __init__(self, id, web_speed):
         super().__init__(id)
         self.name = "DryingMachine"
         self.start_datetime = datetime.now()
