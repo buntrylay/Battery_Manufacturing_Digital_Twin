@@ -17,7 +17,7 @@ class Slurry:
         Initialize a new Slurry instance.
         
         Args:
-            volume (float): The target total volume of the slurry
+            electrode_type (str): The type of electrode ("Anode" or "Cathode")
         """
         self.AM = 0  # Active Material
         self.CA = 0  # Conductive Additive
@@ -30,6 +30,10 @@ class Slurry:
             self.electrode_type = "Cathode"
             self.NMP = 0  # Solvent for cathode
             self.solvent = "NMP"
+        
+        self.viscosity = 0
+        self.density = 0
+        self.yield_stress = 0
 
     def add(self, component, amount):
         """
@@ -49,3 +53,16 @@ class Slurry:
             float: The sum of all components (AM + CA + PVDF + H2O or NMP)
         """
         return self.AM + self.CA + self.PVDF + (self.H2O if self.electrode_type == "Anode" else self.NMP)
+    
+    def update_properties(self, viscosity, density, yield_stress):
+        """
+        Update the properties of the slurry.
+        
+        Args:
+            viscosity (float): The viscosity of the slurry
+            density (float): The density of the slurry
+            yield_stress (float): The yield stress of the slurry
+        """
+        self.viscosity = viscosity
+        self.density = density
+        self.yield_stress = yield_stress
