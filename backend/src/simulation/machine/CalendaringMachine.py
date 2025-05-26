@@ -117,8 +117,8 @@ class CalendaringMachine(BaseMachine):
             filename = f"final_results_{self.id}.json"
             self._write_json(final_result, filename)
             print(f"Calendaring process completed on {self.id}\n")
-
-    def update_from_coating(self, dry_thickness):
+    
+    def update_from_drying(self, dry_thickness_drying):
         with self.lock:
-            self.delta_dry = dry_thickness
-            print(f"{self.id}: Received from coating - dry_thickness={dry_thickness}")
+            self.delta_dry = dry_thickness_drying
+            print(f"{self.id}: Received from drying - dry_thickness={dry_thickness_drying}")

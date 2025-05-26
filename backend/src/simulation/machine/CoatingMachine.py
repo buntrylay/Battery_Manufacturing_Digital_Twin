@@ -122,9 +122,10 @@ class CoatingMachine(BaseMachine):
 
     def get_final_coating(self):
         with self.lock:
-            dry_thickness = self.dry_thickness  # just use the float
-            return dry_thickness
-        
+            wet_thickness_coating = self.wet_thickness  # just use the float
+            solid_content_coating = self.solid_content  # just use the float
+            return wet_thickness_coating, solid_content_coating
+
     def run(self):
         """
         Run the coating process with detailed step simulation.
