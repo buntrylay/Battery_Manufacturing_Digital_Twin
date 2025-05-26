@@ -131,7 +131,7 @@ def download_result_zip(electrode_type: str):
         zip_path = RESULTS_PATH / f"{electrode_type}.zip"
 
         with ZipFile(zip_path, "w") as zipf:
-            for file in (Path.cwd() / "simulation_output").glob(f"*{electrode_type}*.json"):
+            for file in (Path.cwd() / "mixing_output").glob(f"*{electrode_type}*.json"):
                 zipf.write(file, arcname=file.name)
 
         return FileResponse(zip_path, media_type='application/zip', filename=f"{electrode_type}.zip")

@@ -46,8 +46,8 @@ class MixingMachine(BaseMachine):
         self.total_time = 0
         self.start_datetime = datetime.now()
 
-        # Create simulation_output directory in the current working directory
-        self.output_dir = os.path.join(os.getcwd(), "simulation_output")
+        # Create mixing_output directory in the current working directory
+        self.output_dir = os.path.join(os.getcwd(), "mixing_output")
         os.makedirs(self.output_dir, exist_ok=True)
         print(f"Output directory created at: {self.output_dir}")
  
@@ -113,7 +113,7 @@ class MixingMachine(BaseMachine):
         try:
             # Use the timestamp from the data instead of current time
             timestamp = data["TimeStamp"].replace(":", "-").replace(".", "-")
-            unique_filename = f"simulation_output/{self.id}_{timestamp}_{filename}"
+            unique_filename = f"mixing_output/{self.id}_{timestamp}_{filename}"
             
             # Check if file already exists to prevent duplicates
             if os.path.exists(unique_filename):
@@ -174,14 +174,35 @@ class MixingMachine(BaseMachine):
                 last_saved_result = result
 
             time.sleep(pause_sec)
-   
+
+    def get_final_slurry(self):
+        """
+        Get the final slurry after mixing is complete.
+        
+        Returns:
+            Slurry: The final mixed slurry object
+        """
+        with self.lock:
+            return self.slurry
+
     def _save_final_results(self):
         """
-        Save the final mixing results to a JSON file.
+        Save the final mixing results to a JSON file and update the slurry properties
         """
         final_result = self._format_result(is_final=True)
+        # Get properties from the final result's nested Final Properties
+        final_properties = final_result.get("Final Properties", {})
+        viscosity = final_properties.get("Viscosity", 0.0)
+        density = final_properties.get("Density", 0.0)
+        yield_stress = final_properties.get("YieldStress", 0.0)
+        
+        # Update slurry properties
+        self.slurry.update_properties(viscosity, density, yield_stress)
+        
         filename = f"final_results_{self.id}.json"
         self._write_json(final_result, filename)
+        print(f"Final results saved for {self.id}")
+        print(f"Final properties - Viscosity: {viscosity:.2f}, Density: {density:.2f}, Yield Stress: {yield_stress:.2f}")
  
     def run(self, step_percent=0.02, pause_sec=0.1):
         """
