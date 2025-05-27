@@ -10,6 +10,7 @@ from simulation.machine.MixingMachine import MixingMachine
 from simulation.machine.CoatingMachine import CoatingMachine
 from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.DryingMachine import DryingMachine 
+from simulation.machine.SlittingMachine import SlittingMachine
 
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
@@ -44,7 +45,14 @@ user_input_calendaring = {
     "initial_porosity": 0.45,       # Assumed porosity after drying
     "temperature": 25               # Optional
 }
-
+#  Slitting's input parameters - Ai Vi
+user_input_slitting = {
+    "w_input": 500,
+    "blade_sharpness": 8,
+    "slitting_speed": 1.5, 
+    "target_width": 100,
+    "slitting_tension": 150,
+}
 # Create slurry instances
 anode_slurry = Slurry("Anode")
 cathode_slurry = Slurry("Cathode")
@@ -58,12 +66,14 @@ anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
 cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
 
 # Create drying machines
-anode_drying_machine = DryingMachine("MC_Dry_Anode")
-cathode_drying_machine = DryingMachine("MC_Dry_Cathode")
+anode_drying_machine = DryingMachine("MC_Dry_Anode", web_speed= 0.01)
+cathode_drying_machine = DryingMachine("MC_Dry_Cathode", web_speed= 0.01)
 
 # ✅ Create calendaring machine
 anode_calendaring_machine = CalendaringMachine("MC_Calendar_Anode", user_input_calendaring)
 cathode_calendaring_machine = CalendaringMachine("MC_Calendar_Cathode", user_input_calendaring)
+# Create slitting machines - Ai Vi
+anode_slitting_machine = SlittingMachine("MC_Slit_Anode", user_input_slitting)
 # Initialize factory
 factory = Factory()
 
@@ -76,5 +86,7 @@ factory.add_machine(anode_drying_machine, dependencies=["MC_Coat_Anode"])
 factory.add_machine(cathode_drying_machine, dependencies=["MC_Coat_Cathode"])
 factory.add_machine(anode_calendaring_machine, dependencies=["MC_Dry_Anode"])
 factory.add_machine(cathode_calendaring_machine, dependencies=["MC_Dry_Cathode"])   
+factory.add_machine(anode_slitting_machine, dependencies=["MC_Calendar_Anode"])
+# factory.add_machine(cathode_slitting_machine, dependencies=["MC_Calendar_Cathode"])
 # Start the simulation
 factory.start_simulation()
