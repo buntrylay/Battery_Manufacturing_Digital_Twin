@@ -12,6 +12,7 @@ from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.DryingMachine import DryingMachine 
 from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
+# from simulation.machine.ElectrodeRewindingMachine import ElectrodeRewindingMachine
 
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
@@ -62,6 +63,16 @@ user_input_electrode_inspection = {
     "B_max": 2.0,
     "D_surface_max": 3
 }
+
+#  Electrode Rewinding's input parameters - Ai Vi
+# user_input_rewinding = {
+#     "core_diameter": 0.2,
+#     "initial_tension": 200,
+#     "taper_factor": 1.0,
+#     "rewind_speed": 0.5,
+#     "humidity": 30
+# }
+
 # Create slurry instances
 anode_slurry = Slurry("Anode")
 cathode_slurry = Slurry("Cathode")
@@ -86,6 +97,9 @@ anode_slitting_machine = SlittingMachine("MC_Slit_Anode", user_input_slitting)
 
 # Create electrode inspection machines - Ai Vi
 anode_electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect_Anode", user_input_electrode_inspection)
+
+# # Create electrode rewinding - Ai Vi
+# anode_electrode_rewinding_machine = ElectrodeRewindingMachine("MC_Rewind_Anode", user_input_slitting)
 # Initialize factory
 factory = Factory()
 
@@ -101,5 +115,7 @@ factory.add_machine(cathode_calendaring_machine, dependencies=["MC_Dry_Cathode"]
 factory.add_machine(anode_slitting_machine, dependencies=["MC_Calendar_Anode"])
 # factory.add_machine(cathode_slitting_machine, dependencies=["MC_Calendar_Cathode"])
 factory.add_machine(anode_electrode_inspection_machine, dependencies=["MC_Slit_Anode"])
+
+# factory.add_machine(anode_electrode_rewinding_machine, dependencies=["MC_Inspect_Anode"])
 # Start the simulation
 factory.start_simulation()

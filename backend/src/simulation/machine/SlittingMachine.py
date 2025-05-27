@@ -109,9 +109,9 @@ class SlittingMachine(BaseMachine):
     def update_from_calendaring(self, calendaring_data):
         self.delta_cal = calendaring_data.get("delta_cal")
         self.phi_final = calendaring_data.get("porosity")
-        self.v_web = calendaring_data.get("web_speed")
+        self.web_speed = calendaring_data.get("web_speed")
 
-        print(f"[{self.id}] Updated from calendaring: thickness={self.delta_cal}, porosity={self.phi_final}, web_speed={self.v_web}")
+        print(f"[{self.id}] Updated from calendaring: thickness={self.delta_cal}, porosity={self.phi_final}, web_speed={self.web_speed}")
 
 # for electrode inspection
     def get_final_slitting(self):
