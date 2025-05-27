@@ -6,6 +6,7 @@ from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.DryingMachine import DryingMachine
 from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
+from simulation.machine.RewindingMachine import RewindingMachine
 import time
 
 """
@@ -93,11 +94,18 @@ class Factory:
                     cal_data["web_speed_cal"],
                     cal_data["stiffness_cal"]
                 )
+            # Slitting -> Electrode Inspection
             if isinstance(dependency_machine, SlittingMachine) and isinstance(machine, ElectrodeInspectionMachine):
                 slitting_data = dependency_machine.get_final_slitting()
                 print(f"[{machine.id}] Receiving slitting data from {dependency_id}")
                 machine.update_from_slitting(slitting_data)
-
+                
+            # Electrode Inspection -> Rewinding
+            if isinstance(dependency_machine, ElectrodeInspectionMachine) and isinstance(machine, RewindingMachine):
+                inspection_data = dependency_machine.get_final_inspection()
+                print(f"[{machine.id}] Receiving inspection data from {dependency_id}")
+                machine.update_from_inspection(inspection_data)
+                
     def run_machine(self, machine):
         """
          Run a single machine within its own thread, handling dependencies.
