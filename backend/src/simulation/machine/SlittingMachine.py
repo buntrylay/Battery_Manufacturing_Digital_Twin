@@ -4,14 +4,14 @@ import json
 from datetime import datetime, timedelta
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.SlittingPropertyCalculator import SlittingPropertyCalculator
-
+import threading
 class SlittingMachine(BaseMachine):
     def __init__(self, id, machine_parameters: dict):
         super().__init__(id)
         self.name = "SlittingMachine"
         self.start_datetime = datetime.now()
         self.total_time = 0
-
+        self.lock = threading.Lock()
         # Create output directory
         self.output_dir = os.path.join(os.getcwd(), "slitting_output")
         os.makedirs(self.output_dir, exist_ok=True)
@@ -44,6 +44,7 @@ class SlittingMachine(BaseMachine):
         }
 
         properties = {
+            "input_thickness_mm": self.delta_cal,
             "target_width_mm": self.w_target,
             "final_width_mm": round(self.w_final, 3),
             "cut_accuracy_epsilon_mm": round(self.epsilon_width, 3),
@@ -106,12 +107,14 @@ class SlittingMachine(BaseMachine):
             self._write_json(final_result, filename)
             print(f"Slitting process completed on {self.id}\n")
 
-    def update_from_calendaring(self, calendaring_data):
-        self.delta_cal = calendaring_data.get("delta_cal")
-        self.phi_final = calendaring_data.get("porosity")
-        self.v_web = calendaring_data.get("web_speed")
-
-        print(f"[{self.id}] Updated from calendaring: thickness={self.delta_cal}, porosity={self.phi_final}, web_speed={self.v_web}")
+    def update_from_calendaring(self, delta_cal_cal, porosity_cal, web_speed_cal, stiffness_cal):
+        with self.lock:
+            self.delta_cal = float(delta_cal_cal)
+            self.phi_final = float(porosity_cal)
+            self.web_speed = float(web_speed_cal)
+            self.stiffness = float(stiffness_cal)
+            self.w_input = self.delta_cal * (1 - self.phi_final)
+        print(f"[{self.id}] Updated from calendaring: thickness={self.delta_cal}, porosity={self.phi_final}, web_speed={self.web_speed}")
 
 # for electrode inspection
     def get_final_slitting(self):

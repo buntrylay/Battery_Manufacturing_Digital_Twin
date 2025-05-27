@@ -85,10 +85,14 @@ class Factory:
 
             # Calendaring → Slitting
             if isinstance(dependency_machine, CalendaringMachine) and isinstance(machine, SlittingMachine):
-                final_properties = dependency_machine.get_final_calendaring()
-                print(f"[{machine.id}] Receiving calendared data from {dependency_id}")
-                machine.update_from_calendaring(final_properties)
-
+                cal_data = dependency_machine.get_final_calendaring()
+                print(f"[{machine.id}] Receiving calendaring data from {dependency_id}")
+                machine.update_from_calendaring(
+                    cal_data["delta_cal_cal"],
+                    cal_data["porosity_cal"],
+                    cal_data["web_speed_cal"],
+                    cal_data["stiffness_cal"]
+                )
             if isinstance(dependency_machine, SlittingMachine) and isinstance(machine, ElectrodeInspectionMachine):
                 slitting_data = dependency_machine.get_final_slitting()
                 print(f"[{machine.id}] Receiving slitting data from {dependency_id}")

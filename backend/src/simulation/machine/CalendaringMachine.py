@@ -25,14 +25,13 @@ class CalendaringMachine(BaseMachine):
         print(f"Output directory created at: {self.output_dir}")
 
         # Process Parameters
-        self.h_roll = machine_parameters["roll_gap"]           # Initial roll gap (m)
+        self.h_roll_initial = machine_parameters["roll_gap"]           # Initial roll gap (m)
         self.P_roll = machine_parameters["roll_pressure"]      # Initial pressure (Pa)
         self.v_roll = machine_parameters["roll_speed"]         # Initial speed (m/s)
         self.delta_dry = None  # From drying stage (m)
         self.phi_initial = 0.45  # Initial porosity
-
         self.T = machine_parameters.get("temperature", 25)     # Environment temperature (°C)
-
+        self.h_roll = self.h_roll_initial
         # Calculations
         self.calculator = CalendaringProcess()
 
@@ -84,7 +83,7 @@ class CalendaringMachine(BaseMachine):
             self.total_time = t
 
             # Dynamically adjust parameters
-            self.h_roll = self.h_roll * (1 - t / end_time)
+            self.h_roll = max(self.h_roll_initial * (1 - t / end_time), 1e-6)
             self.v_roll = max(0.5, self.v_roll - t / (2 * end_time))
             self.P_roll = self.P_roll * (1 - self.h_roll / self.delta_dry)
 
@@ -126,8 +125,8 @@ class CalendaringMachine(BaseMachine):
     def get_final_calendaring(self):
         with self.lock:
             return {
-                "delta_cal": self.final_thickness,
-                "porosity": self.porosity,
-                "web_speed": self.v_roll,
-                "stiffness": self.calculator.E
+                "delta_cal_cal": self.final_thickness,
+                "porosity_cal": self.porosity,
+                "web_speed_cal": self.v_roll,
+                "stiffness_cal": self.calculator.E
             }
