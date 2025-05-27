@@ -8,7 +8,8 @@ from simulation.factory.Factory import Factory
 from simulation.battery_model.Slurry import Slurry
 from simulation.machine.MixingMachine import MixingMachine
 from simulation.machine.CoatingMachine import CoatingMachine
-from simulation.machine.CalendaringMachine import CalendaringMachine 
+from simulation.machine.CalendaringMachine import CalendaringMachine
+from simulation.machine.DryingMachine import DryingMachine 
 
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
@@ -56,6 +57,10 @@ cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slur
 anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
 cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
 
+# Create drying machines
+anode_drying_machine = DryingMachine("MC_Dry_Anode")
+cathode_drying_machine = DryingMachine("MC_Dry_Cathode")
+
 # ✅ Create calendaring machine
 anode_calendaring_machine = CalendaringMachine("MC_Calendar_Anode", user_input_calendaring)
 cathode_calendaring_machine = CalendaringMachine("MC_Calendar_Cathode", user_input_calendaring)
@@ -67,7 +72,9 @@ factory.add_machine(anode_mixing_machine)
 factory.add_machine(cathode_mixing_machine)
 factory.add_machine(anode_coating_machine, dependencies=["TK_Mix_Anode"])
 factory.add_machine(cathode_coating_machine, dependencies=["TK_Mix_Cathode"])
-factory.add_machine(anode_calendaring_machine, dependencies=["MC_Coat_Anode"])
-factory.add_machine(cathode_calendaring_machine, dependencies=["MC_Coat_Cathode"])
+factory.add_machine(anode_drying_machine, dependencies=["MC_Coat_Anode"])
+factory.add_machine(cathode_drying_machine, dependencies=["MC_Coat_Cathode"])
+factory.add_machine(anode_calendaring_machine, dependencies=["MC_Dry_Anode"])
+factory.add_machine(cathode_calendaring_machine, dependencies=["MC_Dry_Cathode"])   
 # Start the simulation
 factory.start_simulation()
