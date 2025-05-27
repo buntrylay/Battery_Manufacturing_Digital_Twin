@@ -45,8 +45,8 @@ class CoatingMachine(BaseMachine):
         self.coating_width = machine_parameters["coating_width"] # m (possibly fixed)
         
         # Variables from Mixing
-        self.viscosity_pa = 0
-        self.solid_content = 0  # fraction (e.g., 0.55 for 55%)
+        self.viscosity_pa = None
+        self.solid_content = None  # fraction (e.g., 0.55 for 55%)
 
     def _format_result(self, step=None, is_final=False):
         """
@@ -159,4 +159,3 @@ class CoatingMachine(BaseMachine):
             print(f"Updated {self.id} with properties from slurry")
             print(f"Viscosity: {self.viscosity_pa:.2f} Pa·s, Solid Content: {self.solid_content:.2%}") 
             
-    

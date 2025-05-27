@@ -8,6 +8,8 @@ from simulation.machine.MixingMachine import MixingMachine
 from simulation.machine.CoatingMachine import CoatingMachine
 from simulation.machine.DryingMachine import DryingMachine
 from simulation.machine.CalendaringMachine import CalendaringMachine
+from simulation.machine.SlittingMachine import SlittingMachine
+from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
 from pathlib import Path
 from zipfile import ZipFile
 import json
@@ -106,6 +108,35 @@ def start_both_simulation(payload: DualInput):
             calendaring_machine = CalendaringMachine(calendaring_id, user_input_calendaring)
             factory.add_machine(calendaring_machine, dependencies=[drying_id])
             machines[f"{etype}_Calendaring"] = calendaring_machine
+            
+        # Add Slitting machines
+        user_input_slitting = {
+            "w_input": 500,
+            "blade_sharpness": 8,
+            "slitting_speed": 1.5, 
+            "target_width": 100,
+            "slitting_tension": 150,
+        }
+        for etype in ["Anode", "Cathode"]:
+            slitting_id = f"MC_Slit_{etype}"
+            calendaring_id = f"MC_Cal_{etype}"
+            slitting_machine = SlittingMachine(slitting_id, user_input_slitting)
+            factory.add_machine(slitting_machine, dependencies=[calendaring_id])
+            machines[f"{etype}_Slitting"] = slitting_machine
+        
+        # Add Electrode Inspection machines
+        user_input_electrode_inspection = {
+            "epsilon_width_max": 0.1,  
+            "epsilon_thickness_max": 10e-6,
+            "B_max": 2.0,
+            "D_surface_max": 3
+        }
+        for etype in ["Anode", "Cathode"]:
+            inspection_id = f"MC_Inspect_{etype}"
+            slitting_id = f"MC_Slit_{etype}"
+            inspection_machine = ElectrodeInspectionMachine(inspection_id, user_input_electrode_inspection)
+            factory.add_machine(inspection_machine, dependencies=[slitting_id])
+            machines[f"{etype}_Inspection"] = inspection_machine
 
         factory.start_simulation()
 
