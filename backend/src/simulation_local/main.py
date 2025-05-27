@@ -60,8 +60,7 @@ user_input_electrode_inspection = {
     "epsilon_width_max": 0.1,  
     "epsilon_thickness_max": 10e-6,
     "B_max": 2.0,
-    "D_surface_max": 3,
-    "delta_cal": 60e-6
+    "D_surface_max": 3
 }
 # Create slurry instances
 anode_slurry = Slurry("Anode")

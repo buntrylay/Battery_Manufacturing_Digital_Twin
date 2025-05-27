@@ -29,7 +29,7 @@ class ElectrodeInspectionMachine(BaseMachine):
         self.epsilon_thickness_max = machine_parameters["epsilon_thickness_max"]
         self.B_max = machine_parameters["B_max"]
         self.D_surface_max = machine_parameters["D_surface_max"]
-        self.delta_cal = machine_parameters["delta_cal"]
+        self.delta_cal = None
 
         # Will be filled by SlittingMachine
         self.epsilon_width = None
