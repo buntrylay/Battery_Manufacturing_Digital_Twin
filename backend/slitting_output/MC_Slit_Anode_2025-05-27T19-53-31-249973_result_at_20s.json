@@ -1,0 +1,11 @@
+{
+    "TimeStamp": "2025-05-27T19:53:31.249973",
+    "Duration": 20,
+    "Machine ID": "MC_Slit_Anode",
+    "Process": "Slitting",
+    "target_width_mm": 100,
+    "final_width_mm": 100.071,
+    "cut_accuracy_epsilon_mm": 0.071,
+    "burr_factor": 0.281,
+    "defect_risk": false
+}

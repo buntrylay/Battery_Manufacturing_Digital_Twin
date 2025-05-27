@@ -11,6 +11,7 @@ from simulation.machine.CoatingMachine import CoatingMachine
 from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.DryingMachine import DryingMachine 
 from simulation.machine.SlittingMachine import SlittingMachine
+from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
 
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
@@ -53,6 +54,15 @@ user_input_slitting = {
     "target_width": 100,
     "slitting_tension": 150,
 }
+
+#  Electrode Inspection's input parameters - Ai Vi
+user_input_electrode_inspection = {
+    "epsilon_width_max": 0.1,  
+    "epsilon_thickness_max": 10e-6,
+    "B_max": 2.0,
+    "D_surface_max": 3,
+    "delta_cal": 60e-6
+}
 # Create slurry instances
 anode_slurry = Slurry("Anode")
 cathode_slurry = Slurry("Cathode")
@@ -74,6 +84,9 @@ anode_calendaring_machine = CalendaringMachine("MC_Calendar_Anode", user_input_c
 cathode_calendaring_machine = CalendaringMachine("MC_Calendar_Cathode", user_input_calendaring)
 # Create slitting machines - Ai Vi
 anode_slitting_machine = SlittingMachine("MC_Slit_Anode", user_input_slitting)
+
+# Create electrode inspection machines - Ai Vi
+anode_electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect_Anode", user_input_electrode_inspection)
 # Initialize factory
 factory = Factory()
 
@@ -88,5 +101,6 @@ factory.add_machine(anode_calendaring_machine, dependencies=["MC_Dry_Anode"])
 factory.add_machine(cathode_calendaring_machine, dependencies=["MC_Dry_Cathode"])   
 factory.add_machine(anode_slitting_machine, dependencies=["MC_Calendar_Anode"])
 # factory.add_machine(cathode_slitting_machine, dependencies=["MC_Calendar_Cathode"])
+factory.add_machine(anode_electrode_inspection_machine, dependencies=["MC_Slit_Anode"])
 # Start the simulation
 factory.start_simulation()

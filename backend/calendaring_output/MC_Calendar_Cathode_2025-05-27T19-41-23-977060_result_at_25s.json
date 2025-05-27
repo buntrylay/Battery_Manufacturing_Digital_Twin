@@ -1,0 +1,14 @@
+{
+    "TimeStamp": "2025-05-27T19:41:23.977060",
+    "Duration": 25,
+    "Machine ID": "MC_Calendar_Cathode",
+    "Process": "Calendaring",
+    "roll_gap_m": 1.7e-07,
+    "roll_speed_m_per_s": 0.5,
+    "applied_pressure_Pa": 30.84,
+    "strain_epsilon": 0.998729,
+    "calculated_stress_Pa": 499364516.34,
+    "final_thickness_m": 1.7e-07,
+    "porosity_after_calendaring": 0.0225,
+    "defect_risk": false
+}

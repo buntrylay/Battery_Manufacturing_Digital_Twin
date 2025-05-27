@@ -122,3 +122,11 @@ class CalendaringMachine(BaseMachine):
         with self.lock:
             self.delta_dry = dry_thickness_drying
             print(f"{self.id}: Received from drying - dry_thickness={dry_thickness_drying}")
+    def get_final_calendaring(self):
+        with self.lock:
+            return {
+                "delta_cal": self.final_thickness,
+                "porosity": self.porosity,
+                "web_speed": self.v_roll,
+                "stiffness": self.calculator.E
+            }

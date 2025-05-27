@@ -1,0 +1,14 @@
+{
+    "TimeStamp": "2025-05-27T19:35:46.702581",
+    "Duration": 25,
+    "Machine ID": "MC_Calendar_Anode",
+    "Process": "Calendaring",
+    "roll_gap_m": 1.7e-07,
+    "roll_speed_m_per_s": 0.5,
+    "applied_pressure_Pa": 3.22,
+    "strain_epsilon": 0.9986,
+    "calculated_stress_Pa": 499299890.88,
+    "final_thickness_m": 1.7e-07,
+    "porosity_after_calendaring": 0.0225,
+    "defect_risk": false
+}

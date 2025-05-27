@@ -4,6 +4,8 @@ from simulation.machine.MixingMachine import MixingMachine
 from simulation.machine.CoatingMachine import CoatingMachine
 from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.DryingMachine import DryingMachine
+from simulation.machine.SlittingMachine import SlittingMachine
+# from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
 import time
 
 """
@@ -80,6 +82,14 @@ class Factory:
                 dry_thickness = dependency_machine.get_final_drying()
                 print(f"[{machine.id}] Receiving dried data from {dependency_id}")
                 machine.update_from_drying(dry_thickness)
+
+            # Calendaring → Slitting
+            if isinstance(dependency_machine, CalendaringMachine) and isinstance(machine, SlittingMachine):
+                final_properties = dependency_machine.get_final_calendaring()
+                print(f"[{machine.id}] Receiving calendared data from {dependency_id}")
+                machine.update_from_calendaring(final_properties)
+
+            
 
     def run_machine(self, machine):
         """

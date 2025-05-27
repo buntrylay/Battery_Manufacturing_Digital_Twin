@@ -18,11 +18,11 @@ class SlittingMachine(BaseMachine):
         print(f"Output directory created at: {self.output_dir}")
 
         # Inputs parameters
-        self.delta_cal = 10e-6#machine_parameters["delta_cal"]
-        self.w_input = 200#machine_parameters["w_input"]
-        self.phi_final = 1#machine_parameters["porosity"]
-        self.web_speed = 0.1#machine_parameters["web_speed"]
-        self.stiffness = 2#machine_parameters["stiffness"]  
+        self.delta_cal = None 
+        self.w_input = None 
+        self.phi_final = None
+        self.web_speed = None
+        self.stiffness = None
         self.S = machine_parameters["blade_sharpness"]
         self.v_slit = machine_parameters["slitting_speed"]
         self.w_target = machine_parameters["target_width"]
@@ -106,4 +106,17 @@ class SlittingMachine(BaseMachine):
             self._write_json(final_result, filename)
             print(f"Slitting process completed on {self.id}\n")
 
+    def update_from_calendaring(self, calendaring_data):
+        self.delta_cal = calendaring_data.get("delta_cal")
+        self.phi_final = calendaring_data.get("porosity")
+        self.v_web = calendaring_data.get("web_speed")
+
+        print(f"[{self.id}] Updated from calendaring: thickness={self.delta_cal}, porosity={self.phi_final}, web_speed={self.v_web}")
+
+# for electrode inspection
+    def get_final_slitting(self):
+        return {
+            "epsilon_width": self.epsilon_width,
+            "burr_factor": self.burr_factor
+        }
 
