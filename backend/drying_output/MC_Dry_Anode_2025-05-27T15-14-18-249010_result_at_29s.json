@@ -1,0 +1,12 @@
+{
+    "TimeStamp": "2025-05-27T15:14:18.249010",
+    "Duration": 29,
+    "Machine ID": "MC_Dry_Anode",
+    "Process": "Drying",
+    "Wet Thickness (m)": 0.0002,
+    "Dry Thickness (m)": 0.000118,
+    "Remaining Solvent (kg/m\u00b2)": 0.003,
+    "Evaporation Rate (kg/s)": 0.002,
+    "Current Coating Thickness (m)": 0.000122,
+    "Defect Risk": false
+}

@@ -18,11 +18,11 @@ class SlittingMachine(BaseMachine):
         print(f"Output directory created at: {self.output_dir}")
 
         # Inputs parameters
-        self.delta_cal = machine_parameters["delta_cal"]
-        self.w_input = machine_parameters["w_input"]
-        self.phi_final = machine_parameters["porosity"]
-        self.web_speed = machine_parameters["web_speed"]
-        self.stiffness = machine_parameters["stiffness"]  
+        self.delta_cal = 10e-6#machine_parameters["delta_cal"]
+        self.w_input = 200#machine_parameters["w_input"]
+        self.phi_final = 1#machine_parameters["porosity"]
+        self.web_speed = 0.1#machine_parameters["web_speed"]
+        self.stiffness = 2#machine_parameters["stiffness"]  
         self.S = machine_parameters["blade_sharpness"]
         self.v_slit = machine_parameters["slitting_speed"]
         self.w_target = machine_parameters["target_width"]
