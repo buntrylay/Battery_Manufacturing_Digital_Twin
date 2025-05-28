@@ -128,9 +128,6 @@ class RewindingMachine(BaseMachine):
         if self.is_on:
             self._simulate()
             
-            final_output = self._format_result(is_final=True)
-            filename = f"final_results_{self.id}.json"
-            self._write_json(final_output, filename)
             print(f"Rewinding process completed on {self.id}\n")
             
     

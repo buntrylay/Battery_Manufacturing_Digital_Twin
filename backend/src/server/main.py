@@ -10,6 +10,7 @@ from simulation.machine.DryingMachine import DryingMachine
 from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
+from simulation.machine.RewindingMachine import RewindingMachine
 from pathlib import Path
 from zipfile import ZipFile
 import json
@@ -137,6 +138,21 @@ def start_both_simulation(payload: DualInput):
             inspection_machine = ElectrodeInspectionMachine(inspection_id, user_input_electrode_inspection)
             factory.add_machine(inspection_machine, dependencies=[slitting_id])
             machines[f"{etype}_Inspection"] = inspection_machine
+        
+           
+        user_input_rewinding = {
+            "rewinding_speed": 0.5,  # m/s
+            "initial_tension": 100,       # N
+            "tapering_steps": 0.3, # meters
+            "environment_humidity": 30    # %
+        }
+        
+        for etype in ["Anode", "Cathode"]:
+            rewinding_id = f"MC_Rewind_{etype}"
+            inspection_id = f"MC_Inspect_{etype}"
+            rewinding_machine = RewindingMachine(rewinding_id, user_input_rewinding)
+            factory.add_machine(rewinding_machine, dependencies=[inspection_id])
+            machines[f"{etype}_Rewinding"] = rewinding_machine
 
         factory.start_simulation()
 
