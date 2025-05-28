@@ -60,6 +60,8 @@
 **/mixing_output/
 **/coating_output/
 **/results/
+**/calendaring_output/
+**/drying_output/
 
 # IDE and editor files
 **/.idea/
