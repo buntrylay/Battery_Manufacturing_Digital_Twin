@@ -62,6 +62,9 @@
 **/results/
 **/calendaring_output/
 **/drying_output/
+**/inspection_output/
+**/rewinding_output/
+**/slitting_output/
 
 # IDE and editor files
 **/.idea/

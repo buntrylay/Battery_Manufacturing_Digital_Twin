@@ -38,7 +38,7 @@ pip install -e .
 ### Running the Simulation
 
 ```bash
-python -m src.simulation.main
+python -m src.simulation_local.main
 ```
 
 ### Running Tests
