@@ -133,11 +133,6 @@ class CoatingMachine(BaseMachine):
         if self.is_on:
             self._simulate()
             
-            # Save final results
-            final_result = self._format_result(is_final=True)
-            filename = f"final_results_{self.id}.json"
-            self._write_json(final_result, filename)
-            
             print(f"Coating process completed on {self.id}\n")
 
     def update_from_slurry(self, slurry):
