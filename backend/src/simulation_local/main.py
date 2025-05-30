@@ -8,6 +8,7 @@ from simulation.factory.Factory import Factory
 from simulation.battery_model.Slurry import Slurry
 from simulation.machine.MixingMachine import MixingMachine
 from simulation.machine.CoatingMachine import CoatingMachine
+from simulation.machine.DryingMachine import DryingMachine
 
 # Define the mixing ratios for anode slurry components
 # Ratios represent the volume fraction of each component in the final mixture
@@ -46,6 +47,9 @@ cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slur
 anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
 cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
 
+anode_drying_machine = DryingMachine("MD_Drying_Anode")
+cathode_drying_machine = DryingMachine("MD_Drying_Cathode")
+
 # Initialize the factory
 factory = Factory()
 
@@ -56,6 +60,8 @@ factory.add_machine(anode_coating_machine,
                    dependencies=["TK_Mix_Anode"])  # Depends on anode mixer
 factory.add_machine(cathode_coating_machine, 
                    dependencies=["TK_Mix_Cathode"])  # Depends on cathode mixer
+factory.add_machine(anode_drying_machine, dependencies=["MC_Coat_Anode"])
+factory.add_machine(cathode_drying_machine, dependencies=["MC_Coat_Cathode"])
 
 # Start the simulation process
 factory.start_simulation()
