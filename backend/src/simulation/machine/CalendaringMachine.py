@@ -6,6 +6,7 @@ import time
 import json
 import os
 
+
 class CalendaringMachine(BaseMachine):
     """
     Simulates the calendaring process in battery manufacturing.
@@ -110,12 +111,15 @@ class CalendaringMachine(BaseMachine):
         Run the calendaring simulation.
         """
         if self.is_on:
+            from server.main import thread_broadcast
+            thread_broadcast(f"Calendaring process started on {self.id}") # Broadcast start message
             self._simulate()
-
+            thread_broadcast(f"Calendaring process {self.id} in progress...") # Broadcast continuation message
             final_result = self._format_result(is_final=True)
             filename = f"final_results_{self.id}.json"
             self._write_json(final_result, filename)
             print(f"Calendaring process completed on {self.id}\n")
+            thread_broadcast(f"Calendaring process completed on {self.id}") # Broadcast completion message
     
     def update_from_drying(self, dry_thickness_drying):
         with self.lock:

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // added useEffect for enhancements
 import axios from "axios";
 import "./App.css";
 
@@ -6,6 +6,25 @@ function App() {
   const [anode, setAnode] = useState({ PVDF: "", CA: "", AM: "", Solvent: "" });
   const [cathode, setCathode] = useState({ PVDF: "", CA: "", AM: "", Solvent: "" });
   const [status, setStatus] = useState("");
+  const [stageLog, setStageLog] = useState([]); // added stageLog for live updates
+
+  // WebSocket connection for real-time updates
+  useEffect(() => {
+    const socket = new WebSocket("ws://localhost:8000/ws/status");
+
+    socket.onmessage = (event) => {
+      const newMessage = event.data;
+      setStageLog(prev => [...prev, newMessage]);
+    };
+
+    socket.onclose = () => {
+      console.log("WebSocket disconnected");
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, []);
 
   const handleChange = (type, field, value) => {
     if (type === "Anode") setAnode(prev => ({ ...prev, [field]: value }));
@@ -45,6 +64,7 @@ function App() {
     setAnode({ PVDF: "", CA: "", AM: "", Solvent: "" });
     setCathode({ PVDF: "", CA: "", AM: "", Solvent: "" });
     setStatus("Inputs cleared.");
+    setStageLog([]); // Clear the stage log
   };
 
   const downloadZip = (type) => {
@@ -87,6 +107,16 @@ function App() {
       </div>
 
       <p className="status-message">{status}</p>
+
+      {/* ✨ Live stage updates section */}
+      <div className="stage-log">
+        <h4>Live Stage Updates:</h4>
+        <ul>
+          {stageLog.map((msg, idx) => (
+            <li key={idx}>{msg}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

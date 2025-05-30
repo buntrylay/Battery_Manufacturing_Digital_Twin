@@ -7,6 +7,7 @@ import os
 import random
 import threading
 
+
 class CoatingMachine(BaseMachine):
     """
     A coating machine that simulates the electrode coating process.
@@ -131,9 +132,15 @@ class CoatingMachine(BaseMachine):
         Run the coating process with detailed step simulation.
         """
         if self.is_on:
+            from server.main import thread_broadcast
+            thread_broadcast(f"Coating process started on {self.id}") # Broadcast start message
             self._simulate()
+
+            thread_broadcast(f"Coating process {self.id} in progress...") # Broadcast progress message
             
             print(f"Coating process completed on {self.id}\n")
+
+            thread_broadcast(f"Coating process completed on {self.id}")  # Broadcast completion message
 
     def update_from_slurry(self, slurry):
         """
