@@ -29,9 +29,11 @@ class ElectrodeInspectionMachine(BaseMachine):
         self.epsilon_thickness_max = machine_parameters["epsilon_thickness_max"]
         self.B_max = machine_parameters["B_max"]
         self.D_surface_max = machine_parameters["D_surface_max"]
-        self.delta_sl = None
+       
 
         # Will be filled by SlittingMachine
+        self.delta_sl = None
+        self.phi_final = None
         self.epsilon_width = None
         self.B = None
 
@@ -134,10 +136,12 @@ class ElectrodeInspectionMachine(BaseMachine):
             self.epsilon_width = slitting_data.get("epsilon_width")
             self.B = slitting_data.get("burr_factor")
             self.delta_sl = slitting_data.get("delta_sl")
+            self.phi_final = slitting_data.get("phi_final")
             print(f"{self.id}: Received from slitting - ε={self.epsilon_width}, B={self.B}, δ_cal={self.delta_sl}")
             
     def get_final_inspection(self):
         with self.lock:
             return{
-                "delta_el" : self.delta_sl
+                "delta_el" : self.delta_sl,
+                "phi_final" : self.phi_final
             }

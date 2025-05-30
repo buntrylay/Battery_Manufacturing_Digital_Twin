@@ -44,7 +44,7 @@ class RewindingMachine(BaseMachine):
         
         # Variables from previous processes
         self.delta_cal = None
-
+        self.phi_final = None
 
     def update_from_inspection(self, inspection_data):
         """
@@ -55,6 +55,7 @@ class RewindingMachine(BaseMachine):
         """
         with self.lock:
             self.delta_cal = inspection_data.get("delta_el")
+            self.phi_final = inspection_data.get("phi_final")
             print(f"{self.id}: Received from electrode inspection - delta_cal={self.delta_cal}")
             
 
@@ -129,5 +130,10 @@ class RewindingMachine(BaseMachine):
             self._simulate()
             
             print(f"Rewinding process completed on {self.id}\n")
+    
+    def get_final_rewind(self):
+        return {
+            "phi_final" : self.phi_final
+        }
             
     

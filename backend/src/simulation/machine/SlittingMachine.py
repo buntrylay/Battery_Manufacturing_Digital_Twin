@@ -118,5 +118,6 @@ class SlittingMachine(BaseMachine):
         return {
             "epsilon_width": self.epsilon_width,
             "burr_factor": self.burr_factor,
-            "delta_sl": self.delta_cal
+            "delta_sl": self.delta_cal,
+            "phi_final" : self.phi_final
         }
