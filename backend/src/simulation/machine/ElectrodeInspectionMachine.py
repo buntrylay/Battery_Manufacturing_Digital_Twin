@@ -36,6 +36,7 @@ class ElectrodeInspectionMachine(BaseMachine):
         self.phi_final = None
         self.epsilon_width = None
         self.B = None
+        self.final_width = None
 
         # Calculator
         self.calculator = ElectrodeInspectionPropertyCalculator(
@@ -137,11 +138,16 @@ class ElectrodeInspectionMachine(BaseMachine):
             self.B = slitting_data.get("burr_factor")
             self.delta_sl = slitting_data.get("delta_sl")
             self.phi_final = slitting_data.get("phi_final")
+            self.final_width = slitting_data.get("final_width")
+            self.final_thickness_m = slitting_data.get("final_thickness_m")
             print(f"{self.id}: Received from slitting - ε={self.epsilon_width}, B={self.B}, δ_cal={self.delta_sl}")
             
     def get_final_inspection(self):
         with self.lock:
             return{
                 "delta_el" : self.delta_sl,
-                "phi_final" : self.phi_final
+                "phi_final" : self.phi_final,
+                "final_width": self.final_width,
+                "final_thickness_m": self.final_thickness_m,
+                "epsilon_width": self.epsilon_width
             }

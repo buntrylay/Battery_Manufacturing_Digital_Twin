@@ -11,6 +11,9 @@ class ElectrolyteFillingCalculation:
     def V_sep(self):
         return self.T_sep * self.A_sep  #Volume for Separator Find in Technical Meeting 13
     
+    def V_elec(self, length, width, thickness):
+        return length * width * thickness * 1e6
+    
     def phi_elec(self):
         return self.elec_density #Meeting Week 13
     
