@@ -7,6 +7,8 @@ import json
 import os
 import random
 import threading
+
+
 class MixingMachine(BaseMachine):
     """
     A machine class for simulating the mixing of battery slurry components.
@@ -216,9 +218,16 @@ class MixingMachine(BaseMachine):
             pause_sec (float): Time to pause between additions in seconds.
         """
         if self.is_on:
+            from server.main import thread_broadcast
+            thread_broadcast(f"Machine {self.id} is already running.") # Broadcast message
             for comp in ["PVDF", "CA", "AM"]:
                 self._mix_component(comp, step_percent, pause_sec)
+
+            thread_broadcast(f"Machine {self.id} mixing in progress.") # Broadcast message
+
             self._save_final_results() 
+
+            thread_broadcast(f"Machine {self.id} mixing completed.") # Broadcast message
  
 
 
