@@ -42,7 +42,6 @@ class MixingMachine(BaseMachine):
         self.electrode_type = electrode_type
         self.volume = 200  # Default volume in litres
         self.ratios = ratio_materials
-        self.lock = threading.Lock()  # Thread safety lock
         self.total_time = 0
         self.start_datetime = datetime.now()
 
@@ -55,13 +54,12 @@ class MixingMachine(BaseMachine):
         if self.electrode_type == "Anode":
             self.RHO_values = {"AM": 2.26, "CA": 1.8, "PVDF": 1.17, "H2O": 1.0}
             self.WEIGHTS_values = {"a": 0.85, "b": 2.2, "c": 0.3, "s": -0.4}
-            with self.lock:
-                self.slurry.add("H2O", self.volume * self.ratios["H2O"])
+            self.slurry.add("H2O", self.volume * self.ratios["H2O"])
+
         elif self.electrode_type == "Cathode":
             self.RHO_values = {"AM": 2.11, "CA": 1.8, "PVDF": 1.78, "NMP": 1.03} ##TODO To be reviewed
             self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5} ##To be changed
-            with self.lock:
-                self.slurry.add("NMP", self.volume * self.ratios["NMP"])
+            self.slurry.add("NMP", self.volume * self.ratios["NMP"])
  
         self.calculator = SlurryPropertyCalculator(self.RHO_values, self.WEIGHTS_values)
 
@@ -75,32 +73,31 @@ class MixingMachine(BaseMachine):
         Returns:
             dict: The formatted result data.
         """
-        with self.lock:
-            base = {
-                "TimeStamp": (self.start_datetime + timedelta(seconds=self.total_time)).isoformat(),
-                "Duration": round(self.total_time, 5),
-                "Machine ID": self.id,
-                "Process": "Mixing",
-                "Electrode Type": self.electrode_type,
-            }
-            composition = {
-                "AM": round(self.slurry.AM, 3),
-                "CA": round(self.slurry.CA, 3),
-                "PVDF": round(self.slurry.PVDF, 3),
-                f"{self.slurry.solvent}": round(getattr(self.slurry, self.slurry.solvent), 3)
-            }
-            properties = {
-                "Density": round(self.calculator.calculate_density(self.slurry), 4),
-                "Viscosity": round(self.calculator.calculate_viscosity(self.slurry), 2),
-                "YieldStress": round(self.calculator.calculate_yield_stress(self.slurry), 2)
-            }
-            if is_final:
-                base["Final Composition"] = composition
-                base["Final Properties"] = properties
-            else:
-                base.update(composition)
-                base.update(properties)
-            return base
+        base = {
+            "TimeStamp": (self.start_datetime + timedelta(seconds=self.total_time)).isoformat(),
+            "Duration": round(self.total_time, 5),
+            "Machine ID": self.id,
+            "Process": "Mixing",
+            "Electrode Type": self.electrode_type,
+        }
+        composition = {
+            "AM": round(self.slurry.AM, 3),
+            "CA": round(self.slurry.CA, 3),
+            "PVDF": round(self.slurry.PVDF, 3),
+            f"{self.slurry.solvent}": round(getattr(self.slurry, self.slurry.solvent), 3)
+        }
+        properties = {
+            "Density": round(self.calculator.calculate_density(self.slurry), 4),
+            "Viscosity": round(self.calculator.calculate_viscosity(self.slurry), 2),
+            "YieldStress": round(self.calculator.calculate_yield_stress(self.slurry), 2)
+        }
+        if is_final:
+            base["Final Composition"] = composition
+            base["Final Properties"] = properties
+        else:
+            base.update(composition)
+            base.update(properties)
+        return base
  
     def _write_json(self, data, filename):
         """
@@ -119,11 +116,10 @@ class MixingMachine(BaseMachine):
             if os.path.exists(unique_filename):
                 return
                 
-            with self.lock:  # Use the machine's lock for thread safety
-                with open(unique_filename, "w") as f:
-                    json.dump(data, f, indent=4)
-                print(f"Results saved to {unique_filename}")
-                return data
+            with open(unique_filename, "w") as f:
+                json.dump(data, f, indent=4)
+            print(f"Results saved to {unique_filename}")
+            return data
         except Exception as e:
             print(f"Error writing result to file: {e}")
  
@@ -153,9 +149,8 @@ class MixingMachine(BaseMachine):
         last_saved_result = None  # Track last saved result to prevent duplicates
 
         for _ in range(steps):
-            with self.lock:  # Use lock for thread safety
-                self.total_time += pause_sec
-                self.slurry.add(component, step_volume)
+            self.total_time += pause_sec
+            self.slurry.add(component, step_volume)
 
             # Simulate machine parameters
             temperature = round(random.uniform(20, 25), 2)
@@ -185,8 +180,7 @@ class MixingMachine(BaseMachine):
         Returns:
             Slurry: The final mixed slurry object
         """
-        with self.lock:
-            return self.slurry
+        return self.slurry
 
     def _save_final_results(self):
         """

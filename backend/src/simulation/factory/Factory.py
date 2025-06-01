@@ -44,12 +44,6 @@ class Factory:
         """
         self.machines.append(machine)
         self.machine_status[machine.id] = False
-        self.machine_locks[machine.id] = threading.Lock()
-        self.machine_events[machine.id] = threading.Event()
-        if dependencies:
-            machine.dependencies = dependencies
-        else:
-            machine.dependencies = []
 
     def wait_for_dependencies(self, machine):
         """
@@ -119,11 +113,7 @@ class Factory:
             machine.turn_on()
             machine.run()
             machine.turn_off()
-            
-            # Mark machine as complete
-            with self.machine_locks[machine.id]:
-                self.machine_status[machine.id] = True
-                self.machine_events[machine.id].set()  # Signal completion
+        
             
             print(f"Completed {machine.id}")
         except Exception as e:
@@ -140,13 +130,7 @@ class Factory:
         print("Starting factory simulation...")
 
         for machine in self.machines:
-            thread = threading.Thread(
-                target=self.run_machine,
-                args=(machine,),
-                daemon=False  # Make threads non-daemon
-            )
-            thread.start()
-            self.threads.append(thread)
+            self.run_machine(machine)
 
     def stop_simulation(self):
         """

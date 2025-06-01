@@ -27,6 +27,7 @@ class BaseMachine(ABC):
         if connection_string:
             try:
                 self.iot_client = IoTHubDeviceClient.create_from_connection_string(connection_string)
+                print(f"IoT Hub client created for machine {self.id}")
             except Exception as e:
                 print(f"Failed to create IoT Hub client: {e}")
 

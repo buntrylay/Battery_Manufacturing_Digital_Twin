@@ -75,47 +75,14 @@ anode_slurry = Slurry("Anode")
 cathode_slurry = Slurry("Cathode")
 
 # Create mixing machines
-anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode)
-cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slurry, user_input_cathode)
+anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode, "HostName=SW-DEV-a633d6e2-a3f2-11ef-a7f3-000d3a8201a5.azure-devices.net;DeviceId=ACTestSwin;SharedAccessKey=AIZ4O/jiLzaXY4v5GMr5VSPfA26TF4o14iNApHMv3VA=")
+cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slurry, user_input_cathode, "")
 
-# Create coating machines
-anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
-cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
-
-# Create drying machines
-anode_drying_machine = DryingMachine("MC_Dry_Anode")
-cathode_drying_machine = DryingMachine("MC_Dry_Cathode")
-
-# ✅ Create calendaring machine
-anode_calendaring_machine = CalendaringMachine("MC_Calendar_Anode", user_input_calendaring)
-cathode_calendaring_machine = CalendaringMachine("MC_Calendar_Cathode", user_input_calendaring)
-# Create slitting machines - Ai Vi
-anode_slitting_machine = SlittingMachine("MC_Slit_Anode", user_input_slitting)
-cathode_slitting_machine = SlittingMachine("MC_Slit_Cathode", user_input_slitting)
-# Create electrode inspection machines - Ai Vi
-anode_electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect_Anode", user_input_electrode_inspection)
-cathode_electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect_Cathode", user_input_electrode_inspection)
-
-# Create rewinding machine
-anode_rewinding_machine = RewindingMachine("MC_Rewind_Anode", user_input_rewinding)
-cathode_rewinding_machine = RewindingMachine("MC_Rewind_Cathode", user_input_rewinding)
 # Initialize factory
 factory = Factory()
 
 # Add machines to factory
 factory.add_machine(anode_mixing_machine)
-factory.add_machine(cathode_mixing_machine)
-factory.add_machine(anode_coating_machine, dependencies=["TK_Mix_Anode"])
-factory.add_machine(cathode_coating_machine, dependencies=["TK_Mix_Cathode"])
-factory.add_machine(anode_drying_machine, dependencies=["MC_Coat_Anode"])
-factory.add_machine(cathode_drying_machine, dependencies=["MC_Coat_Cathode"])
-factory.add_machine(anode_calendaring_machine, dependencies=["MC_Dry_Anode"])
-factory.add_machine(cathode_calendaring_machine, dependencies=["MC_Dry_Cathode"])   
-factory.add_machine(anode_slitting_machine, dependencies=["MC_Calendar_Anode"])
-factory.add_machine(cathode_slitting_machine, dependencies=["MC_Calendar_Cathode"])
-factory.add_machine(anode_electrode_inspection_machine, dependencies=["MC_Slit_Anode"])
-factory.add_machine(cathode_electrode_inspection_machine, dependencies=["MC_Slit_Cathode"])
-factory.add_machine(anode_rewinding_machine, dependencies=["MC_Inspect_Anode"])
-factory.add_machine(cathode_rewinding_machine, dependencies=["MC_Inspect_Cathode"]) 
+
 # Start the simulation
 factory.start_simulation()
