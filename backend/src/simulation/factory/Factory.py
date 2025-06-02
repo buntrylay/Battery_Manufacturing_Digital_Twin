@@ -5,8 +5,12 @@ from simulation.machine.CoatingMachine import CoatingMachine
 from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.DryingMachine import DryingMachine
 from simulation.machine.SlittingMachine import SlittingMachine
-# from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
+from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
+from simulation.machine.RewindingMachine import RewindingMachine
+
+
 import time
+from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
 
 """
 Factory class that simulates a factory with multiple machines.
@@ -85,12 +89,27 @@ class Factory:
 
             # Calendaring → Slitting
             if isinstance(dependency_machine, CalendaringMachine) and isinstance(machine, SlittingMachine):
-                final_properties = dependency_machine.get_final_calendaring()
-                print(f"[{machine.id}] Receiving calendared data from {dependency_id}")
-                machine.update_from_calendaring(final_properties)
+                cal_data = dependency_machine.get_final_calendaring()
+                print(f"[{machine.id}] Receiving calendaring data from {dependency_id}")
+                machine.update_from_calendaring(cal_data)
+            # Slitting -> Electrode Inspection
+            if isinstance(dependency_machine, SlittingMachine) and isinstance(machine, ElectrodeInspectionMachine):
+                slitting_data = dependency_machine.get_final_slitting()
+                print(f"[{machine.id}] Receiving slitting data from {dependency_id}")
+                machine.update_from_slitting(slitting_data)
+                
+            # Electrode Inspection -> Rewinding
+            if isinstance(dependency_machine, ElectrodeInspectionMachine) and isinstance(machine, RewindingMachine):
+                inspection_data = dependency_machine.get_final_inspection()
+                print(f"[{machine.id}] Receiving inspection data from {dependency_id}")
+                machine.update_from_inspection(inspection_data)
+                
+            if isinstance(dependency_machine, RewindingMachine) and isinstance(machine, ElectrolyteFillingMachine):
+                rewind_data = dependency_machine.get_final_rewind()
+                print(f"[{machine.id}] Receiving inspection data from {dependency_id}")
+                machine.update_from_rewind(rewind_data)
 
             
-
     def run_machine(self, machine):
         """
          Run a single machine within its own thread, handling dependencies.

@@ -12,7 +12,7 @@ class DryingMachine(BaseMachine):
     Removes solvent from the coated electrode to form a dry film.
     """
 
-    def __init__(self, id, web_speed):
+    def __init__(self, id, web_speed = 0.5):
         super().__init__(id)
         self.name = "DryingMachine"
         self.start_datetime = datetime.now()
@@ -116,10 +116,6 @@ class DryingMachine(BaseMachine):
             delta_coat = self.dry_thickness + (self.M_solvent / self.calculator.solvent_density)
             defect_risk = abs(evap_rate / self.calculator.area()) > self.calculator.max_safe_evap_rate
 
-            # Now call with required arguments
-            final_result = self._format_result(evap_rate, delta_coat, defect_risk, is_final=True)
-            filename = f"final_results_{self.id}.json"
-            self._write_json(final_result, filename)
             print(f"Drying process completed on {self.id}\n")
 
     def update_from_coating(self, wet_thickness_coating, solid_content_coating):

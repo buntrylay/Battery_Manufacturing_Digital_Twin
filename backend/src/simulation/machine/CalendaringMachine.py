@@ -25,14 +25,13 @@ class CalendaringMachine(BaseMachine):
         print(f"Output directory created at: {self.output_dir}")
 
         # Process Parameters
-        self.h_roll = machine_parameters["roll_gap"]           # Initial roll gap (m)
+        self.h_roll_initial = machine_parameters["roll_gap"]           # Initial roll gap (m)
         self.P_roll = machine_parameters["roll_pressure"]      # Initial pressure (Pa)
         self.v_roll = machine_parameters["roll_speed"]         # Initial speed (m/s)
-        self.delta_dry = 0  # From drying stage (m)
+        self.delta_dry = None  # From drying stage (m)
         self.phi_initial = 0.45  # Initial porosity
-
         self.T = machine_parameters.get("temperature", 25)     # Environment temperature (°C)
-
+        self.h_roll = self.h_roll_initial
         # Calculations
         self.calculator = CalendaringProcess()
 
@@ -83,11 +82,6 @@ class CalendaringMachine(BaseMachine):
         for t in range(0, end_time + 1, interval):
             self.total_time = t
 
-            # Dynamically adjust parameters
-            self.h_roll = self.h_roll * (1 - t / end_time)
-            self.v_roll = max(0.5, self.v_roll - t / (2 * end_time))
-            self.P_roll = self.P_roll * (1 - self.h_roll / self.delta_dry)
-
             self.epsilon_val = self.calculator._epsilon(self.delta_dry, self.h_roll)
             self.sigma_theory = self.calculator._sigma_calc(self.epsilon_val)
             self.porosity = self.calculator._porosity_reduction(self.epsilon_val, self.phi_initial)
@@ -112,21 +106,19 @@ class CalendaringMachine(BaseMachine):
         """
         if self.is_on:
             self._simulate()
-
-            final_result = self._format_result(is_final=True)
-            filename = f"final_results_{self.id}.json"
-            self._write_json(final_result, filename)
             print(f"Calendaring process completed on {self.id}\n")
     
     def update_from_drying(self, dry_thickness_drying):
         with self.lock:
             self.delta_dry = dry_thickness_drying
             print(f"{self.id}: Received from drying - dry_thickness={dry_thickness_drying}")
+            
     def get_final_calendaring(self):
         with self.lock:
             return {
-                "delta_cal": self.final_thickness,
-                "porosity": self.porosity,
-                "web_speed": self.v_roll,
-                "stiffness": self.calculator.E
+                "delta_cal_cal": self.final_thickness,
+                "porosity_cal": self.porosity,
+                "web_speed_cal": self.v_roll,
+                "stiffness_cal": self.calculator.E,
+                "final_thickness_m" : self.final_thickness
             }

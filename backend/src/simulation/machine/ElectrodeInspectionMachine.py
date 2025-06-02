@@ -29,11 +29,14 @@ class ElectrodeInspectionMachine(BaseMachine):
         self.epsilon_thickness_max = machine_parameters["epsilon_thickness_max"]
         self.B_max = machine_parameters["B_max"]
         self.D_surface_max = machine_parameters["D_surface_max"]
-        self.delta_cal = None
+       
 
         # Will be filled by SlittingMachine
+        self.delta_sl = None
+        self.phi_final = None
         self.epsilon_width = None
         self.B = None
+        self.final_width = None
 
         # Calculator
         self.calculator = ElectrodeInspectionPropertyCalculator(
@@ -43,11 +46,6 @@ class ElectrodeInspectionMachine(BaseMachine):
             D_surface_max=self.D_surface_max
         )
 
-    def update_from_slitting(self, slitting_data: dict):
-        with self.lock:
-            self.epsilon_width = slitting_data["epsilon_width"]
-            self.B = slitting_data["burr_factor"]
-            print(f"{self.id}: Received from slitting - ε={self.epsilon_width}, B={self.B}")
 
     def _format_result(self, step=None, is_final=False):
         base = {
@@ -60,7 +58,7 @@ class ElectrodeInspectionMachine(BaseMachine):
         properties = {
             "epsilon_width_mm": round(self.epsilon_width, 4),
             "burr_factor": round(self.B, 3),
-            "delta_cal_m": self.delta_cal,
+            "delta_sl_m": self.delta_sl,
             "delta_measured_m": round(self.delta_measured, 7),
             "epsilon_thickness_m": round(self.epsilon_thickness, 7),
             "defects_detected": self.D_detected,
@@ -88,7 +86,7 @@ class ElectrodeInspectionMachine(BaseMachine):
         except Exception as e:
             print(f"Error writing inspection result: {e}")
 
-    def _simulate(self, end_time=1, interval=1):
+    def _simulate(self, end_time=100, interval=1):
         last_saved_time = time.time()
         last_saved_result = None
 
@@ -96,14 +94,14 @@ class ElectrodeInspectionMachine(BaseMachine):
             self.total_time = t
 
             # Simulated data
-            self.delta_measured = self.delta_cal + (1e-6 * (0.5 - time.time() % 1))
+            self.delta_measured = self.delta_sl + (1e-6 * (0.5 - time.time() % 1))
             self.D_detected = 1  # Fake fixed value for now
 
             # Perform inspection
             result = self.calculator.is_pass(
                 self.epsilon_width,
                 self.delta_measured,
-                self.delta_cal,
+                self.delta_sl,
                 self.B,
                 self.D_detected
             )
@@ -131,7 +129,25 @@ class ElectrodeInspectionMachine(BaseMachine):
             if None in [self.epsilon_width, self.B]:
                 raise ValueError(f"{self.id}: Missing slitting inputs.")
             self._simulate()
-            final_output = self._format_result(is_final=True)
-            filename = f"final_results_{self.id}.json"
-            self._write_json(final_output, filename)
+            
             print(f"Inspection process completed on {self.id}\n")
+            
+    def update_from_slitting(self, slitting_data):
+        with self.lock:
+            self.epsilon_width = slitting_data.get("epsilon_width")
+            self.B = slitting_data.get("burr_factor")
+            self.delta_sl = slitting_data.get("delta_sl")
+            self.phi_final = slitting_data.get("phi_final")
+            self.final_width = slitting_data.get("final_width")
+            self.final_thickness_m = slitting_data.get("final_thickness_m")
+            print(f"{self.id}: Received from slitting - ε={self.epsilon_width}, B={self.B}, δ_cal={self.delta_sl}")
+            
+    def get_final_inspection(self):
+        with self.lock:
+            return{
+                "delta_el" : self.delta_sl,
+                "phi_final" : self.phi_final,
+                "final_width": self.final_width,
+                "final_thickness_m": self.final_thickness_m,
+                "epsilon_width": self.epsilon_width
+            }
