@@ -7,6 +7,7 @@ import json
 import os
 import random
 import threading
+import asyncio
 class MixingMachine(BaseMachine):
     """
     A machine class for simulating the mixing of battery slurry components.
@@ -27,7 +28,7 @@ class MixingMachine(BaseMachine):
         calculator (SlurryPropertyCalculator): Calculator for slurry properties.
     """
    
-    def __init__(self, id, electrode_type, slurry: Slurry, ratio_materials: dict, connection_string=None):
+    def __init__(self, id, electrode_type, slurry: Slurry, ratio_materials: dict, opcua_server=None, connection_string=None):
         """
         Initialise a new MixingMachine instance.
  
@@ -44,6 +45,7 @@ class MixingMachine(BaseMachine):
         self.ratios = ratio_materials
         self.lock = threading.Lock()  # Thread safety lock
         self.total_time = 0
+        self.opcua_server = opcua_server  # Optional OPC UA server for real-time data
         self.start_datetime = datetime.now()
 
         # Create mixing_output directory in the current working directory
@@ -171,7 +173,7 @@ class MixingMachine(BaseMachine):
                 filename = f"result_at_{round(self.total_time)}s.json"
                 data = self._write_json(result, filename)
                 if data:
-                    self.send_json_to_iothub(data)  # Send to IoT Hub
+                    self.update_opcua_from_thread(json.dumps(data))
                     self._print_result(data)  # Print to console
                 last_saved_time = now
                 last_saved_result = result
@@ -218,7 +220,19 @@ class MixingMachine(BaseMachine):
         if self.is_on:
             for comp in ["PVDF", "CA", "AM"]:
                 self._mix_component(comp, step_percent, pause_sec)
-            self._save_final_results() 
+            self._save_final_results()
+
+    def update_opcua_from_thread(self, result_json):
+        print(f"Updating OPC UA for {self.id} with: {result_json}")
+        if self.opcua_server and self.opcua_loop:
+            try:
+                fut = asyncio.run_coroutine_threadsafe(
+                    self.opcua_server.set_machine_result(self.id, result_json),
+                    self.opcua_loop
+                )
+                fut.result(timeout=5)  # Add a timeout to avoid infinite blocking
+            except Exception as e:
+                print(f"Error updating OPC UA for {self.id}: {e}")
  
 
 

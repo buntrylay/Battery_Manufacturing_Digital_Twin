@@ -1,5 +1,7 @@
 import sys
 import os
+import asyncio
+import threading
 
 # Add the src directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -13,6 +15,21 @@ from simulation.machine.DryingMachine import DryingMachine
 from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
 from simulation.machine.RewindingMachine import RewindingMachine
+from opcua_server.MixingOPCUAServer import MixingOPCUAServer
+
+MIXING_MACHINE_IDS = ["TK_Mix_Anode", "TK_Mix_Cathode"]
+opcua_server = MixingOPCUAServer()
+opcua_loop = asyncio.new_event_loop()
+
+def start_opcua_server():
+    asyncio.set_event_loop(opcua_loop)
+    opcua_loop.run_until_complete(opcua_server.setup(MIXING_MACHINE_IDS))
+    opcua_loop.run_until_complete(opcua_server.run())
+
+opcua_thread = threading.Thread(target=start_opcua_server, daemon=True)
+opcua_thread.start()
+
+
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
     "PVDF": 0.05,
@@ -29,93 +46,25 @@ user_input_cathode = {
     "NMP": 0.35
 }
 
-# Define the coating parameters
-user_input_coating = {
-    "coating_speed": 0.05,
-    "gap_height": 200e-6,
-    "flow_rate": 5e-6,
-    "coating_width": 0.5
-}
-
-# ✅ Define calendaring parameters
-user_input_calendaring = {
-    "roll_gap": 100e-6,             # meters
-    "roll_pressure": 2e6,           # Pascals
-    "roll_speed": 2.0,              # m/s
-    "dry_thickness": 150e-6,        # From coating (m)
-    "initial_porosity": 0.45,       # Assumed porosity after drying
-    "temperature": 25               # Optional
-}
-#  Slitting's input parameters - Ai Vi
-user_input_slitting = {
-    "w_input": 500,
-    "blade_sharpness": 8,
-    "slitting_speed": 1.5, 
-    "target_width": 100,
-    "slitting_tension": 150,
-}
-
-#  Electrode Inspection's input parameters - Ai Vi
-user_input_electrode_inspection = {
-    "epsilon_width_max": 0.1,  
-    "epsilon_thickness_max": 10e-6,
-    "B_max": 2.0,
-    "D_surface_max": 3
-}
-
-#  Rewinding's input parameters
-user_input_rewinding = {
-    "rewinding_speed": 0.5,  # m/s
-    "initial_tension": 100,       # N
-    "tapering_steps": 0.3, # meters
-    "environment_humidity": 30    # %
-}
 # Create slurry instances
 anode_slurry = Slurry("Anode")
 cathode_slurry = Slurry("Cathode")
 
 # Create mixing machines
-anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode)
-cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slurry, user_input_cathode)
+anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode, opcua_server)
+cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slurry, user_input_cathode, opcua_server)
 
-# Create coating machines
-anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
-cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
+for machine in [anode_mixing_machine, cathode_mixing_machine]:
+    machine.opcua_loop = opcua_loop
 
-# Create drying machines
-anode_drying_machine = DryingMachine("MC_Dry_Anode")
-cathode_drying_machine = DryingMachine("MC_Dry_Cathode")
-
-# ✅ Create calendaring machine
-anode_calendaring_machine = CalendaringMachine("MC_Calendar_Anode", user_input_calendaring)
-cathode_calendaring_machine = CalendaringMachine("MC_Calendar_Cathode", user_input_calendaring)
-# Create slitting machines - Ai Vi
-anode_slitting_machine = SlittingMachine("MC_Slit_Anode", user_input_slitting)
-cathode_slitting_machine = SlittingMachine("MC_Slit_Cathode", user_input_slitting)
-# Create electrode inspection machines - Ai Vi
-anode_electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect_Anode", user_input_electrode_inspection)
-cathode_electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect_Cathode", user_input_electrode_inspection)
-
-# Create rewinding machine
-anode_rewinding_machine = RewindingMachine("MC_Rewind_Anode", user_input_rewinding)
-cathode_rewinding_machine = RewindingMachine("MC_Rewind_Cathode", user_input_rewinding)
 # Initialize factory
 factory = Factory()
 
 # Add machines to factory
 factory.add_machine(anode_mixing_machine)
 factory.add_machine(cathode_mixing_machine)
-factory.add_machine(anode_coating_machine, dependencies=["TK_Mix_Anode"])
-factory.add_machine(cathode_coating_machine, dependencies=["TK_Mix_Cathode"])
-factory.add_machine(anode_drying_machine, dependencies=["MC_Coat_Anode"])
-factory.add_machine(cathode_drying_machine, dependencies=["MC_Coat_Cathode"])
-factory.add_machine(anode_calendaring_machine, dependencies=["MC_Dry_Anode"])
-factory.add_machine(cathode_calendaring_machine, dependencies=["MC_Dry_Cathode"])   
-factory.add_machine(anode_slitting_machine, dependencies=["MC_Calendar_Anode"])
-factory.add_machine(cathode_slitting_machine, dependencies=["MC_Calendar_Cathode"])
-factory.add_machine(anode_electrode_inspection_machine, dependencies=["MC_Slit_Anode"])
-factory.add_machine(cathode_electrode_inspection_machine, dependencies=["MC_Slit_Cathode"])
-factory.add_machine(anode_rewinding_machine, dependencies=["MC_Inspect_Anode"])
-factory.add_machine(cathode_rewinding_machine, dependencies=["MC_Inspect_Cathode"]) 
+
+input("Start the opcua_client gateway now, then press Enter to continue...")
+
 # Start the simulation
 factory.start_simulation()
