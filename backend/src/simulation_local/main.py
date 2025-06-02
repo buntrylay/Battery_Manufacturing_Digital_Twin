@@ -75,7 +75,7 @@ anode_slurry = Slurry("Anode")
 cathode_slurry = Slurry("Cathode")
 
 # Create mixing machines
-anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode)
+anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode, "")
 cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slurry, user_input_cathode)
 
 # Create coating machines
