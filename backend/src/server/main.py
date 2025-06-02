@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -10,49 +10,15 @@ from simulation.machine.DryingMachine import DryingMachine
 from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
+from simulation.machine.RewindingMachine import RewindingMachine
 from pathlib import Path
 from zipfile import ZipFile
 import json
 import shutil
 from glob import glob
 import time
-from typing import List
-import asyncio
-from contextlib import asynccontextmanager
 
-connected_clients: List[WebSocket] = []
-event_loop = None  # ✨ Global reference to main event loop
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global event_loop
-    event_loop = asyncio.get_running_loop()
-    print("[WebSocket] Main event loop registered.")
-    yield
-    # You could clean up here if needed
-
-# Broadcast function to send message to all connected clients
-async def broadcast_status(message: str):
-    for client in connected_clients:
-        try:
-            await client.send_text(message)
-        except:
-            connected_clients.remove(client)
-
-# Thread-safe broadcast from non-async functions (e.g., threads)
-def thread_broadcast(message: str):
-    global event_loop
-    if event_loop and event_loop.is_running():
-        future = asyncio.run_coroutine_threadsafe(broadcast_status(message), event_loop)
-        try:
-            # ✨ Yield control briefly to allow WebSocket flush
-            future.result(timeout=0.1)
-        except Exception:
-            print(f"[WebSocket] Broadcast timeout or error: {message}")
-    else:
-        print(f"[WebSocket] Skipped broadcast (no event loop): {message}")
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 # Allow frontend communication
 app.add_middleware(
@@ -81,12 +47,8 @@ factory = Factory()
 machines = {}
 
 @app.post("/start-both")
-async def start_both_simulation(payload: DualInput):
-    return await asyncio.to_thread(_run_simulation, payload)
-
-def _run_simulation(payload: DualInput):
+def start_both_simulation(payload: DualInput):
     try:
-        thread_broadcast("🔄 Initializing factory and clearing previous simulation...")  # ✨ WebSocket status update
         factory.stop_simulation()
         factory.machines = []
         factory.threads = []
@@ -95,7 +57,6 @@ def _run_simulation(payload: DualInput):
         factory.machine_events = {}
 
         for data in [payload.anode, payload.cathode]:
-            thread_broadcast(f"🧪 Starting Mixing Stage: {data.electrode_type}")  # ✨ WebSocket status update
             slurry = Slurry(data.electrode_type)
             ratios = {
                 "PVDF": data.PVDF,
@@ -108,9 +69,7 @@ def _run_simulation(payload: DualInput):
             mixing_machine = MixingMachine(machine_id, data.electrode_type, slurry, ratios)
             factory.add_machine(mixing_machine)
             machines[data.electrode_type] = mixing_machine
-            thread_broadcast(f"✅ Completed Mixing Stage: {data.electrode_type}")  # ✨ WebSocket status update
 
-        thread_broadcast("🧴 Adding Coating Machines...")  # ✨ WebSocket status update
         user_input_coating = {
             "coating_speed": 0.05,
             "gap_height": 200e-6,
@@ -126,20 +85,16 @@ def _run_simulation(payload: DualInput):
 
         machines["Anode_Coating"] = anode_coating_machine
         machines["Cathode_Coating"] = cathode_coating_machine
-        thread_broadcast("✅ Coating Machines Added")  # ✨ WebSocket status update
 
         # Add Drying machines
-        thread_broadcast("💨 Adding Drying Machines...")  # ✨ WebSocket status update
         for etype in ["Anode", "Cathode"]:
             drying_id = f"MC_Dry_{etype}"
             coat_id = f"MC_Coat_{etype}"
             drying_machine = DryingMachine(drying_id, web_speed=0.5)
             factory.add_machine(drying_machine, dependencies=[coat_id])
             machines[f"{etype}_Drying"] = drying_machine
-        thread_broadcast("✅ Drying Machines Added")  # ✨ WebSocket status update
-
+            
         # Add Calendaring machines
-        thread_broadcast("🧲 Adding Calendaring Machines...")  # ✨ WebSocket status update
         user_input_calendaring = {
             "roll_gap": 100e-6,             # meters
             "roll_pressure": 2e6,           # Pascals
@@ -154,10 +109,8 @@ def _run_simulation(payload: DualInput):
             calendaring_machine = CalendaringMachine(calendaring_id, user_input_calendaring)
             factory.add_machine(calendaring_machine, dependencies=[drying_id])
             machines[f"{etype}_Calendaring"] = calendaring_machine
-        thread_broadcast("✅ Calendaring Machines Added")  # ✨ WebSocket status update
-
+            
         # Add Slitting machines
-        thread_broadcast("🔪 Adding Slitting Machines...")  # ✨ WebSocket status update
         user_input_slitting = {
             "w_input": 500,
             "blade_sharpness": 8,
@@ -171,10 +124,8 @@ def _run_simulation(payload: DualInput):
             slitting_machine = SlittingMachine(slitting_id, user_input_slitting)
             factory.add_machine(slitting_machine, dependencies=[calendaring_id])
             machines[f"{etype}_Slitting"] = slitting_machine
-        thread_broadcast("✅ Slitting Machines Added")  # ✨ WebSocket status update
-
+        
         # Add Electrode Inspection machines
-        thread_broadcast("🔍 Adding Electrode Inspection Machines...")  # ✨ WebSocket status update
         user_input_electrode_inspection = {
             "epsilon_width_max": 0.1,  
             "epsilon_thickness_max": 10e-6,
@@ -187,18 +138,29 @@ def _run_simulation(payload: DualInput):
             inspection_machine = ElectrodeInspectionMachine(inspection_id, user_input_electrode_inspection)
             factory.add_machine(inspection_machine, dependencies=[slitting_id])
             machines[f"{etype}_Inspection"] = inspection_machine
-        thread_broadcast("✅ Electrode Inspection Machines Added")  # ✨ WebSocket status update
+        
+           
+        user_input_rewinding = {
+            "rewinding_speed": 0.5,  # m/s
+            "initial_tension": 100,       # N
+            "tapering_steps": 0.3, # meters
+            "environment_humidity": 30    # %
+        }
+        
+        for etype in ["Anode", "Cathode"]:
+            rewinding_id = f"MC_Rewind_{etype}"
+            inspection_id = f"MC_Inspect_{etype}"
+            rewinding_machine = RewindingMachine(rewinding_id, user_input_rewinding)
+            factory.add_machine(rewinding_machine, dependencies=[inspection_id])
+            machines[f"{etype}_Rewinding"] = rewinding_machine
 
-        thread_broadcast("🚀 Starting Full Simulation...")  # ✨ WebSocket status update
         factory.start_simulation()
 
         for thread in factory.threads:
             thread.join()
-        thread_broadcast("✅ Simulation Complete")  # ✨ WebSocket status update
 
         all_completed = all(factory.machine_status.values())
         if not all_completed:
-            thread_broadcast("❌ Some machines failed to complete")  # ✨ WebSocket status update
             raise Exception("Not all machines completed successfully")
 
         for data in [payload.anode, payload.cathode]:
@@ -207,7 +169,6 @@ def _run_simulation(payload: DualInput):
             result_path = RESULTS_PATH / f"{data.electrode_type}_result.json"
             with open(result_path, "w") as f:
                 json.dump(final_result, f, indent=4)
-            thread_broadcast(f"📁 Results saved for {data.electrode_type}")  # ✨ WebSocket status update
 
         completion_status = {
             machine_id: {
@@ -218,14 +179,11 @@ def _run_simulation(payload: DualInput):
             for machine_id, status in factory.machine_status.items()
         }
 
-        thread_broadcast("🎉 All processes completed successfully.")  # ✨ WebSocket status update
         return {
             "message": "All processes completed successfully.",
             "completion_status": completion_status
         }
-
     except Exception as e:
-        thread_broadcast(f"❌ Error: {str(e)}")  # ✨ WebSocket status update
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/reset")
@@ -242,37 +200,155 @@ def reset_simulation():
 @app.get("/files/{electrode_type}")
 def download_result_zip(electrode_type: str):
     try:
+        '''
+        json_file = RESULTS_PATH / f"{electrode_type}_result.json"
+        if not json_file.exists():
+            raise FileNotFoundError(f"No result file for {electrode_type}")
+        
         zip_path = RESULTS_PATH / f"{electrode_type}.zip"
+        with ZipFile(zip_path, "w") as zipf:
+            zipf.write(json_file, arcname=json_file.name)
+        '''
+        zip_path = RESULTS_PATH / f"{electrode_type}.zip"
+
         with ZipFile(zip_path, "w") as zipf:
             for file in (Path.cwd() / "simulation_output").glob(f"*{electrode_type}*.json"):
                 zipf.write(file, arcname=file.name)
+
         return FileResponse(zip_path, media_type='application/zip', filename=f"{electrode_type}.zip")
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
-
-# ✨ WebSocket endpoint to accept connections from frontend
-@app.websocket("/ws/status")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    connected_clients.append(websocket)
+    
+'''
+@app.post("/start-both")
+def start_both_simulation(payload: DualInput):
     try:
-        while True:
-            await websocket.receive_text()  # keep connection alive
-    except WebSocketDisconnect:
-        connected_clients.remove(websocket)
+        # Reset factory and clear any existing machines
+        factory.stop_simulation()
+        factory.machines = []
+        factory.threads = []
+        factory.machine_status = {}
+        factory.machine_locks = {}
+        factory.machine_events = {}
+        #Create mixing machines
+        for data in [payload.anode, payload.cathode]:
+            slurry = Slurry(data.electrode_type)
+            ratios = {
+                "PVDF": data.PVDF,
+                "CA": data.CA,
+                "AM": data.AM,
+                "H2O" if data.electrode_type == "Anode" else "NMP": data.Solvent
+            }
 
-# (Optional) Download all results as a zip
+            machine_id = f"TK_Mix_{data.electrode_type}"
+            mixing_machine = MixingMachine(machine_id, data.electrode_type, slurry, ratios)
+            factory.add_machine(mixing_machine)
+            machines[data.electrode_type] = mixing_machine
+
+        # Define the coating parameters
+        user_input_coating = {
+            "coating_speed": 0.05,  # m/s (0,05 - 5 m/s)
+            "gap_height": 200e-6, # meters (50e-6 to 300 e-6)
+            "flow_rate": 5e-6,  # m³/s (Possibly fixed)
+            "coating_width": 0.5  # m (possibly fixed)
+        }
+
+        # Create coating machine instances
+        anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
+        cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
+
+        factory.add_machine(anode_coating_machine, 
+                   dependencies=["TK_Mix_Anode"])  # Depends on anode mixer
+        print("Anode coating machine added")
+        factory.add_machine(cathode_coating_machine, 
+                   dependencies=["TK_Mix_Cathode"])  # Depends on cathode mixer
+        print("Cathode coating machine added")
+        
+        machines["Anode_Coating"] = anode_coating_machine
+        machines["Cathode_Coating"] = cathode_coating_machine
+
+        # Start simulation for all machines
+        factory.start_simulation()
+
+        # Wait for all machines to complete
+        for thread in factory.threads:
+            thread.join()
+
+        # Check if all machines completed successfully
+        all_completed = all(factory.machine_status.values())
+        if not all_completed:
+            raise Exception("Not all machines completed successfully")
+
+         # >>> ADDED: Drying stage 
+        for etype in ["Anode", "Cathode"]:
+            coat_id = f"MC_Coat_{etype}"
+            max_wait_time = 10  # seconds
+            waited = 0
+            coating_result_path = None
+            while waited < max_wait_time:
+                matching_files = sorted(glob(f"coating_output/*final_results_{coat_id}.json"), reverse=True)
+                if matching_files:
+                    coating_result_path = matching_files[0]
+                    break
+                time.sleep(0.5)
+                waited += 0.5
+
+            if not coating_result_path:
+                raise FileNotFoundError(f"No final coating result found for {coat_id} after waiting {max_wait_time} seconds.")
+
+            with open(coating_result_path) as f:
+                coating_data = json.load(f)
+
+            props = coating_data["Final Properties"]
+            wet_thickness = props["wet_thickness_m"]
+            solid_content = props["solid_content"]
+
+            drying_machine = DryingMachine(f"MC_Dry_{etype}", wet_thickness, solid_content, web_speed=0.5)
+            drying_machine.run()
+        # <<< END Drying stage        
+       
+        # Save final results
+        for data in [payload.anode, payload.cathode]:
+            machine = machines[data.electrode_type]
+            final_result = machine._format_result(is_final=True)
+            result_path = RESULTS_PATH / f"{data.electrode_type}_result.json"
+            with open(result_path, "w") as f:
+                json.dump(final_result, f, indent=4)
+
+        # Get completion status for each machine
+        completion_status = {
+            machine_id: {
+                "completed": status,
+                "timestamp": machines[data.electrode_type]._format_result(is_final=True)["TimeStamp"] if machine_id != "Coating_Machine" else "N/A"
+            }
+            for machine_id, status in factory.machine_status.items()
+        }
+
+        return {
+            "message": "All processes completed successfully.",
+            "completion_status": completion_status
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+'''
+
+    
+#this one is not included yet, we can put this if it's needed later
 '''
 @app.get("/files/all")
 def download_all_results():
     try:
         zip_path = RESULTS_PATH / "all_results.zip"
+
+        # Check for any .json files to include
         json_files = list(RESULTS_PATH.glob("*.json"))
         if not json_files:
             raise FileNotFoundError("No result file for all")
+
         with ZipFile(zip_path, "w") as zipf:
             for file in json_files:
                 zipf.write(file, arcname=file.name)
+
         return FileResponse(zip_path, media_type='application/zip', filename="all_results.zip")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -13,6 +13,7 @@ from simulation.machine.DryingMachine import DryingMachine
 from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
 from simulation.machine.RewindingMachine import RewindingMachine
+from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
     "PVDF": 0.05,
@@ -70,6 +71,12 @@ user_input_rewinding = {
     "tapering_steps": 0.3, # meters
     "environment_humidity": 30    # %
 }
+
+user_input_elec_filling = {
+    "Vacuum_level" : 100,
+    "Vacuum_filling" : 100,
+    "Soaking_time" : 10
+}
 # Create slurry instances
 anode_slurry = Slurry("Anode")
 cathode_slurry = Slurry("Cathode")
@@ -99,6 +106,10 @@ cathode_electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect_Ca
 # Create rewinding machine
 anode_rewinding_machine = RewindingMachine("MC_Rewind_Anode", user_input_rewinding)
 cathode_rewinding_machine = RewindingMachine("MC_Rewind_Cathode", user_input_rewinding)
+
+# Create electrolyte filling machines
+anode_electrolyte_filling_machine = ElectrolyteFillingMachine("MC_ElecFill_Anode", user_input_elec_filling)
+cathode_electrolyte_filling_machine = ElectrolyteFillingMachine("MC_ElecFill_Cathode", user_input_elec_filling)
 # Initialize factory
 factory = Factory()
 
@@ -117,5 +128,7 @@ factory.add_machine(anode_electrode_inspection_machine, dependencies=["MC_Slit_A
 factory.add_machine(cathode_electrode_inspection_machine, dependencies=["MC_Slit_Cathode"])
 factory.add_machine(anode_rewinding_machine, dependencies=["MC_Inspect_Anode"])
 factory.add_machine(cathode_rewinding_machine, dependencies=["MC_Inspect_Cathode"]) 
+factory.add_machine(anode_electrolyte_filling_machine, dependencies=["MC_Rewind_Anode"])
+factory.add_machine(cathode_electrolyte_filling_machine, dependencies=["MC_Rewind_Cathode"])
 # Start the simulation
 factory.start_simulation()

@@ -6,7 +6,6 @@ import time
 import json
 import os
 
-
 class CalendaringMachine(BaseMachine):
     """
     Simulates the calendaring process in battery manufacturing.
@@ -83,11 +82,6 @@ class CalendaringMachine(BaseMachine):
         for t in range(0, end_time + 1, interval):
             self.total_time = t
 
-            # Dynamically adjust parameters
-            self.h_roll = max(self.h_roll_initial * (1 - t / end_time), 1e-6)
-            self.v_roll = max(0.5, self.v_roll - t / (2 * end_time))
-            self.P_roll = self.P_roll * (1 - self.h_roll / self.delta_dry)
-
             self.epsilon_val = self.calculator._epsilon(self.delta_dry, self.h_roll)
             self.sigma_theory = self.calculator._sigma_calc(self.epsilon_val)
             self.porosity = self.calculator._porosity_reduction(self.epsilon_val, self.phi_initial)
@@ -111,15 +105,8 @@ class CalendaringMachine(BaseMachine):
         Run the calendaring simulation.
         """
         if self.is_on:
-            from server.main import thread_broadcast
-            thread_broadcast(f"Calendaring process started on {self.id}") # Broadcast start message
             self._simulate()
-            thread_broadcast(f"Calendaring process {self.id} in progress...") # Broadcast continuation message
-            final_result = self._format_result(is_final=True)
-            filename = f"final_results_{self.id}.json"
-            self._write_json(final_result, filename)
             print(f"Calendaring process completed on {self.id}\n")
-            thread_broadcast(f"Calendaring process completed on {self.id}") # Broadcast completion message
     
     def update_from_drying(self, dry_thickness_drying):
         with self.lock:
@@ -132,5 +119,6 @@ class CalendaringMachine(BaseMachine):
                 "delta_cal_cal": self.final_thickness,
                 "porosity_cal": self.porosity,
                 "web_speed_cal": self.v_roll,
-                "stiffness_cal": self.calculator.E
+                "stiffness_cal": self.calculator.E,
+                "final_thickness_m" : self.final_thickness
             }
