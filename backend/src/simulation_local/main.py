@@ -85,12 +85,12 @@ user_input_elec_filling = {
 user_input_aging = {
     # hard input from cycling formation
     "Q_cell": 2.0,
-    "V_OCV(0)": 4.2,
+    "V_OCV(0)": 4.0,
     # 
     "SOC_0": 1.0,
-    "k_leak": 1e-6,
+    "k_leak": 1e-8,
     "temperature": 25,
-    "aging_time_days": 15
+    "aging_time_days": 10
 }
 # Create slurry instances
 anode_slurry = Slurry("Anode")

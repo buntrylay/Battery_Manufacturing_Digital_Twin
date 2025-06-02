@@ -100,7 +100,18 @@ class AgingMachine(BaseMachine):
             time.sleep(0.01)
 
         final_output = self._format_result(is_final=True)
+        defects = self.assess_defect_risk(self.SOC, self.V_OCV, self.I_leak)
+        final_output["defect_risk"] = defects
         self._write_json(final_output, "final_result.json")
+
+
+    def assess_defect_risk(self, final_soc, final_ocv, final_i_leak):
+        return {
+            "OCV_Drop": bool((self.V_OCV - final_ocv) > 0.1),
+            "Leakage_Current_High": bool(final_i_leak > 0.0001),
+            "SOC_Loss": bool(final_soc < 0.95 * self.SOC_0)
+        }
+
 
     def run(self):
         if self.is_on:
