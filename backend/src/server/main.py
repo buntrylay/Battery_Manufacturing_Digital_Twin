@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -17,13 +17,62 @@ import json
 import shutil
 from glob import glob
 import time
+import threading
+from collections import deque #memory efficient - works with threading and iterable data - will pop from either side if needed
+from datetime import datetime
+from typing import List
+import asyncio
+
+#Message Storing Technique using deque for creating a "queue"
+MAX_MESSAGE = 100 #max msgs that will be stored
+message_queue = deque(maxlen=MAX_MESSAGE)
+message_lock = threading.Lock()
+
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(message)
+            except:
+                pass  # Skip failed connections
+
+manager = ConnectionManager()
+
+# Thread broadcast function
+def thread_broadcast(message: str):
+    """
+    Broadcast a message to all connected clients.
+    Thread-safe message broadcasting system.
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    formatted_message = f"[{timestamp}] {message}"
+    
+    with message_lock:
+        message_queue.append(formatted_message)
+        # Broadcast to all WebSocket connections
+        for connection in manager.active_connections:
+            try:
+                asyncio.run(connection.send_text(formatted_message))
+            except:
+                pass  # Skip failed connections
 
 app = FastAPI()
 
-# Allow frontend communication
+# Allow frontend communication with more specific CORS settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],  # Your React app's address
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -55,7 +104,7 @@ def start_both_simulation(payload: DualInput):
         factory.machine_status = {}
         factory.machine_locks = {}
         factory.machine_events = {}
-
+        factory.thread_broadcast = {}
         for data in [payload.anode, payload.cathode]:
             slurry = Slurry(data.electrode_type)
             ratios = {
@@ -353,3 +402,15 @@ def download_all_results():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 '''
+
+# WebSocket endpoint
+@app.websocket("/ws/status")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Keep the connection alive and wait for any messages
+            data = await websocket.receive_text()
+            # You can handle incoming messages here if needed
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
