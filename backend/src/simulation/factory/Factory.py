@@ -142,7 +142,7 @@ class Factory:
         for machine in self.machines:
             thread = threading.Thread(
                 target=self.run_machine,
-                args=(machine),
+                args=(machine,),
                 daemon=False  # Make threads non-daemon
             )
             thread.start()
