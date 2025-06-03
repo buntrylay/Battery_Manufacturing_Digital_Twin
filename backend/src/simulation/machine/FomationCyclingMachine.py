@@ -1,19 +1,12 @@
 import os
-
 import json
-
 import time
-
 import threading
-
 from datetime import datetime, timedelta
-
 import numpy as np # For np.exp if not used directly in calculator
- 
 from simulation.machine.BaseMachine import BaseMachine
-
 from simulation.sensor.FormationCyclingCalculation import FormationCyclingCalculation # Ensure this path is correct
- 
+
 class FormationCyclingMachine(BaseMachine):
 
     """
@@ -97,9 +90,10 @@ class FormationCyclingMachine(BaseMachine):
                 "SEI_Efficiency": round(self.sei_efficiency, 4),
                 "Cell_Capacity_Ah": round(self.cell_capacity_Ah, 4),
             }
- 
-            
-            base.update(properties)
+            if is_final:
+                base["Final Properties"] = properties
+            else:
+                base.update(properties)
             return base
  
     def _write_json(self, data, filename_suffix):
@@ -168,7 +162,7 @@ class FormationCyclingMachine(BaseMachine):
             # For this simplified version, we return the state after the first charge attempt
             return {
                 "machine_id": self.id,
-                "electrode_type": self.electrode_type,
+                # "electrode_type": self.electrode_type,
                 "final_simulated_duration_s": self.total_simulation_time_s,
                 "final_voltage_V": self.current_voltage_V,
                 "final_sei_efficiency": self.sei_efficiency,

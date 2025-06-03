@@ -106,25 +106,21 @@ class Factory:
                 print(f"[{machine.id}] Receiving inspection data from {dependency_id}")
                 machine.update_from_inspection(inspection_data)
                 
-            # Rewinding -> Electrode Filling
-            
             # Rewinding -> Electrolyte Filling
             if isinstance(dependency_machine, RewindingMachine) and isinstance(machine, ElectrolyteFillingMachine):
                 rewind_data = dependency_machine.get_final_rewind()
                 print(f"[{machine.id}] Receiving inspection data from {dependency_id}")
                 machine.update_from_rewind(rewind_data)
 
-            #Electrode Filling -> Formaiton Cycling
+            #Electrode Filling -> Formation Cycling
             if isinstance(dependency_machine, ElectrolyteFillingMachine) and isinstance(machine, FormationCyclingMachine):
                 filling_data = dependency_machine.get_final_filling()
                 print(f"[{machine.id}] Receiving filling data from {dependency_id}")
                 machine.update_from_filling(filling_data)
                 
-            # Electrolyte Filling -> Formation Cycling
-
             # # Formation Cycling -> Aging
-            if isinstance(dependency_machine, RewindingMachine) and isinstance(machine, AgingMachine):
-                formation_data = dependency_machine.get_final_rewind()
+            if isinstance(dependency_machine, FormationCyclingMachine) and isinstance(machine, AgingMachine):
+                formation_data = dependency_machine.get_final_formation_properties()
                 print(f"[{machine.id}] Receiving formation data from {dependency_id}")
                 machine.update_from_formation_cycling(formation_data)
 
