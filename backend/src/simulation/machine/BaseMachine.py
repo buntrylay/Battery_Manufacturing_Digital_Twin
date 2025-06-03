@@ -47,6 +47,15 @@ class BaseMachine(ABC):
         else:
             print("IoT Hub client not initialized.")
 
+    def shutdown(self):
+        """Shutdown the machine."""
+        if self.iot_client:
+            try:
+                self.iot_client.shutdown()
+                print(f"IoT client shut down for machine {self.id}")
+            except Exception as e:
+                print(f"Error shutting down IoT client for machine {self.id}: {e}")
+
     def turn_on(self):
         """Turn on the machine."""
         self.is_on = True

@@ -142,7 +142,7 @@ class Factory:
         for machine in self.machines:
             thread = threading.Thread(
                 target=self.run_machine,
-                args=(machine,),
+                args=(machine),
                 daemon=False  # Make threads non-daemon
             )
             thread.start()
@@ -157,7 +157,11 @@ class Factory:
         
         # Wait for all threads to complete
         for thread in self.threads:
-            thread.join(timeout=5.0)  # Wait up to 5 seconds for each thread
+            thread.join()  # Wait up to 5 seconds for each thread
+
+        # Shutdown all machines
+        for machine in self.machines:
+            machine.shutdown()
         
         # Clear all events
         for event in self.machine_events.values():
