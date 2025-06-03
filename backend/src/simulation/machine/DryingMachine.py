@@ -118,10 +118,6 @@ class DryingMachine(BaseMachine):
             delta_coat = self.dry_thickness + (self.M_solvent / self.calculator.solvent_density)
             defect_risk = abs(evap_rate / self.calculator.area()) > self.calculator.max_safe_evap_rate
 
-            # Now call with required arguments
-            final_result = self._format_result(evap_rate, delta_coat, defect_risk, is_final=True)
-            filename = f"final_results_{self.id}.json"
-            self._write_json(final_result, filename)
             print(f"Drying process completed on {self.id}\n")
             thread_broadcast(f"Drying process completed on {self.id}") # Broadcast completion message
 

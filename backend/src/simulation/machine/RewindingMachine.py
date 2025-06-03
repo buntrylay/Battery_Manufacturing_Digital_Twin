@@ -42,10 +42,10 @@ class RewindingMachine(BaseMachine):
         self.n_taper = machine_parameters["tapering_steps"]  # Number of tapering steps
         self.v_rewind = machine_parameters["rewinding_speed"]  # m/s
         self.H_env = machine_parameters["environment_humidity"]  # Relative humidity (0-1)
-        
+        self.L_wound = 0
         # Variables from previous processes
         self.delta_cal = None
-
+        self.phi_final = None
 
     def update_from_inspection(self, inspection_data):
         """
@@ -56,6 +56,10 @@ class RewindingMachine(BaseMachine):
         """
         with self.lock:
             self.delta_cal = inspection_data.get("delta_el")
+            self.phi_final = inspection_data.get("phi_final")
+            self.final_width = inspection_data.get("final_width")
+            self.final_thickness_m = inspection_data.get("final_thickness_m")
+            self.epsilon_width = inspection_data.get("epslon_width")
             print(f"{self.id}: Received from electrode inspection - delta_cal={self.delta_cal}")
             
 
@@ -108,8 +112,8 @@ class RewindingMachine(BaseMachine):
         for t in range(0, end_time + 1, 5):
             self.total_time = t
             # Update parameters based on the current time
-            self.L_wound = self.calculator.L_wound(self.delta_cal, self.n_taper)
-            self.D_roll = self.calculator.D_roll(self.delta_cal, self.n_taper)
+            self.L_wound += self.v_rewind * t
+            self.D_roll = self.calculator.D_roll(self.L_wound, self.delta_cal)
             self.tau_rewind = self.calculator.tau_rewind(self.D_roll, self.tau_initial, self.n_taper)
             self.H_roll = self.calculator.H_roll(self.delta_cal, self.tau_rewind)
 
@@ -136,5 +140,17 @@ class RewindingMachine(BaseMachine):
             self._write_json(final_output, filename)
             print(f"Rewinding process completed on {self.id}\n")
             thread_broadcast(f"Rewinding process {self.id} completed") # Broadcast completion message
+            
+            print(f"Rewinding process completed on {self.id}\n")
+    
+    def get_final_rewind(self):
+        return {
+            "phi_final" : self.phi_final,
+            "wound_length": self.L_wound,
+            "epsilon_width": self.epsilon_width,
+            "final_width": self.final_width,
+            "final_thickness_m": self.final_thickness_m
+            
+        }
             
     

@@ -25,6 +25,7 @@ class SlittingMachine(BaseMachine):
         self.phi_final = None
         self.web_speed = None
         self.stiffness = None
+        self.final_thickness_m = None
         self.S = machine_parameters["blade_sharpness"]
         self.v_slit = machine_parameters["slitting_speed"]
         self.w_target = machine_parameters["target_width"]
@@ -113,12 +114,13 @@ class SlittingMachine(BaseMachine):
             print(f"Slitting process completed on {self.id}\n")
             thread_broadcast(f"Slitting process completed on {self.id}\n")  # Broadcast completion message
 
-    def update_from_calendaring(self, delta_cal_cal, porosity_cal, web_speed_cal, stiffness_cal):
+    def update_from_calendaring(self, cal_data):
         with self.lock:
-            self.delta_cal = float(delta_cal_cal)
-            self.phi_final = float(porosity_cal)
-            self.web_speed = float(web_speed_cal)
-            self.stiffness = float(stiffness_cal)
+            self.delta_cal = cal_data.get("delta_cal_cal")
+            self.phi_final = cal_data.get("porosity_cal")
+            self.web_speed = cal_data.get("web_speed_cal")
+            self.stiffness = cal_data.get("stiffness_cal")
+            self.final_thickness_m =cal_data.get("final_thickness_m")
             self.w_input = self.delta_cal * (1 - self.phi_final)
         print(f"[{self.id}] Updated from calendaring: thickness={self.delta_cal}, porosity={self.phi_final}, web_speed={self.web_speed}")
 
@@ -127,5 +129,8 @@ class SlittingMachine(BaseMachine):
         return {
             "epsilon_width": self.epsilon_width,
             "burr_factor": self.burr_factor,
-            "delta_sl": self.delta_cal
+            "delta_sl": self.delta_cal,
+            "phi_final" : self.phi_final,
+            "final_width": self.w_final,
+            "final_thickness_m" : self.final_thickness_m
         }
