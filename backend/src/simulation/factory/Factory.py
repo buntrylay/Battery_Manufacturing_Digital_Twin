@@ -11,6 +11,7 @@ from simulation.machine.RewindingMachine import RewindingMachine
 
 import time
 from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
+from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
 
 """
 Factory class that simulates a factory with multiple machines.
@@ -92,6 +93,7 @@ class Factory:
                 cal_data = dependency_machine.get_final_calendaring()
                 print(f"[{machine.id}] Receiving calendaring data from {dependency_id}")
                 machine.update_from_calendaring(cal_data)
+            
             # Slitting -> Electrode Inspection
             if isinstance(dependency_machine, SlittingMachine) and isinstance(machine, ElectrodeInspectionMachine):
                 slitting_data = dependency_machine.get_final_slitting()
@@ -104,12 +106,18 @@ class Factory:
                 print(f"[{machine.id}] Receiving inspection data from {dependency_id}")
                 machine.update_from_inspection(inspection_data)
                 
+            # Rewinding -> Electrode Filling
             if isinstance(dependency_machine, RewindingMachine) and isinstance(machine, ElectrolyteFillingMachine):
                 rewind_data = dependency_machine.get_final_rewind()
                 print(f"[{machine.id}] Receiving inspection data from {dependency_id}")
                 machine.update_from_rewind(rewind_data)
 
-            
+            #Electrode Filling -> Formaiton Cycling
+            if isinstance(dependency_machine, ElectrolyteFillingMachine) and isinstance(machine, FormationCyclingMachine):
+                filling_data = dependency_machine.get_final_filling()
+                print(f"[{machine.id}] Receiving filling data from {dependency_id}")
+                machine.update_from_filling(filling_data)
+                
     def run_machine(self, machine):
         """
          Run a single machine within its own thread, handling dependencies.
