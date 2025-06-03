@@ -14,6 +14,9 @@ from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
 from simulation.machine.RewindingMachine import RewindingMachine
 from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
+from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
+
+
 
 from simulation.machine.AgingMachine import AgingMachine
 # Define the mixing ratios for anode slurry components
@@ -79,6 +82,12 @@ user_input_elec_filling = {
     "Vacuum_filling" : 100,
     "Soaking_time" : 10
 }
+
+user_input_formation = {
+    "Charge_current_A" : 0.05,
+    "Charge_voltage_limit_V" : 0.05,
+    "Voltage": 4
+}
 # Formation Cycling's input parameters
 
 # Aging's input parameters
@@ -126,6 +135,11 @@ cathode_rewinding_machine = RewindingMachine("MC_Rewind_Cathode", user_input_rew
 anode_electrolyte_filling_machine = ElectrolyteFillingMachine("MC_ElecFill_Anode", user_input_elec_filling)
 cathode_electrolyte_filling_machine = ElectrolyteFillingMachine("MC_ElecFill_Cathode", user_input_elec_filling)
 
+# Create Formation Cycling machines
+anode_formation_machine = FormationCyclingMachine("MC_Formation_Anode", user_input_formation)
+cathode_formation_machine = FormationCyclingMachine("MC_Formation_Cathode", user_input_formation)
+
+
 # Create cycling formation machines:
 
 # Create aging machines:
@@ -151,6 +165,8 @@ factory.add_machine(anode_rewinding_machine, dependencies=["MC_Inspect_Anode"])
 factory.add_machine(cathode_rewinding_machine, dependencies=["MC_Inspect_Cathode"]) 
 factory.add_machine(anode_electrolyte_filling_machine, dependencies=["MC_Rewind_Anode"])
 factory.add_machine(cathode_electrolyte_filling_machine, dependencies=["MC_Rewind_Cathode"])
+factory.add_machine(anode_formation_machine, dependencies=["MC_ElecFill_Anode"])
+factory.add_machine(cathode_formation_machine, dependencies=["MC_ElecFill_Cathode"])
 
 factory.add_machine(anode_aging_machine, dependencies=["MC_ElecFill_Anode"])
 factory.add_machine(cathode_aging_machine, dependencies=["MC_ElecFill_Cathode"])
