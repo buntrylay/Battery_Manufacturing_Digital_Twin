@@ -106,6 +106,10 @@ class CalendaringMachine(BaseMachine):
         """
         if self.is_on:
             self._simulate()
+            thread_broadcast(f"Calendaring process {self.id} in progress...") # Broadcast continuation message
+            final_result = self._format_result(is_final=True)
+            filename = f"final_results_{self.id}.json"
+            self._write_json(final_result, filename)
             print(f"Calendaring process completed on {self.id}\n")
     
     def update_from_drying(self, dry_thickness_drying):

@@ -187,6 +187,7 @@ def start_both_simulation(payload: DualInput):
             inspection_machine = ElectrodeInspectionMachine(inspection_id, user_input_electrode_inspection)
             factory.add_machine(inspection_machine, dependencies=[slitting_id])
             machines[f"{etype}_Inspection"] = inspection_machine
+        thread_broadcast("✅ Electrode Inspection Machines Added")  # ✨ WebSocket status update
         
            
         user_input_rewinding = {

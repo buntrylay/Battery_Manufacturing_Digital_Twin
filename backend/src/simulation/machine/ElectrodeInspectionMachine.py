@@ -129,6 +129,11 @@ class ElectrodeInspectionMachine(BaseMachine):
             if None in [self.epsilon_width, self.B]:
                 raise ValueError(f"{self.id}: Missing slitting inputs.")
             self._simulate()
+            thread_broadcast(f"Inspection process {self.id} in progress...") # Broadcast continuation message
+
+            final_output = self._format_result(is_final=True)
+            filename = f"final_results_{self.id}.json"
+            self._write_json(final_output, filename)
             
             print(f"Inspection process completed on {self.id}\n")
             

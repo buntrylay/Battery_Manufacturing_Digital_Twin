@@ -103,6 +103,10 @@ class SlittingMachine(BaseMachine):
     def run(self):
         if self.is_on:
             self._simulate()
+            thread_broadcast(f"Slitting process {self.id} in progress...\n") # Broadcast continuation message 
+            final_result = self._format_result(is_final=True)
+            filename = f"final_results_{self.id}.json"
+            self._write_json(final_result, filename)
             print(f"Slitting process completed on {self.id}\n")
 
     def update_from_calendaring(self, cal_data):
