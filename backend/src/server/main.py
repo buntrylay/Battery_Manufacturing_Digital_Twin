@@ -11,6 +11,9 @@ from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
 from simulation.machine.RewindingMachine import RewindingMachine
+from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
+from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
+from simulation.machine.AgingMachine import AgingMachine
 from pathlib import Path
 from zipfile import ZipFile
 import json
@@ -153,7 +156,45 @@ def start_both_simulation(payload: DualInput):
             rewinding_machine = RewindingMachine(rewinding_id, user_input_rewinding)
             factory.add_machine(rewinding_machine, dependencies=[inspection_id])
             machines[f"{etype}_Rewinding"] = rewinding_machine
+        
+        user_input_elec_filling = {
+            "Vacuum_level" : 100,
+            "Vacuum_filling" : 100,
+            "Soaking_time" : 10
+        }
+        for etype in ["Anode", "Cathode"]:
+            filling_id = f"MC_filling_{etype}"
+            rewinding_id = f"MC_Rewind_{etype}"
+            filling_machine = ElectrolyteFillingMachine(filling_id, user_input_elec_filling)
+            factory.add_machine(filling_machine, dependencies=[rewinding_id])
+            machines[f"{etype}_Electrolyte_Filling"] = filling_machine
+        
+        # Add Formation Cycling machines
+        user_input_formation_cycling = {
+            "Charge_current_A" : 0.05,
+            "Charge_voltage_limit_V" : 0.05,
+            "Voltage": 4
+        }
+        for etype in ["Anode", "Cathode"]:
+            formation_id = f"MC_formation_{etype}"
+            filling_id = f"MC_filling_{etype}"
+            formation_machine = FormationCyclingMachine(formation_id, user_input_formation_cycling)
+            factory.add_machine(formation_machine, dependencies=[filling_id])
+            machines[f"{etype}_Formation_Cycling"] = formation_machine
 
+        # Add Aging machines
+        user_input_aging = {
+            "k_leak": 1e-8,
+            "temperature": 25,
+            "aging_time_days": 10
+        }
+        for etype in ["Anode", "Cathode"]:
+            aging_id = f"MC_aging_{etype}"
+            formation_id = f"MC_formation_{etype}"
+            aging_machine = AgingMachine(aging_id, user_input_aging)
+            factory.add_machine(aging_machine, dependencies=[formation_id])
+            machines[f"{etype}_Aging"] = aging_machine
+        
         factory.start_simulation()
 
         for thread in factory.threads:
