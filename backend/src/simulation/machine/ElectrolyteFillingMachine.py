@@ -115,8 +115,13 @@ class ElectrolyteFillingMachine(BaseMachine):
             time.sleep(0.1)
     def run(self):
         if self.is_on:
+            from server.main import thread_broadcast
+            thread_broadcast(f"Electrode filling process started on {self.id}") # Broadcast start message
             try:
                 self._simulate()
+                thread_broadcast(f"Electrolyte Filling process {self.id} in progress...")  # Broadcast continuation message
+
                 print(f"Electrolyte Filling process completed on {self.id}")
+                thread_broadcast(f"Electrolyte Filling process completed on {self.id}")  # Broadcast completion message
             except Exception as e:
                 print(f"Simulation error on {self.id}: {e}")
