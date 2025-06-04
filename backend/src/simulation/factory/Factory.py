@@ -8,6 +8,7 @@ from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
 from simulation.machine.RewindingMachine import RewindingMachine
 from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
+from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
 from simulation.machine.AgingMachine import AgingMachine
 
 import time
@@ -92,6 +93,7 @@ class Factory:
                 cal_data = dependency_machine.get_final_calendaring()
                 print(f"[{machine.id}] Receiving calendaring data from {dependency_id}")
                 machine.update_from_calendaring(cal_data)
+            
             # Slitting -> Electrode Inspection
             if isinstance(dependency_machine, SlittingMachine) and isinstance(machine, ElectrodeInspectionMachine):
                 slitting_data = dependency_machine.get_final_slitting()
@@ -103,18 +105,22 @@ class Factory:
                 inspection_data = dependency_machine.get_final_inspection()
                 print(f"[{machine.id}] Receiving inspection data from {dependency_id}")
                 machine.update_from_inspection(inspection_data)
-            
+                
             # Rewinding -> Electrolyte Filling
             if isinstance(dependency_machine, RewindingMachine) and isinstance(machine, ElectrolyteFillingMachine):
                 rewind_data = dependency_machine.get_final_rewind()
                 print(f"[{machine.id}] Receiving inspection data from {dependency_id}")
                 machine.update_from_rewind(rewind_data)
 
-            # Electrolyte Filling -> Formation Cycling
-
+            #Electrode Filling -> Formation Cycling
+            if isinstance(dependency_machine, ElectrolyteFillingMachine) and isinstance(machine, FormationCyclingMachine):
+                filling_data = dependency_machine.get_final_filling()
+                print(f"[{machine.id}] Receiving filling data from {dependency_id}")
+                machine.update_from_filling(filling_data)
+                
             # # Formation Cycling -> Aging
-            if isinstance(dependency_machine, RewindingMachine) and isinstance(machine, AgingMachine):
-                formation_data = dependency_machine.get_final_rewind()
+            if isinstance(dependency_machine, FormationCyclingMachine) and isinstance(machine, AgingMachine):
+                formation_data = dependency_machine.get_final_formation_properties()
                 print(f"[{machine.id}] Receiving formation data from {dependency_id}")
                 machine.update_from_formation_cycling(formation_data)
 

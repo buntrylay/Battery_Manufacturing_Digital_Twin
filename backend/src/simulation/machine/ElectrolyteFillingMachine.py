@@ -120,3 +120,10 @@ class ElectrolyteFillingMachine(BaseMachine):
                 print(f"Electrolyte Filling process completed on {self.id}")
             except Exception as e:
                 print(f"Simulation error on {self.id}: {e}")
+                
+    def get_final_filling(self):
+        with self.lock:
+            return {
+                "volume_electrolyte" : self.V_max,
+                "wetting_efficiency": self.eta_wetting
+            }

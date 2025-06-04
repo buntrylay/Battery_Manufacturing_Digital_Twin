@@ -20,23 +20,21 @@ class AgingMachine(BaseMachine):
         os.makedirs(self.output_dir, exist_ok=True)
         print(f"Output directory created at: {self.output_dir}")
 
-        self.SOC_0 = machine_parameters["SOC_0"]
-        self.Q_cell = machine_parameters["Q_cell"]
-        self.V_OCV = machine_parameters["V_OCV(0)"]
-        self.k_leak = machine_parameters["k_leak"]
-        self.T = machine_parameters["temperature"]
-        self.t_aging = machine_parameters["aging_time_days"]
+        self.SOC_0 = None
+        self.Q_cell = None
+        self.V_OCV = None
+        self.k_leak = machine_parameters.get("k_leak")
+        self.T = machine_parameters.get("temperature")
+        self.t_aging = machine_parameters.get("aging_time_days")
         self.delta_t = 3600  # 1 hour step
 
         self.calculator = AgingPropertyCalculator()
 
-    def update_from_formation_cycling(self, formation_data):
+    def update_from_formation_cycling(self, formation_data: dict):
         with self.lock:
-            self.SOC = formation_data.get("SOC_0", self.SOC_0)
-            self.Q_cell = formation_data.get("Q_cell", self.Q_cell)
-            self.V_OCV = formation_data.get("V_OCV", self.V_OCV)
-            self.k_leak = formation_data.get("k_leak", self.k_leak)
-            self.T = formation_data.get("temperature", self.T)
+            self.SOC_0 = formation_data.get("final_sei_efficiency", self.SOC_0)
+            self.Q_cell = formation_data.get("final_cell_capacity_Ah", self.Q_cell)
+            self.V_OCV = formation_data.get("final_voltage_V", self.V_OCV)
 
     def _format_result(self, step=None, is_final=False):
         with self.lock:
@@ -81,7 +79,7 @@ class AgingMachine(BaseMachine):
         last_saved_result = None
 
         self.SOC = self.SOC_0
-        self.V_OCV = self.calculator.ocv_drift(self.SOC)
+        self.V_OCV = self.calculator.ocv_drift(self.SOC_0)
         self.I_leak = self.calculator.leakage_current(self.k_leak)
 
         for t in range(0, int(t_aging * 24 * 3600) + 1, delta_t):
