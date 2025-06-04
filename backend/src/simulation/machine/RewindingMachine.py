@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.RewindingPropertyCalculator import RewindingPropertyCalculator
 
-
 class RewindingMachine(BaseMachine):
     """
     A rewinding machine that simulates the electrode rewinding process.
@@ -131,8 +130,6 @@ class RewindingMachine(BaseMachine):
                 
     def run(self):
         if self.is_on:
-            from server.main import thread_broadcast
-            thread_broadcast(f"Rewinding process started on {self.id}") # Broadcast start message
             self._simulate()
             thread_broadcast(f"Rewinding process {self.id} in progress...") # Broadcast continuation message
             final_output = self._format_result(is_final=True)

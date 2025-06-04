@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.ElectrodeInspectionPropertyCalculator import ElectrodeInspectionPropertyCalculator
 
-
 class ElectrodeInspectionMachine(BaseMachine):
     """
     Simulates electrode inspection after slitting.
@@ -127,8 +126,6 @@ class ElectrodeInspectionMachine(BaseMachine):
 
     def run(self):
         if self.is_on:
-            from server.main import thread_broadcast
-            thread_broadcast(f"Inspection process started on {self.id}") # Broadcast start message
             if None in [self.epsilon_width, self.B]:
                 raise ValueError(f"{self.id}: Missing slitting inputs.")
             self._simulate()
@@ -139,7 +136,6 @@ class ElectrodeInspectionMachine(BaseMachine):
             self._write_json(final_output, filename)
             
             print(f"Inspection process completed on {self.id}\n")
-            thread_broadcast(f"Inspection process {self.id} completed") # Broadcast completion message
             
     def update_from_slitting(self, slitting_data):
         with self.lock:

@@ -114,7 +114,7 @@ _(Update this section if the directory structure changes significantly.)_
 
       python -m venv venv
 
-      source venv/bin/activate  # On Windows: venv\Scripts\activate
+      source .venv/bin/activate  # On Windows: venv\Scripts\activate
 
       ```
 
