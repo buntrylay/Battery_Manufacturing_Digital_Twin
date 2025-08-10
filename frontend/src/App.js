@@ -4,9 +4,19 @@ import "./App.css";
 
 function App() {
   const [anode, setAnode] = useState({ PVDF: "", CA: "", AM: "", Solvent: "" });
-  const [cathode, setCathode] = useState({ PVDF: "", CA: "", AM: "", Solvent: "" });
+  const [cathode, setCathode] = useState({
+    PVDF: "",
+    CA: "",
+    AM: "",
+    Solvent: "",
+  });
   const [status, setStatus] = useState("");
   const [stageLog, setStageLog] = useState([]); // added stageLog for live updates
+  const [completionStatus, setCompletionStatus] = useState(null);
+  const allCompleted =
+    completionStatus &&
+    Object.values(completionStatus).every((s) => s.completed);
+  const [isPlotting, setIsPlotting] = useState(false);
 
   // WebSocket connection for real-time updates
   useEffect(() => {
@@ -14,7 +24,7 @@ function App() {
 
     socket.onmessage = (event) => {
       const newMessage = event.data;
-      setStageLog(prev => [...prev, newMessage]);
+      setStageLog((prev) => [...prev, newMessage]);
     };
 
     socket.onclose = () => {
@@ -27,12 +37,13 @@ function App() {
   }, []);
 
   const handleChange = (type, field, value) => {
-    if (type === "Anode") setAnode(prev => ({ ...prev, [field]: value }));
-    else setCathode(prev => ({ ...prev, [field]: value }));
+    if (type === "Anode") setAnode((prev) => ({ ...prev, [field]: value }));
+    else setCathode((prev) => ({ ...prev, [field]: value }));
   };
 
   const validateRatios = () => {
-    const sum = obj => Object.values(obj).reduce((acc, val) => acc + parseFloat(val || 0), 0);
+    const sum = (obj) =>
+      Object.values(obj).reduce((acc, val) => acc + parseFloat(val || 0), 0);
     const anodeSum = sum(anode);
     const cathodeSum = sum(cathode);
 
@@ -43,17 +54,21 @@ function App() {
     return true;
   };
 
-
   const startBothSimulations = async () => {
     if (!validateRatios()) return;
 
     const data = {
       anode: { ...anode, electrode_type: "Anode" },
-      cathode: { ...cathode, electrode_type: "Cathode" }
+      cathode: { ...cathode, electrode_type: "Cathode" },
     };
 
     try {
-      const response = await axios.post("http://localhost:8000/start-both", data);
+      const response = await axios.post(
+        "http://localhost:8000/start-both",
+        data
+      );
+      // response.data.completion_status exists on success
+      setCompletionStatus(response.data.completion_status);
       setStatus(response.data.message);
     } catch (err) {
       setStatus("Error: " + (err.response?.data?.detail || err.message));
@@ -64,7 +79,8 @@ function App() {
     setAnode({ PVDF: "", CA: "", AM: "", Solvent: "" });
     setCathode({ PVDF: "", CA: "", AM: "", Solvent: "" });
     setStatus("Inputs cleared.");
-    setStageLog([]); // Clear the stage log
+    setStageLog([]);
+    setCompletionStatus(null);
   };
 
   const downloadZip = (type) => {
@@ -80,16 +96,16 @@ function App() {
       <h2>Battery Slurry Mixing Simulation</h2>
 
       <div className="simulation-section">
-        {["Anode", "Cathode"].map(type => (
+        {["Anode", "Cathode"].map((type) => (
           <div key={type} className="input-group">
             <h3>{type} Input</h3>
-            {["PVDF", "CA", "AM", "Solvent"].map(field => (
+            {["PVDF", "CA", "AM", "Solvent"].map((field) => (
               <input
                 key={field}
                 type="number"
                 placeholder={`${field} ratio`}
                 value={type === "Anode" ? anode[field] : cathode[field]}
-                onChange={e => handleChange(type, field, e.target.value)}
+                onChange={(e) => handleChange(type, field, e.target.value)}
                 step="0.01"
                 min="0"
                 max="1"
@@ -100,9 +116,13 @@ function App() {
       </div>
 
       <div className="actions">
-        <button onClick={() => downloadZip("Anode")}>Download Anode results</button>
+        <button onClick={() => downloadZip("Anode")}>
+          Download Anode results
+        </button>
         <button onClick={resetSimulation}>Reset Inputs</button>
-        <button onClick={() => downloadZip("Cathode")}>Download Cathode results</button>
+        <button onClick={() => downloadZip("Cathode")}>
+          Download Cathode results
+        </button>
         <button onClick={startBothSimulations}>Start Both Simulations</button>
       </div>
 
@@ -117,6 +137,38 @@ function App() {
           ))}
         </ul>
       </div>
+      <div>
+        <button
+          onClick={async () => {
+            try {
+              setIsPlotting(true);
+              const res = await fetch("/plots/machine/{machine_id}");
+              if (!res.ok) throw new Error(await res.text());
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "summary_plots.zip";
+              a.click();
+              URL.revokeObjectURL(url);
+              setStatus("Summary plots generated.");
+            } catch (e) {
+              setStatus(`Plotting failed: ${e.message}`);
+            } finally {
+              setIsPlotting(false);
+            }
+          }}
+        >
+          {isPlotting ? "Generating Plots..." : "Generate Summary Plots"}
+        </button>
+      </div>
+      <button
+        onClick={() =>
+          window.open("http://localhost:8000/plots/process/mixing", "_blank")
+        }
+      >
+        Generate Mixing Plot
+      </button>
     </div>
   );
 }

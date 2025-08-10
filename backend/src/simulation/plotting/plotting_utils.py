@@ -4,7 +4,9 @@ Plotting utilities for battery manufacturing simulation data.
 This module provides functions for creating various types of plots and visualizations
 from the simulation data, including time-series plots, process comparisons, and summary charts.
 """
-
+import matplotlib
+# Use a non-interactive backend suitable for servers/threads (prevents macOS GUI errors)
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.figure import Figure

@@ -26,6 +26,9 @@ from datetime import datetime
 from typing import List
 import asyncio
 import os
+import matplotlib
+# Force non-interactive backend for server/threaded use (avoid macOS GUI backend)
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # Import plotting utilities
