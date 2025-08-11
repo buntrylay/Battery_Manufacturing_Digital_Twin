@@ -1,114 +1,79 @@
-import React, { useState, useEffect } from "react"; // added useEffect for enhancements
-import axios from "axios";
+import React, { useState, useContext } from "react";
+import {
+  WebSocketProvider,
+  WebSocketContext,
+} from "./contexts/WebSocketContext";
+import LogsPage from "./pages/LogsPage";
 import "./App.css";
 
-function App() {
+import SlurryInputs from "./components/SlurryInputs";
+import { startSimulations, downloadFile, downloadAll } from "./services/api";
+import "./App.css";
+function SimulationPage() {
   const [anode, setAnode] = useState({ PVDF: "", CA: "", AM: "", Solvent: "" });
-  const [cathode, setCathode] = useState({ PVDF: "", CA: "", AM: "", Solvent: "" });
+  const [cathode, setCathode] = useState({
+    PVDF: "",
+    CA: "",
+    AM: "",
+    Solvent: "",
+  });
   const [status, setStatus] = useState("");
-  const [stageLog, setStageLog] = useState([]); // added stageLog for live updates
-
-  // WebSocket connection for real-time updates
-  useEffect(() => {
-    const socket = new WebSocket("ws://localhost:8000/ws/status");
-
-    socket.onmessage = (event) => {
-      const newMessage = event.data;
-      setStageLog(prev => [...prev, newMessage]);
-    };
-
-    socket.onclose = () => {
-      console.log("WebSocket disconnected");
-    };
-
-    return () => {
-      socket.close();
-    };
-  }, []);
+  const { stageLog } = useContext(WebSocketContext);
 
   const handleChange = (type, field, value) => {
-    if (type === "Anode") setAnode(prev => ({ ...prev, [field]: value }));
-    else setCathode(prev => ({ ...prev, [field]: value }));
+    if (type === "Anode") setAnode((prev) => ({ ...prev, [field]: value }));
+    else setCathode((prev) => ({ ...prev, [field]: value }));
   };
 
   const validateRatios = () => {
-    const sum = obj => Object.values(obj).reduce((acc, val) => acc + parseFloat(val || 0), 0);
-    const anodeSum = sum(anode);
-    const cathodeSum = sum(cathode);
-
-    if (Math.abs(anodeSum - 1) > 0.0001 || Math.abs(cathodeSum - 1) > 0.0001) {
-      setStatus("Error: Both Anode and Cathode inputs must total exactly 1.00");
-      return false;
-    }
-    return true;
+    const sum = (obj) =>
+      Object.values(obj).reduce((acc, val) => acc + parseFloat(val || 0), 0);
+    return (
+      Math.abs(sum(anode) - 1) <= 0.0001 && Math.abs(sum(cathode) - 1) <= 0.0001
+    );
   };
 
-
   const startBothSimulations = async () => {
-    if (!validateRatios()) return;
-
-    const data = {
-      anode: { ...anode, electrode_type: "Anode" },
-      cathode: { ...cathode, electrode_type: "Cathode" }
-    };
-
+    if (!validateRatios()) {
+      setStatus("Error: Both Anode and Cathode inputs must total exactly 1.00");
+      return;
+    }
     try {
-      const response = await axios.post("http://localhost:8000/start-both", data);
+      const response = await startSimulations({
+        anode: { ...anode, electrode_type: "Anode" },
+        cathode: { ...cathode, electrode_type: "Cathode" },
+      });
       setStatus(response.data.message);
     } catch (err) {
       setStatus("Error: " + (err.response?.data?.detail || err.message));
     }
   };
 
-  const resetSimulation = async () => {
+  const resetSimulation = () => {
     setAnode({ PVDF: "", CA: "", AM: "", Solvent: "" });
     setCathode({ PVDF: "", CA: "", AM: "", Solvent: "" });
     setStatus("Inputs cleared.");
-    setStageLog([]); // Clear the stage log
-  };
-
-  const downloadZip = (type) => {
-    window.open(`http://localhost:8000/files/${type}`, "_blank");
-  };
-
-  const downloadAllResults = () => {
-    window.open("http://localhost:8000/files/all", "_blank");
   };
 
   return (
     <div className="container">
       <h2>Battery Slurry Mixing Simulation</h2>
-
       <div className="simulation-section">
-        {["Anode", "Cathode"].map(type => (
-          <div key={type} className="input-group">
-            <h3>{type} Input</h3>
-            {["PVDF", "CA", "AM", "Solvent"].map(field => (
-              <input
-                key={field}
-                type="number"
-                placeholder={`${field} ratio`}
-                value={type === "Anode" ? anode[field] : cathode[field]}
-                onChange={e => handleChange(type, field, e.target.value)}
-                step="0.01"
-                min="0"
-                max="1"
-              />
-            ))}
-          </div>
-        ))}
+        <SlurryInputs type="Anode" data={anode} onChange={handleChange} />
+        <SlurryInputs type="Cathode" data={cathode} onChange={handleChange} />
       </div>
-
       <div className="actions">
-        <button onClick={() => downloadZip("Anode")}>Download Anode results</button>
+        <button onClick={() => downloadFile("Anode")}>
+          Download Anode results
+        </button>
         <button onClick={resetSimulation}>Reset Inputs</button>
-        <button onClick={() => downloadZip("Cathode")}>Download Cathode results</button>
+        <button onClick={() => downloadFile("Cathode")}>
+          Download Cathode results
+        </button>
         <button onClick={startBothSimulations}>Start Both Simulations</button>
+        <button>View Logs</button>
       </div>
-
       <p className="status-message">{status}</p>
-
-      {/* ✨ Live stage updates section */}
       <div className="stage-log">
         <h4>Live Stage Updates:</h4>
         <ul>
@@ -121,4 +86,11 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <WebSocketProvider>
+      <SimulationPage />
+      <LogsPage />
+    </WebSocketProvider>
+  );
+}
