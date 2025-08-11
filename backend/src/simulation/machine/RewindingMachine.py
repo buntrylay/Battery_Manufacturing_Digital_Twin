@@ -131,6 +131,7 @@ class RewindingMachine(BaseMachine):
     def run(self):
         if self.is_on:
             self._simulate()
+            from server.main import thread_broadcast
             thread_broadcast(f"Rewinding process {self.id} in progress...") # Broadcast continuation message
             final_output = self._format_result(is_final=True)
             filename = f"final_results_{self.id}.json"

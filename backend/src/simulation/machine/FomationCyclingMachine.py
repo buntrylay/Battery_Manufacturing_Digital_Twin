@@ -150,10 +150,14 @@ class FormationCyclingMachine(BaseMachine):
     def run(self):
 
         if self.is_on:
+            from server.main import thread_broadcast
+            thread_broadcast(f"Formation Cycling process started on {self.id}")
             # Ensure inputs from previous stage are available if needed
             if self.initial_wetting_efficiency is None: # Example check
                  print(f"Warning: [{self.id}] Inputs from electrolyte filling not updated. Using defaults/initials.")
+            thread_broadcast(f"Formation Cycling process {self.id} in progress...")
             self._simulate()
+            print(f"[{self.id}] Formation Cycling process completed.")
         else:
             print(f"Machine {self.id} is not on.")
  

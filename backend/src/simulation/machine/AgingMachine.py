@@ -113,8 +113,12 @@ class AgingMachine(BaseMachine):
 
     def run(self):
         if self.is_on:
+            from server.main import thread_broadcast
+            thread_broadcast(f"Aging process started on {self.id}")
             try:
                 self._simulate(self.t_aging, self.delta_t)
                 print(f"Aging process completed on {self.id}")
+                thread_broadcast(f"Aging process completed on {self.id}")
+                thread_broadcast(f"All processes are completed and now ready for packaging.")
             except Exception as e:
                 print(f"Error during aging process on {self.id}: {e}")

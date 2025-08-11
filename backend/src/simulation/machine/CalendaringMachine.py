@@ -106,6 +106,7 @@ class CalendaringMachine(BaseMachine):
         """
         if self.is_on:
             self._simulate()
+            from server.main import thread_broadcast
             thread_broadcast(f"Calendaring process {self.id} in progress...") # Broadcast continuation message
             final_result = self._format_result(is_final=True)
             filename = f"final_results_{self.id}.json"

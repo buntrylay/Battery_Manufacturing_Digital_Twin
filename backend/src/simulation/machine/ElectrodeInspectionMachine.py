@@ -126,6 +126,8 @@ class ElectrodeInspectionMachine(BaseMachine):
 
     def run(self):
         if self.is_on:
+            from server.main import thread_broadcast
+            thread_broadcast(f"Inspection process {self.id} started...")  # Broadcast start message
             if None in [self.epsilon_width, self.B]:
                 raise ValueError(f"{self.id}: Missing slitting inputs.")
             self._simulate()
@@ -136,6 +138,7 @@ class ElectrodeInspectionMachine(BaseMachine):
             self._write_json(final_output, filename)
             
             print(f"Inspection process completed on {self.id}\n")
+            thread_broadcast(f"Inspection process completed on {self.id}")  # Broadcast completion message
             
     def update_from_slitting(self, slitting_data):
         with self.lock:
