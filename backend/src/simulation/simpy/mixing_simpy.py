@@ -11,6 +11,32 @@ class MixingSimPy:
     SimPy-based stand-alone mixer that mimics MixingMachine JSON outputs.
     Keeps the existing Slurry & SlurryPropertyCalculator usage so results match.
     """
+    # --------------------------------------------------------------------------
+    # THREAD VERSION (previous): constructor gist
+    # --------------------------------------------------------------------------
+    # class MixingMachine(BaseMachine):
+    #     def __init__(self, id, electrode_type, slurry: Slurry, ratios: dict):
+    #         super().__init__(id)
+    #         self.electrode_type = electrode_type
+    #         self.slurry = slurry
+    #         self.ratios = ratios
+    #         self.start_time = datetime.now()
+    #         self.total_time = 0.0
+    #         self.lock = threading.Lock()
+    #         self.shutdown_event = threading.Event()
+    #         # densities/weights per electrode + calculator
+    #         if self.electrode_type == "Anode":
+    #             self.RHO_values = {"AM": 2.26, "CA": 1.8, "PVDF": 1.17, "H2O": 1.0}
+    #             self.WEIGHTS_values = {"a": 0.85, "b": 2.2, "c": 0.3, "s": -0.4}
+    #             self.slurry.add("H2O", 200 * self.ratios["H2O"])
+    #         else:
+    #             self.RHO_values = {"AM": 2.11, "CA": 1.8, "PVDF": 1.78, "NMP": 1.03}
+    #             self.WEIGHTS_values = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5}
+    #             self.slurry.add("NMP", 200 * self.ratios["NMP"])
+    #         self.calc = SlurryPropertyCalculator(self.RHO_values, self.WEIGHTS_values)
+    #         self.output_dir = os.path.join(os.getcwd(), "mixing_output")
+    #         os.makedirs(self.output_dir, exist_ok=True)
+    # --------------------------------------------------------------------------
 
     def __init__(
         self,
@@ -57,6 +83,36 @@ class MixingSimPy:
         self._last_saved_result = None
         self._last_saved_wall = datetime.now()
 
+ # ---------- formatting & saving (shape aligned with MixingMachine) ----------
+
+    # --------------------------------------------------------------------------
+    # THREAD VERSION (previous): formatting helper (wall-clock based)
+    # --------------------------------------------------------------------------
+    # def _format_result(self):
+    #     ts = (self.start_time + timedelta(seconds=self.total_time)).isoformat()
+    #     base = {
+    #         "TimeStamp": ts,
+    #         "Duration": round(self.total_time, 5),
+    #         "Machine ID": self.id,
+    #         "Process": "Mixing",
+    #         "Electrode Type": self.electrode_type,
+    #     }
+    #     comp = {
+    #         "AM": round(self.slurry.AM, 3),
+    #         "CA": round(self.slurry.CA, 3),
+    #         "PVDF": round(self.slurry.PVDF, 3),
+    #         self.slurry.solvent: round(getattr(self.slurry, self.slurry.solvent), 3),
+    #     }
+    #     props = {
+    #         "Density": round(self.calc.calculate_density(self.slurry), 4),
+    #         "Viscosity": round(self.calc.calculate_viscosity(self.slurry), 2),
+    #         "YieldStress": round(self.calc.calculate_yield_stress(self.slurry), 2),
+    #     }
+    #     base.update(comp)
+    #     base.update(props)
+    #     return base
+    # --------------------------------------------------------------------------
+
     # ---------- formatting & saving (shape aligned with MixingMachine) ----------
     def _format_result(self, sim_t: float, is_final: bool = False):
         base = {
@@ -95,6 +151,31 @@ class MixingSimPy:
             json.dump(data, f, indent=4)
         return data
 
+# ---------- the mixing process ----------
+
+    # --------------------------------------------------------------------------
+    # THREAD VERSION (previous): step loop with sleep + lock
+    # --------------------------------------------------------------------------
+    # def _mix_component(self, component, step_percent=0.02, pause_sec=0.1):
+    #     total_volume = self.total_volume * self.ratios[component]
+    #     step_vol = max(total_volume * step_percent, 1e-9)
+    #     added = 0.0
+    #     while added < total_volume and not self.shutdown_event.is_set():
+    #         time.sleep(pause_sec)                # wall-clock wait
+    #         with self.lock:                      # guard shared state
+    #             self.total_time += pause_sec     # wall clock accumulator
+    #             self.slurry.add(component, min(step_vol, total_volume - added))
+    #             result = self._format_result()
+    #             if self._should_save(result):    # throttled snapshot
+    #                 self._write_json(result, f"result_at_{round(self.total_time)}s.json")
+    #                 try:
+    #                     from server.main import thread_broadcast
+    #                     thread_broadcast(f"Machine {self.id} {component} progress @ {round(self.total_time,1)}s")
+    #                 except Exception:
+    #                     pass
+    #         added += step_vol
+    # --------------------------------------------------------------------------
+
     # ---------- the mixing process ----------
     def _mix_component(self, component: str):
         total_volume = self.volume * self.ratios[component]
@@ -123,6 +204,19 @@ class MixingSimPy:
                     thread_broadcast(f"SimPy[{self.id}] progress {component} @ {round(sim_t,1)}s")
                 except Exception:
                     pass
+
+# --------------------------------------------------------------------------
+    # THREAD VERSION (previous): top-level run()
+    # --------------------------------------------------------------------------
+    # def run(self, step_percent=0.02, pause_sec=0.1):
+    #     if self.is_on:
+    #         from server.main import thread_broadcast
+    #         thread_broadcast(f"Machine {self.id} is already running.")
+    #         for comp in ["PVDF", "CA", "AM"]:
+    #             self._mix_component(comp, step_percent, pause_sec)
+    #         self._save_final_results()
+    #         thread_broadcast(f"Machine {self.id} mixing completed.")
+    # --------------------------------------------------------------------------
 
     def _run_all(self):
         # Order matches your current machine: PVDF → CA → AM (solvent already preloaded)

@@ -21,7 +21,14 @@ from simulation.sensor.SlurryPropertyCalculator import SlurryPropertyCalculator
 
 # ---- NEW: SimPy for mixing ----
 import simpy
-
+# ------------------------------------------------------------------------------
+# THREAD VERSION (previous): core includes
+# ------------------------------------------------------------------------------
+# from simulation.factory.Factory import Factory
+# from simulation.machine.MixingMachine import MixingMachine
+# from simulation.machine.CoatingMachine import CoatingMachine
+# ... (other machines)
+# ------------------------------------------------------------------------------
 
 # ======================================================================================
 # WebSocket infra (unchanged from your current file)
@@ -246,6 +253,34 @@ class MixingSimPy:
             )
         thread_broadcast(f"SimPy {self.id} mixing completed. -> {os.path.basename(final_path)}")
         return final
+
+# ------------------------------------------------------------------------------
+# THREAD VERSION (previous): /start-both orchestration (Factory + threads)
+# ------------------------------------------------------------------------------
+# @app.post("/start-both")
+# def start_both_simulation(payload: DualInput):
+#     try:
+#         factory.stop_simulation()
+#         factory.machines = []
+#         factory.threads = []
+#         factory.machine_status = {}
+#         factory.machine_locks = {}
+#         factory.machine_events = {}
+#         # Create mixing machines for Anode & Cathode
+#         for data in [payload.anode, payload.cathode]:
+#             slurry = Slurry(data.electrode_type)
+#             ratios = {
+#                 "PVDF": data.PVDF, "CA": data.CA, "AM": data.AM,
+#                 "H2O" if data.electrode_type == "Anode" else "NMP": data.Solvent
+#             }
+#             machine_id = f"TK_Mix_{data.electrode_type}"
+#             mixing_machine = MixingMachine(machine_id, data.electrode_type, slurry, ratios)
+#             factory.add_machine(mixing_machine)
+#         factory.start_simulation()   # spawn threads
+#         return {"message": "Started thread-based pipeline"}
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+# ------------------------------------------------------------------------------
 
 
 # ======================================================================================
