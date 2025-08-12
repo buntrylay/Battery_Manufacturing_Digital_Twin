@@ -3,8 +3,13 @@ import React from "react";
 function Footer() {
   return (
     <footer>
-      <h2>battery manufacturing simulation</h2>
-      <p>https://www.syncrowin.com.au/</p>
+      <div className="footer-title-area">
+        <h2>battery manufacturing simulation</h2>
+      </div>
+      <div className="footer-text-area">
+        <p>Swinburne</p>
+        <p>https://www.syncrowin.com.au/</p>
+      </div>
     </footer>
   );
 }
