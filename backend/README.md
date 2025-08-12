@@ -4,7 +4,7 @@ This module contains the simulation and API components of the Battery Manufactur
 
 ## Project Structure
 
-``` txt
+```txt
 backend/
 ├── src/
 │   ├── simulation/           # Simulation package
@@ -38,7 +38,7 @@ pip install -e .
 ### Running the Simulation
 
 ```bash
-python -m src.simulation.main
+python3 -m src.simulation.main
 ```
 
 ### Running Tests
@@ -63,12 +63,15 @@ pytest tests/
 
 Make sure you are in the `backend/src` directory before starting the server.
 Then run:
+
 ```bash
-python -m uvicorn server.main:app --reload
+python3 -m uvicorn server.main:app --reload
 ```
 
 ### 🛠️ Prerequisites
+
 Ensure you have the following installed:
+
 - Python 3.8+
 - `uvicorn` and `fastapi`
 
@@ -81,3 +84,4 @@ pip install fastapi uvicorn
 ## License
 
 [Your License Here]
+```
