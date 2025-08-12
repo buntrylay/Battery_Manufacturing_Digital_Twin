@@ -1,0 +1,15 @@
+footer {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  background-color: #dfeaf3;
+  color: rgba(47, 55, 89, 0.548);
+  text-align: center;
+  margin-top: 20px;
+  min-height: 200px;
+}
+footer p {
+  padding: 20px;
+  font-size: 1.2em;
+  font-weight: 300;
+}
