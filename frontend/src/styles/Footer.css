@@ -15,4 +15,13 @@ footer {
 .footer-text-area {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+}
+
+.footer-logo img {
+  max-width: 200px;
+  max-height: 100px;
+  align-items: center;
+  margin-inline: 20px;
+  margin-top: 1%;
 }

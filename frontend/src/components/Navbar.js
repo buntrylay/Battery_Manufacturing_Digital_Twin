@@ -13,6 +13,9 @@ const Navbar = () => (
       <li>
         <Link to="/testing">Testing Page</Link>
       </li>
+      <li>
+        <Link to="/flow">Flow Page</Link>
+      </li>
     </ul>
   </nav>
 );

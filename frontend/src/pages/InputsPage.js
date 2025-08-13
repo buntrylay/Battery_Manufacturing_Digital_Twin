@@ -82,8 +82,6 @@ function InputsPage() {
       <div className="actions">
         <button onClick={resetSimulation}>Reset Inputs</button>
         <button onClick={startBothSimulations}>Start Both Simulations</button>
-        <button onClick={() => navigate("/logs")}>Go to Log Page</button>{" "}
-        {/* Add this button */}
       </div>
       <p className="status-message">{status}</p>
     </div>

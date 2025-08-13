@@ -1,5 +1,6 @@
 import React from "react";
-
+import swinLogo from "../assets/swinburneLogo.jpg";
+import syncLogo from "../assets/syncrowinLogo.jpg";
 function Footer() {
   return (
     <footer>
@@ -7,8 +8,13 @@ function Footer() {
         <h2>battery manufacturing simulation</h2>
       </div>
       <div className="footer-text-area">
-        <p>Swinburne</p>
+        <div className="footer-logo">
+          <img src={swinLogo} alt="Swinburne Logo" />
+        </div>
         <p>https://www.syncrowin.com.au/</p>
+        <div className="footer-logo">
+          <img src={syncLogo} alt="Syncrowin Logo" />
+        </div>
       </div>
     </footer>
   );
