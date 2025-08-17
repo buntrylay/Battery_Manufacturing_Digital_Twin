@@ -188,3 +188,6 @@ class Factory:
         Cleanup when the factory is destroyed.
         """
         self.stop_simulation() 
+
+    def run_pipeline(self):
+        pass

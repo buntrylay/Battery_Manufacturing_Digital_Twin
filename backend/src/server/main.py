@@ -1,7 +1,14 @@
+import os
+import sys
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+
+# Add the src directory to the Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import the Factory class
 from simulation.factory.Factory import Factory
 from simulation.battery_model.Slurry import Slurry
 from simulation.machine.MixingMachine import MixingMachine

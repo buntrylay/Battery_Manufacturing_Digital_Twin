@@ -15,10 +15,8 @@ from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMac
 from simulation.machine.RewindingMachine import RewindingMachine
 from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
 from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
-
-
-
 from simulation.machine.AgingMachine import AgingMachine
+
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
     "PVDF": 0.05,
