@@ -21,17 +21,17 @@ from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
 from simulation.machine.AgingMachine import AgingMachine
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
-    "PVDF": 0.05,
-    "CA": 0.045,
-    "AM": 0.495,
+    "PVDF": 0.03,
+    "CA": 0.02,
+    "AM": 0.44,
     "H2O": 0.41
 }
 
 # Define the mixing ratios for cathode slurry components
 user_input_cathode = {
-    "PVDF": 0.013,
-    "CA": 0.039,
-    "AM": 0.598,
+    "PVDF": 0.04,
+    "CA": 0.025,
+    "AM": 0.415,
     "NMP": 0.35
 }
 
