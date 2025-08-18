@@ -41,7 +41,7 @@ user_input_coating = {
     "coating_width": 0.5
 }
 
-# ✅ Define calendaring parameters
+# Define calendaring parameters
 user_input_calendaring = {
     "roll_gap": 100e-6,             # meters
     "roll_pressure": 2e6,           # Pascals
@@ -50,6 +50,7 @@ user_input_calendaring = {
     "initial_porosity": 0.45,       # Assumed porosity after drying
     "temperature": 25               # Optional
 }
+
 #  Slitting's input parameters - Ai Vi
 user_input_slitting = {
     "w_input": 500,
@@ -74,12 +75,14 @@ user_input_rewinding = {
     "tapering_steps": 0.3, # meters
     "environment_humidity": 30    # %
 }
+
 # Electrolyte Filling's input parameters
 user_input_elec_filling = {
     "Vacuum_level" : 100,
     "Vacuum_filling" : 100,
     "Soaking_time" : 10
 }
+
 # Formation Cycling's input parameters
 user_input_formation = {
     "Charge_current_A" : 0.05,
@@ -93,70 +96,58 @@ user_input_aging = {
     "temperature": 25,
     "aging_time_days": 10
 }
+
 # Create slurry instances
 anode_slurry = Slurry("Anode")
 cathode_slurry = Slurry("Cathode")
-
 # Create mixing machines
 anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode)
 cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slurry, user_input_cathode)
-
 # Create coating machines
 anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
 cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
-
 # Create drying machines
 anode_drying_machine = DryingMachine("MC_Dry_Anode", web_speed= 0.01)
 cathode_drying_machine = DryingMachine("MC_Dry_Cathode", web_speed= 0.01)
-
-# ✅ Create calendaring machine
+# Create calendaring machines
 anode_calendaring_machine = CalendaringMachine("MC_Calendar_Anode", user_input_calendaring)
 cathode_calendaring_machine = CalendaringMachine("MC_Calendar_Cathode", user_input_calendaring)
-# Create slitting machines - Ai Vi
-anode_slitting_machine = SlittingMachine("MC_Slit_Anode", user_input_slitting)
-cathode_slitting_machine = SlittingMachine("MC_Slit_Cathode", user_input_slitting)
-# Create electrode inspection machines - Ai Vi
-anode_electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect_Anode", user_input_electrode_inspection)
-cathode_electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect_Cathode", user_input_electrode_inspection)
-
+# Create slitting machine
+slitting_machine = SlittingMachine("MC_Slit", user_input_slitting)
+# Create electrode inspection machine
+electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect", user_input_electrode_inspection)
 # Create rewinding machine
-anode_rewinding_machine = RewindingMachine("MC_Rewind_Anode", user_input_rewinding)
-cathode_rewinding_machine = RewindingMachine("MC_Rewind_Cathode", user_input_rewinding)
+rewinding_machine = RewindingMachine("MC_Rewind", user_input_rewinding)
+# Create electrolyte filling machine
+electrolyte_filling_machine = ElectrolyteFillingMachine("MC_ElecFill", user_input_elec_filling)
+# Create formation cycling machine
+formation_machine = FormationCyclingMachine("MC_Formation", user_input_formation)
+# Create aging machine
+aging_machine = AgingMachine("MC_Aging", user_input_aging)
 
-# Create electrolyte filling machines
-anode_electrolyte_filling_machine = ElectrolyteFillingMachine("MC_ElecFill_Anode", user_input_elec_filling)
-cathode_electrolyte_filling_machine = ElectrolyteFillingMachine("MC_ElecFill_Cathode", user_input_elec_filling)
-
-# Create Formation Cycling machines
-anode_formation_machine = FormationCyclingMachine("MC_Formation_Anode", user_input_formation)
-cathode_formation_machine = FormationCyclingMachine("MC_Formation_Cathode", user_input_formation)
-
-# Create aging machines:
-anode_aging_machine = AgingMachine("MC_Aging_Anode", user_input_aging)
-cathode_aging_machine = AgingMachine("MC_Aging_Cathode", user_input_aging)
-# Initialize factory
+# Initialize factory with new pipeline structure
 factory = Factory()
 
-# Add machines to factory
-factory.add_machine(anode_mixing_machine)
-factory.add_machine(cathode_mixing_machine)
-factory.add_machine(anode_coating_machine, dependencies=["TK_Mix_Anode"])
-factory.add_machine(cathode_coating_machine, dependencies=["TK_Mix_Cathode"])
-factory.add_machine(anode_drying_machine, dependencies=["MC_Coat_Anode"])
-factory.add_machine(cathode_drying_machine, dependencies=["MC_Coat_Cathode"])
-factory.add_machine(anode_calendaring_machine, dependencies=["MC_Dry_Anode"])
-factory.add_machine(cathode_calendaring_machine, dependencies=["MC_Dry_Cathode"])   
-factory.add_machine(anode_slitting_machine, dependencies=["MC_Calendar_Anode"])
-factory.add_machine(cathode_slitting_machine, dependencies=["MC_Calendar_Cathode"])
-factory.add_machine(anode_electrode_inspection_machine, dependencies=["MC_Slit_Anode"])
-factory.add_machine(cathode_electrode_inspection_machine, dependencies=["MC_Slit_Cathode"])
-factory.add_machine(anode_rewinding_machine, dependencies=["MC_Inspect_Anode"])
-factory.add_machine(cathode_rewinding_machine, dependencies=["MC_Inspect_Cathode"]) 
-factory.add_machine(anode_electrolyte_filling_machine, dependencies=["MC_Rewind_Anode"])
-factory.add_machine(cathode_electrolyte_filling_machine, dependencies=["MC_Rewind_Cathode"])
-factory.add_machine(anode_formation_machine, dependencies=["MC_ElecFill_Anode"])
-factory.add_machine(cathode_formation_machine, dependencies=["MC_ElecFill_Cathode"])
-factory.add_machine(anode_aging_machine, dependencies=["MC_Formation_Anode"])
-factory.add_machine(cathode_aging_machine, dependencies=["MC_Formation_Cathode"])
+# Add machines to anode line
+factory.add_machine(anode_mixing_machine, 'anode', 'mixing')
+factory.add_machine(anode_coating_machine, 'anode', 'coating')
+factory.add_machine(anode_drying_machine, 'anode', 'drying')
+factory.add_machine(anode_calendaring_machine, 'anode', 'calendaring')
+
+# Add machines to cathode line
+factory.add_machine(cathode_mixing_machine, 'cathode', 'mixing')
+factory.add_machine(cathode_coating_machine, 'cathode', 'coating')
+factory.add_machine(cathode_drying_machine, 'cathode', 'drying')
+factory.add_machine(cathode_calendaring_machine, 'cathode', 'calendaring')
+
+# Add machines to merged line (after calendaring)
+factory.add_machine(slitting_machine, 'merged', 'slitting')
+factory.add_machine(electrode_inspection_machine, 'merged', 'inspection')
+factory.add_machine(rewinding_machine, 'merged', 'rewinding')
+factory.add_machine(electrolyte_filling_machine, 'merged', 'electrolyte_filling')
+factory.add_machine(formation_machine, 'merged', 'formation_cycling')
+factory.add_machine(aging_machine, 'merged', 'aging')
+
 # Start the simulation
+print("Starting Battery Manufacturing Pipeline Simulation...")
 factory.start_simulation()
