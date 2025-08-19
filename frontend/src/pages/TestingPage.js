@@ -1,28 +1,11 @@
-import React from "react";
+import ProcessPlotButton from "../components/ProcessPlotButton";
 
-function TestingPage() {
-  const downloadZip = (type) => {
-    window.open(`http://localhost:8000/files/${type}`, "_blank");
-  };
-
-  const downloadAllResults = () => {
-    window.open("http://localhost:8000/files/all", "_blank");
-  };
-
+export default function TestingPage() {
   return (
-    <div className="container">
-      <h2>Download Results</h2>
-      <div className="actions">
-        <button onClick={() => downloadZip("Anode")}>
-          Download Anode results
-        </button>
-        <button onClick={() => downloadZip("Cathode")}>
-          Download Cathode results
-        </button>
-        <button onClick={downloadAllResults}>Download All Results</button>
-      </div>
+    <div className="p-4 space-y-6">
+      <ProcessPlotButton processName="mixing" />
+      <ProcessPlotButton processName="coating" />
+      <ProcessPlotButton processName="drying" />
     </div>
   );
 }
-
-export default TestingPage;

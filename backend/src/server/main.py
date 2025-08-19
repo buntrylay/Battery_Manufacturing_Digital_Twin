@@ -57,6 +57,21 @@ class ConnectionManager:
                 pass  # Skip failed connections
 
 manager = ConnectionManager()
+app = FastAPI()
+# Allow frontend communication with more specific CORS settings
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # or ["*"] for testing
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Thread broadcast function
 def thread_broadcast(message: str):
@@ -76,16 +91,6 @@ def thread_broadcast(message: str):
             except:
                 pass  # Skip failed connections
 
-app = FastAPI()
-
-# Allow frontend communication with more specific CORS settings
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Your React app's address
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 RESULTS_PATH = Path("results")
 RESULTS_PATH.mkdir(parents=True, exist_ok=True)

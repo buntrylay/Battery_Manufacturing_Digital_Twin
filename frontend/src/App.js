@@ -16,7 +16,6 @@ import "./styles/TestingPage.css";
 import SimulationPage from "./pages/SimulationPage";
 import LogsPage from "./pages/LogsPage";
 import TestingPage from "./pages/TestingPage";
-import FlowPage from "./pages/FlowPage";
 
 export default function App() {
   return (
@@ -28,7 +27,6 @@ export default function App() {
             <Route path="/" element={<SimulationPage />} />
             <Route path="/logs" element={<LogsPage />} />
             <Route path="/testing" element={<TestingPage />} />
-            <Route path="/flow" element={<FlowPage />} />
             <Route path="/404" element={<h1>PAGE NOT FOUND</h1>} />
             <Route path="*" element={<h1>PAGE NOT FOUND</h1>} />
           </Routes>
