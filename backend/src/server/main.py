@@ -26,10 +26,13 @@ from datetime import datetime
 from typing import List
 import asyncio
 import os
-import matplotlib
-
-# Force non-interactive backend for server/threaded use (avoid macOS GUI backend)
-matplotlib.use('Agg')
+from dotenv import load_dotenv
+load_dotenv()  # reads .env into os.environ
+import os
+from fastapi import FastAPI, Response
+from metrics.metrics import REGISTRY, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import start_http_server, Gauge, Counter, Histogram
+from prometheus_client import make_asgi_app
 
 #Message Storing Technique using deque for creating a "queue"
 MAX_MESSAGE = 100 #max msgs that will be stored
@@ -63,6 +66,7 @@ origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8000",
+    "http://localhost:3001",
 ]
 
 app.add_middleware(
@@ -72,6 +76,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount Prometheus endpoint at /metrics
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)
 
 # Thread broadcast function
 def thread_broadcast(message: str):
@@ -271,11 +279,10 @@ def start_both_simulation(payload: DualInput):
             with open(result_path, "w") as f:
                 json.dump(final_result, f, indent=4)
 
+# Get completion status for each machine
         completion_status = {
             machine_id: {
-                "completed": status,
-                "timestamp": machines[data.electrode_type]._format_result(is_final=True)["TimeStamp"]
-                if machine_id != "Coating_Machine" else "N/A"
+                "completed": status
             }
             for machine_id, status in factory.machine_status.items()
         }
@@ -469,163 +476,15 @@ async def websocket_endpoint(websocket: WebSocket):
         print("WebSocket disconnected")
         manager.disconnect(websocket)
 
+#Metrics Trial
+@app.get("/metrics")
+async def metrics():
+    # Exposed even if ENABLE_METRICS=false; returns empty registry if unused
+    return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
 
-# Plotting endpoints
-@app.get("/plots/process/{process_name}")
-def generate_process_plot(process_name: str):
-    """
-    Generate a plot for a specific process.
-    
-    Args:
-        process_name: Name of the process (e.g., 'mixing', 'coating', 'drying')
-    """
-    if not PLOTTING_AVAILABLE:
-        raise HTTPException(status_code=503, detail="Plotting not available. Install matplotlib.")
-    
-    try:
-        # Map process names to output directories
-        process_dirs = {
-            'mixing': 'mixing_output',
-            'coating': 'coating_output',
-            'drying': 'drying_output',
-            'calendaring': 'calendaring_output',
-            'slitting': 'slitting_output',
-            'inspection': 'inspection_output',
-            'rewinding': 'rewinding_output',
-            'electrolyte_filling': 'electrolyte_filling_output'
-        }
-        
-        if process_name not in process_dirs:
-            raise HTTPException(status_code=400, detail=f"Unknown process: {process_name}")
-        
-        output_dir = process_dirs[process_name]
-        if not os.path.exists(output_dir):
-            raise HTTPException(status_code=404, detail=f"No data found for {process_name}")
-        
-        # Load data from the output directory
-        data = []
-        json_files = [f for f in os.listdir(output_dir) if f.endswith('.json')]
-        
-        for json_file in sorted(json_files):
-            try:
-                with open(os.path.join(output_dir, json_file), 'r') as f:
-                    file_data = json.load(f)
-                    if isinstance(file_data, list):
-                        data.extend(file_data)
-                    else:
-                        data.append(file_data)
-            except Exception as e:
-                print(f"Warning: Could not load {json_file}: {e}")
-        
-        if not data:
-            raise HTTPException(status_code=404, detail=f"No valid data found for {process_name}")
-        
-        # Create plot
-        fig = plot_time_series(
-            data=data,
-            title=f"{process_name.title()} Process Data",
-            save_path=f"plots/{process_name}_process_plot.png"
-        )
-        
-        # Save plot
-        os.makedirs("plots", exist_ok=True)
-        plot_path = f"plots/{process_name}_process_plot.png"
-        fig.savefig(plot_path, dpi=300, bbox_inches='tight')
-        plt.close(fig)
-        
-        return FileResponse(plot_path, media_type='image/png', filename=f"{process_name}_plot.png")
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/plots/summary")
-def generate_summary_plots():
-    """
-    Generate summary plots for all processes.
-    """
-    if not PLOTTING_AVAILABLE:
-        raise HTTPException(status_code=503, detail="Plotting not available. Install matplotlib.")
-    
-    try:
-        # Define output directories
-        output_dirs = {
-            "Mixing": "mixing_output",
-            "Coating": "coating_output", 
-            "Drying": "drying_output",
-            "Calendaring": "calendaring_output",
-            "Slitting": "slitting_output",
-            "Inspection": "inspection_output",
-            "Rewinding": "rewinding_output",
-            "Electrolyte_Filling": "electrolyte_filling_output"
-        }
-        
-        # Create summary plots
-        figures = create_summary_plots(
-            output_dirs=output_dirs,
-            save_dir="plots"
-        )
-        
-        # Create a zip file with all plots
-        zip_path = "plots/summary_plots.zip"
-        os.makedirs("plots", exist_ok=True)
-        
-        with ZipFile(zip_path, "w") as zipf:
-            for file in os.listdir("plots"):
-                if file.endswith('.png'):
-                    zipf.write(os.path.join("plots", file), arcname=file)
-        
-        return FileResponse(zip_path, media_type='application/zip', filename="summary_plots.zip")
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/plots/machine/{machine_id}")
-def generate_machine_plot(machine_id: str):
-    """
-    Generate a plot for a specific machine.
-    
-    Args:
-        machine_id: ID of the machine (e.g., 'MC_Mix_Anode', 'MC_Coat_Cathode')
-    """
-    if not PLOTTING_AVAILABLE:
-        raise HTTPException(status_code=503, detail="Plotting not available. Install matplotlib.")
-    
-    try:
-        # Try different output directories
-        output_dirs = [
-            "mixing_output",
-            "coating_output",
-            "drying_output", 
-            "calendaring_output",
-            "slitting_output",
-            "inspection_output",
-            "rewinding_output",
-            "electrolyte_filling_output"
-        ]
-        
-        for output_dir in output_dirs:
-            if os.path.exists(output_dir):
-                try:
-                    fig = plot_machine_data(
-                        machine_id=machine_id,
-                        output_dir=output_dir,
-                        save_path=f"plots/{machine_id}_{output_dir.replace('_output', '')}_plot.png"
-                    )
-                    
-                    # Save plot
-                    os.makedirs("plots", exist_ok=True)
-                    plot_path = f"plots/{machine_id}_{output_dir.replace('_output', '')}_plot.png"
-                    fig.savefig(plot_path, dpi=300, bbox_inches='tight')
-                    plt.close(fig)
-                    
-                    return FileResponse(plot_path, media_type='image/png', filename=f"{machine_id}_plot.png")
-                    
-                except ValueError:
-                    continue
-        
-        raise HTTPException(status_code=404, detail=f"No data found for machine {machine_id}")
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/simulate")
+def simulate():
+    machine_status.labels(machine="mixer").set(1)
+    jobs_completed.labels(machine="mixer").inc()
+    job_duration.labels(machine="mixer").observe(2.5)
+    return {"status": "updated"}

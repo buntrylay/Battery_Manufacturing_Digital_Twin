@@ -10,6 +10,8 @@ from simulation.machine.RewindingMachine import RewindingMachine
 from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
 from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
 from simulation.machine.AgingMachine import AgingMachine
+from metrics.metrics import set_machine_status, inc_job_completed, observe_job_duration
+
 
 import time
 
@@ -134,6 +136,9 @@ class Factory:
                 self.wait_for_dependencies(machine)
 
             print(f"Starting {machine.id}...")
+             # When a machine starts:
+            machine_status.labels(machine=machine.id).set(1) # 1 = Running
+
             machine.turn_on()
             machine.run()
             machine.turn_off()
@@ -142,7 +147,8 @@ class Factory:
             with self.machine_locks[machine.id]:
                 self.machine_status[machine.id] = True
                 self.machine_events[machine.id].set()  # Signal completion
-            
+            # When a machine finishes:
+            machine_status.labels(machine=machine.id).set(0) # 0 = Idle/Completed
             print(f"Completed {machine.id}")
         except Exception as e:
             print(f"Error in {machine.id}: {str(e)}")
@@ -188,3 +194,11 @@ class Factory:
         Cleanup when the factory is destroyed.
         """
         self.stop_simulation() 
+    
+    def on_machine_state(machine_name, is_running: bool, is_fault: bool=False):
+        status = 2 if is_fault else (1 if is_running else 0)
+        set_machine_status(machine_name, status)
+
+    def on_job_completed(machine_name, duration_s: float):
+        inc_job_completed(machine_name)
+        observe_job_duration(machine_name, duration_s)

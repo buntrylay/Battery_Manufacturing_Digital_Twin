@@ -5,6 +5,7 @@ import threading
 from datetime import datetime, timedelta
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.RewindingPropertyCalculator import RewindingPropertyCalculator
+from metrics.metrics import set_machine_status
 
 class RewindingMachine(BaseMachine):
     """
@@ -129,16 +130,22 @@ class RewindingMachine(BaseMachine):
             time.sleep(0.1)
                 
     def run(self):
-        if self.is_on:
-            self._simulate()
-            thread_broadcast(f"Rewinding process {self.id} in progress...") # Broadcast continuation message
-            final_output = self._format_result(is_final=True)
-            filename = f"final_results_{self.id}.json"
-            self._write_json(final_output, filename)
-            print(f"Rewinding process completed on {self.id}\n")
-            thread_broadcast(f"Rewinding process {self.id} completed") # Broadcast completion message
-            
-            print(f"Rewinding process completed on {self.id}\n")
+        set_machine_status(self.id, 1)
+        try:
+            if self.is_on:
+                self._simulate()
+                thread_broadcast(f"Rewinding process {self.id} in progress...") # Broadcast continuation message
+                final_output = self._format_result(is_final=True)
+                filename = f"final_results_{self.id}.json"
+                self._write_json(final_output, filename)
+                print(f"Rewinding process completed on {self.id}\n")
+                thread_broadcast(f"Rewinding process {self.id} completed") # Broadcast completion message
+                
+                print(f"Rewinding process completed on {self.id}\n")
+            pass
+        finally:
+            self.completed.set()
+            set_machine_status(self.id, 0)
     
     def get_final_rewind(self):
         return {

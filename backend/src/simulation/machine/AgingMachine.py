@@ -5,6 +5,7 @@ import threading
 from datetime import datetime, timedelta
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.AgingPropertyCalculator import AgingPropertyCalculator
+from metrics.metrics import set_machine_status
 
 class AgingMachine(BaseMachine):
 
@@ -112,9 +113,15 @@ class AgingMachine(BaseMachine):
 
 
     def run(self):
+        set_machine_status(self.id, 1)
         if self.is_on:
             try:
                 self._simulate(self.t_aging, self.delta_t)
                 print(f"Aging process completed on {self.id}")
             except Exception as e:
                 print(f"Error during aging process on {self.id}: {e}")
+            finally:   
+                # This block will run no matter what happens
+                self.completed.set()
+                # Set status to 0 (completed/idle) when the machine finishes
+                set_machine_status(self.id, 0)

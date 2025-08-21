@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.SlittingPropertyCalculator import SlittingPropertyCalculator
 import threading
+from metrics.metrics import set_machine_status
+
 class SlittingMachine(BaseMachine):
     def __init__(self, id, machine_parameters: dict):
         super().__init__(id)
@@ -101,14 +103,21 @@ class SlittingMachine(BaseMachine):
             time.sleep(0.1)
 
     def run(self):
-        if self.is_on:
-            self._simulate()
-            thread_broadcast(f"Slitting process {self.id} in progress...\n") # Broadcast continuation message 
-            final_result = self._format_result(is_final=True)
-            filename = f"final_results_{self.id}.json"
-            self._write_json(final_result, filename)
-            print(f"Slitting process completed on {self.id}\n")
-
+        set_machine_status(self.id, 1)
+        try:
+            if self.is_on:
+                self._simulate()
+                thread_broadcast(f"Slitting process {self.id} in progress...\n") # Broadcast continuation message 
+                final_result = self._format_result(is_final=True)
+                filename = f"final_results_{self.id}.json"
+                self._write_json(final_result, filename)
+                print(f"Slitting process completed on {self.id}\n")
+            pass
+        finally:
+            # Set status to 0 (completed/idle) when the machine finishes,
+            # even if there was an error.
+            self.completed.set()
+            set_machine_status(self.id, 0)
     def update_from_calendaring(self, cal_data):
         with self.lock:
             self.delta_cal = cal_data.get("delta_cal_cal")

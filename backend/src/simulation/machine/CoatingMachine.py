@@ -6,6 +6,7 @@ import json
 import os
 import random
 import threading
+from metrics.metrics import set_machine_status
 
 
 class CoatingMachine(BaseMachine):
@@ -131,16 +132,26 @@ class CoatingMachine(BaseMachine):
         """
         Run the coating process with detailed step simulation.
         """
-        if self.is_on:
-            from server.main import thread_broadcast
-            thread_broadcast(f"Coating process started on {self.id}") # Broadcast start message
-            self._simulate()
+        set_machine_status(self.id, 1)
 
-            thread_broadcast(f"Coating process {self.id} in progress...") # Broadcast progress message
-            
-            print(f"Coating process completed on {self.id}\n")
+        try:
+            if self.is_on:
+                from server.main import thread_broadcast
+                thread_broadcast(f"Coating process started on {self.id}") # Broadcast start message
+                self._simulate()
 
-            thread_broadcast(f"Coating process completed on {self.id}")  # Broadcast completion message
+                thread_broadcast(f"Coating process {self.id} in progress...") # Broadcast progress message
+                
+                print(f"Coating process completed on {self.id}\n")
+
+                thread_broadcast(f"Coating process completed on {self.id}")  # Broadcast completion message
+            pass # Subclasses will override this
+        finally:
+            # Set status to 0 (completed/idle) when the machine finishes,
+            # even if there was an error.
+            self.completed.set()
+            set_machine_status(self.id, 0)
+        
 
     def update_from_slurry(self, slurry):
         """
