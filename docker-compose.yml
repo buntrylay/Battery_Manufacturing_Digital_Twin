@@ -27,7 +27,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - .:/workspaces/app
+    working_dir: /workspaces/app
     networks:
       - app-net
     command: sleep infinity
