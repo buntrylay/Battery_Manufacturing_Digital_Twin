@@ -8,7 +8,7 @@ services:
   # React Frontend Service
   frontend:
     build:
-      context: ./frontend # Corrected path
+      context: ./frontend
     container_name: frontend
     ports:
       - "3000:3000"
@@ -19,10 +19,10 @@ services:
     depends_on:
       - fastapi
 
-  # FastAPI Backend Service (This will be your Dev Container)
+  # FastAPI Backend Service
   fastapi:
     build:
-      context: ./backend # Corrected path
+      context: ./backend
     container_name: fastapi
     ports:
       - "8000:8000"
