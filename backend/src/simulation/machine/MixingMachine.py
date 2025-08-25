@@ -8,9 +8,12 @@ import json
 import os
 import random
 import threading
+
+
 class MixingMachine(BaseMachine):
     def __init__(self, id, electrode_type, slurry: Slurry, ratio_materials: dict):
-        super().__init__(id)
+        super().__init__(id, connection_string)
+
         self.slurry = slurry
         self.electrode_type = electrode_type
         self.volume = 200
@@ -75,6 +78,7 @@ class MixingMachine(BaseMachine):
                 with open(unique_filename, "w") as f:
                     json.dump(data, f, indent=4)
                 print(f"Results saved to {unique_filename}")
+                return data
         except Exception as e:
             print(f"Error writing result to file: {e}")
  
@@ -99,10 +103,12 @@ class MixingMachine(BaseMachine):
             result = self._format_result()
             results_list.append(result)
             now = time.time()
-            if now - last_saved_time >= 0.1 and result != last_saved_result:
-                self._print_result(result)
+            if now - last_saved_time >= 0.1 and result != last_saved_result:  # Check if data has changed
                 filename = f"result_at_{round(self.total_time)}s.json"
-                self._write_json(result, filename)
+                data = self._write_json(result, filename)
+                if data:
+                    self.send_json_to_iothub(data)  # Send to IoT Hub
+                    self._print_result(data)  # Print to console
                 last_saved_time = now
                 last_saved_result = result
             time.sleep(pause_sec)
@@ -129,6 +135,18 @@ class MixingMachine(BaseMachine):
             with open(summary_filename, "w") as f:
                 json.dump(all_results, f, indent=4)
             print(f"Summary of all mixing data saved to {summary_filename}")
- 
+            thread_broadcast(f"Machine {self.id} is already running.") # Broadcast message
+            all_results = []
+            self._mix_component("PVDF", step_percent, pause_sec, 8, all_results)
+            self._mix_component("CA", step_percent, pause_sec, 8, all_results)
+            self._mix_component("AM", step_percent, pause_sec, 10, all_results)
+            thread_broadcast(f"Machine {self.id} mixing in progress.") # Broadcast message
+            self._save_final_results() 
+            thread_broadcast(f"Machine {self.id} mixing completed.") # Broadcast message
+             summary_filename = os.path.join(self.output_dir, f"{self.id}_mixing_summary.json")
+            with open(summary_filename, "w") as f:
+                json.dump(all_results, f, indent=4)
+            print(f"Summary of all mixing data saved to {summary_filename}")
+
 
 

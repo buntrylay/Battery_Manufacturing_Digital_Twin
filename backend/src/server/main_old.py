@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -10,72 +12,19 @@ from simulation.machine.DryingMachine import DryingMachine
 from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
-from simulation.machine.RewindingMachine import RewindingMachine
-from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
-from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
-from simulation.machine.AgingMachine import AgingMachine
 from pathlib import Path
 from zipfile import ZipFile
 import json
 import shutil
 from glob import glob
 import time
-import threading
-from collections import deque #memory efficient - works with threading and iterable data - will pop from either side if needed
-from datetime import datetime
-from typing import List
-import asyncio
-
-#Message Storing Technique using deque for creating a "queue"
-MAX_MESSAGE = 100 #max msgs that will be stored
-message_queue = deque(maxlen=MAX_MESSAGE)
-message_lock = threading.Lock()
-
-# WebSocket connection manager
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            try:
-                await connection.send_text(message)
-            except:
-                pass  # Skip failed connections
-
-manager = ConnectionManager()
-
-# Thread broadcast function
-def thread_broadcast(message: str):
-    """
-    Broadcast a message to all connected clients.
-    Thread-safe message broadcasting system.
-    """
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    formatted_message = f"[{timestamp}] {message}"
-    
-    with message_lock:
-        message_queue.append(formatted_message)
-        # Broadcast to all WebSocket connections
-        for connection in manager.active_connections:
-            try:
-                asyncio.run(connection.send_text(formatted_message))
-            except:
-                pass  # Skip failed connections
-
+''''''
 app = FastAPI()
 
-# Allow frontend communication with more specific CORS settings
+# Allow frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Your React app's address
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -107,7 +56,7 @@ def start_both_simulation(payload: DualInput):
         factory.machine_status = {}
         factory.machine_locks = {}
         factory.machine_events = {}
-        factory.thread_broadcast = {}
+
         for data in [payload.anode, payload.cathode]:
             slurry = Slurry(data.electrode_type)
             ratios = {
@@ -190,61 +139,7 @@ def start_both_simulation(payload: DualInput):
             inspection_machine = ElectrodeInspectionMachine(inspection_id, user_input_electrode_inspection)
             factory.add_machine(inspection_machine, dependencies=[slitting_id])
             machines[f"{etype}_Inspection"] = inspection_machine
-        thread_broadcast("✅ Electrode Inspection Machines Added")  # ✨ WebSocket status update
-        
-           
-        user_input_rewinding = {
-            "rewinding_speed": 0.5,  # m/s
-            "initial_tension": 100,       # N
-            "tapering_steps": 0.3, # meters
-            "environment_humidity": 30    # %
-        }
-        
-        for etype in ["Anode", "Cathode"]:
-            rewinding_id = f"MC_Rewind_{etype}"
-            inspection_id = f"MC_Inspect_{etype}"
-            rewinding_machine = RewindingMachine(rewinding_id, user_input_rewinding)
-            factory.add_machine(rewinding_machine, dependencies=[inspection_id])
-            machines[f"{etype}_Rewinding"] = rewinding_machine
-        
-        user_input_elec_filling = {
-            "Vacuum_level" : 100,
-            "Vacuum_filling" : 100,
-            "Soaking_time" : 10
-        }
-        for etype in ["Anode", "Cathode"]:
-            filling_id = f"MC_filling_{etype}"
-            rewinding_id = f"MC_Rewind_{etype}"
-            filling_machine = ElectrolyteFillingMachine(filling_id, user_input_elec_filling)
-            factory.add_machine(filling_machine, dependencies=[rewinding_id])
-            machines[f"{etype}_Electrolyte_Filling"] = filling_machine
-        
-        # Add Formation Cycling machines
-        user_input_formation_cycling = {
-            "Charge_current_A" : 0.05,
-            "Charge_voltage_limit_V" : 0.05,
-            "Voltage": 4
-        }
-        for etype in ["Anode", "Cathode"]:
-            formation_id = f"MC_formation_{etype}"
-            filling_id = f"MC_filling_{etype}"
-            formation_machine = FormationCyclingMachine(formation_id, user_input_formation_cycling)
-            factory.add_machine(formation_machine, dependencies=[filling_id])
-            machines[f"{etype}_Formation_Cycling"] = formation_machine
 
-        # Add Aging machines
-        user_input_aging = {
-            "k_leak": 1e-8,
-            "temperature": 25,
-            "aging_time_days": 10
-        }
-        for etype in ["Anode", "Cathode"]:
-            aging_id = f"MC_aging_{etype}"
-            formation_id = f"MC_formation_{etype}"
-            aging_machine = AgingMachine(aging_id, user_input_aging)
-            factory.add_machine(aging_machine, dependencies=[formation_id])
-            machines[f"{etype}_Aging"] = aging_machine
-        
         factory.start_simulation()
 
         for thread in factory.threads:
@@ -309,6 +204,7 @@ def download_result_zip(electrode_type: str):
         return FileResponse(zip_path, media_type='application/zip', filename=f"{electrode_type}.zip")
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
+
     
 '''
 @app.post("/start-both")
@@ -444,15 +340,3 @@ def download_all_results():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 '''
-
-# WebSocket endpoint
-@app.websocket("/ws/status")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            # Keep the connection alive and wait for any messages
-            data = await websocket.receive_text()
-            # You can handle incoming messages here if needed
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
