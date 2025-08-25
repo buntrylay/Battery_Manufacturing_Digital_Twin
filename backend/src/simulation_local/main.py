@@ -29,9 +29,9 @@ user_input_anode = {
 
 # Define the mixing ratios for cathode slurry components
 user_input_cathode = {
-    "PVDF": 0.04,
-    "CA": 0.025,
-    "AM": 0.415,
+    "PVDF": 0.0325,
+    "CA": 0.0225,
+    "AM": 0.55,
     "NMP": 0.35
 }
 

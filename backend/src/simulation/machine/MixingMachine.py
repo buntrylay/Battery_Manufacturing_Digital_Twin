@@ -15,14 +15,14 @@ class MixingMachine(BaseMachine):
         self.electrode_type = electrode_type
         self.volume = 200
         self.temperature = 25
-        self.k = random.uniform(0.01, 0.1)  # Random decay constant for viscosity
-        self.alpha = random.uniform(0.1, 0.5)  # Random shear-thinning index
+        self.k_vis = random.uniform(0.01, 0.1)  # Random decay constant for viscosity
+        self.k_yield = random.uniform(0.01, 0.1)  # Random decay constant for yield stress
         self.ratios = ratio_materials
         self.lock = threading.Lock()
         self.total_time = 0
         self.start_datetime = datetime.now()
         self.output_dir = os.path.join(os.getcwd(), "mixing_output")
-        os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)           
         print(f"Output directory created at: {self.output_dir}")
         if self.electrode_type == "Anode":
             self.RHO_values = {"AM": 2.26, "CA": 1.8, "PVDF": 1.17, "H2O": 1.0}
@@ -40,11 +40,11 @@ class MixingMachine(BaseMachine):
         with self.lock:
             base = {
                 "TimeStamp": (self.start_datetime + timedelta(seconds=self.total_time)).isoformat(),
-                "Duration (s)": f"{round(self.total_time, 5)} s",
+                "Duration (s)": round(self.total_time, 5),
                 "Machine ID": self.id,
                 "Process": "Mixing",
                 "Electrode Type": self.electrode_type,
-                "Temperature (C)": f"{round(self.ref_temperature, 2)} °C"
+                "Temperature (C)": round(self.ref_temperature, 2)
             }
             composition = {
                 "AM (kg)": round(getattr(self.slurry, 'AM'), 3),
@@ -53,9 +53,9 @@ class MixingMachine(BaseMachine):
                 f"{self.slurry.solvent} (kg)": round(getattr(self.slurry, self.slurry.solvent), 3)
             }
             properties = {
-                "Density (g/cm3)": round(self.calculator.calculate_density(self.slurry)*(1 - self.alpha * (self.temperature - self.ref_temperature)), 4),
-                "Viscosity (mPa*s)": round(self.calculator.calculate_viscosity(self.slurry)* np.exp (-self.k * (self.temperature - self.ref_temperature)), 4),
-                "YieldStress (Pa)": round(self.calculator.calculate_yield_stress(self.slurry)* np.exp (-self.k * (self.temperature - self.ref_temperature)), 4)
+                "Density (g/cm3)": round(self.calculator.calculate_density(self.slurry), 4),
+                "Viscosity (mPa*s)": round(self.calculator.calculate_viscosity(self.slurry)* np.exp (-self.k_vis * (self.temperature - self.ref_temperature)), 4),
+                "YieldStress (Pa)": round(self.calculator.calculate_yield_stress(self.slurry)* np.exp (-self.k_yield * (self.temperature - self.ref_temperature)), 4)
             }
             if is_final:
                 base["Final Composition"] = composition
