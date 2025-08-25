@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from azure.iot.device import IoTHubDeviceClient, Message
+import json
 
 class BaseMachine(ABC):
     """
@@ -10,7 +12,7 @@ class BaseMachine(ABC):
         calculator (SlurryPropertyCalculator): Calculator for slurry properties
     """
     
-    def __init__(self, id):
+    def __init__(self, id, connection_string=None):
         """
         Initialise a new Machine instance.
         
@@ -20,6 +22,30 @@ class BaseMachine(ABC):
         self.id = id
         self.is_on = False
         self.calculator = None
+        self.connection_string = connection_string
+        self.iot_client = None
+        if connection_string:
+            try:
+                self.iot_client = IoTHubDeviceClient.create_from_connection_string(connection_string)
+            except Exception as e:
+                print(f"Failed to create IoT Hub client: {e}")
+
+    def send_json_to_iothub(self, data):
+        """
+        Send a JSON-serializable dictionary to Azure IoT Hub via MQTT.
+
+        Args:
+            data (dict): The data to send.
+        """
+        if self.iot_client:
+            try:
+                msg = Message(json.dumps(data))
+                self.iot_client.send_message(msg)
+                print(f"Sent data to IoT Hub for machine {self.id}")
+            except Exception as e:
+                print(f"Failed to send data to IoT Hub: {e}")
+        else:
+            print("IoT Hub client not initialized.")
 
     def turn_on(self):
         """Turn on the machine."""

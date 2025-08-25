@@ -109,14 +109,17 @@ class DryingMachine(BaseMachine):
         Run the drying simulation.
         """
         if self.is_on:
+            from server.main import thread_broadcast 
+            thread_broadcast(f"Drying process started on {self.id}") # Broadcast start message
             self._simulate()
-
+            thread_broadcast(f"Drying process {self.id} in progress...") # Broadcast progress message
             # Recalculate final values
             evap_rate = self.calculator.evaporation_rate()
             delta_coat = self.dry_thickness + (self.M_solvent / self.calculator.solvent_density)
             defect_risk = abs(evap_rate / self.calculator.area()) > self.calculator.max_safe_evap_rate
 
             print(f"Drying process completed on {self.id}\n")
+            thread_broadcast(f"Drying process completed on {self.id}") # Broadcast completion message
 
     def update_from_coating(self, wet_thickness_coating, solid_content_coating):
         with self.lock:
