@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import numpy as np # For np.exp if not used directly in calculator
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.FormationCyclingCalculation import FormationCyclingCalculation # Ensure this path is correct
-from metrics.metrics import set_machine_status
 
 class FormationCyclingMachine(BaseMachine):
 
@@ -149,22 +148,14 @@ class FormationCyclingMachine(BaseMachine):
         print(f"[{self.id}] Simplified Formation First Charge completed.")
  
     def run(self):
-        set_machine_status(self.id, 1)
-        try:
-            if self.is_on:
-                # Ensure inputs from previous stage are available if needed
-                if self.initial_wetting_efficiency is None: # Example check
-                    print(f"Warning: [{self.id}] Inputs from electrolyte filling not updated. Using defaults/initials.")
-                self._simulate()
-            else:
-                print(f"Machine {self.id} is not on.")
-            
-            pass 
-        finally:
-    
-            self.completed.set()
-            set_machine_status(self.id, 0)
-        
+
+        if self.is_on:
+            # Ensure inputs from previous stage are available if needed
+            if self.initial_wetting_efficiency is None: # Example check
+                 print(f"Warning: [{self.id}] Inputs from electrolyte filling not updated. Using defaults/initials.")
+            self._simulate()
+        else:
+            print(f"Machine {self.id} is not on.")
  
     def get_final_formation_properties(self):
         with self.lock:

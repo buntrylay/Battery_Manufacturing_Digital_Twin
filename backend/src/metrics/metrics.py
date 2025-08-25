@@ -8,8 +8,7 @@ machine_status = Gauge("machine_status", "Machine status", ["machine"], registry
 jobs_completed = Counter("machine_jobs_completed_total", "Jobs completed", ["machine"], registry=REGISTRY)
 job_duration = Histogram("machine_job_duration_seconds", "Job duration", ["machine"], registry=REGISTRY)
 
-# Note: The functions below are examples of how you might wrap the metrics
-# if you wanted to add more complex logic later.
+# Mapping example for metrics
 def set_machine_status(machine_id: str, status: int):
     machine_status.labels(machine=machine_id).set(status)
 

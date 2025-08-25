@@ -34,6 +34,8 @@ from metrics.metrics import REGISTRY, generate_latest, CONTENT_TYPE_LATEST
 from prometheus_client import start_http_server, Gauge, Counter, Histogram
 from prometheus_client import make_asgi_app
 
+
+
 #Message Storing Technique using deque for creating a "queue"
 MAX_MESSAGE = 100 #max msgs that will be stored
 message_queue = deque(maxlen=MAX_MESSAGE)
@@ -56,30 +58,9 @@ class ConnectionManager:
             try:
                 await connection.send_text(message)
             except:
-                print("Connection to web socket failed.")
                 pass  # Skip failed connections
 
 manager = ConnectionManager()
-app = FastAPI()
-# Allow frontend communication with more specific CORS settings
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8000",
-    "http://localhost:3001",
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,  # or ["*"] for testing
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Mount Prometheus endpoint at /metrics
-metrics_app = make_asgi_app()
-app.mount("/metrics", metrics_app)
 
 # Thread broadcast function
 def thread_broadcast(message: str):
@@ -99,6 +80,16 @@ def thread_broadcast(message: str):
             except:
                 pass  # Skip failed connections
 
+app = FastAPI()
+
+# Allow frontend communication with more specific CORS settings
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 RESULTS_PATH = Path("results")
 RESULTS_PATH.mkdir(parents=True, exist_ok=True)
@@ -209,6 +200,7 @@ def start_both_simulation(payload: DualInput):
             inspection_machine = ElectrodeInspectionMachine(inspection_id, user_input_electrode_inspection)
             factory.add_machine(inspection_machine, dependencies=[slitting_id])
             machines[f"{etype}_Inspection"] = inspection_machine
+        thread_broadcast("✅ Electrode Inspection Machines Added")  # ✨ WebSocket status update
         
            
         user_input_rewinding = {
@@ -279,10 +271,11 @@ def start_both_simulation(payload: DualInput):
             with open(result_path, "w") as f:
                 json.dump(final_result, f, indent=4)
 
-# Get completion status for each machine
         completion_status = {
             machine_id: {
-                "completed": status
+                "completed": status,
+                "timestamp": machines[data.electrode_type]._format_result(is_final=True)["TimeStamp"]
+                if machine_id != "Coating_Machine" else "N/A"
             }
             for machine_id, status in factory.machine_status.items()
         }
@@ -291,7 +284,6 @@ def start_both_simulation(payload: DualInput):
             "message": "All processes completed successfully.",
             "completion_status": completion_status
         }
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -473,13 +465,11 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             # You can handle incoming messages here if needed
     except WebSocketDisconnect:
-        print("WebSocket disconnected")
         manager.disconnect(websocket)
 
 #Metrics Trial
 @app.get("/metrics")
 async def metrics():
-    # Exposed even if ENABLE_METRICS=false; returns empty registry if unused
     return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
 
 @app.get("/simulate")

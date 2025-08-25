@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useRef,
   useContext,
+  useCallback, // Import useCallback
 } from "react";
 
 // Create a context for sharing WebSocket data
@@ -13,18 +14,16 @@ export const useLogs = () => useContext(WebSocketContext);
 // Provider component to wrap the app and manage WebSocket connection
 export const WebSocketProvider = ({ children }) => {
   // Store stage logs in state, initialize from localStorage if available
-  const [stageLog, setStageLog, setLogs] = useState(() => {
+  const [stageLog, setStageLog] = useState(() => {
     const saved = localStorage.getItem("stageLog");
     return saved ? JSON.parse(saved) : [];
   });
-  const addLog = (message) => {
-    setLogs((prev) => [...prev, message]);
-  };
+
   const socketRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
 
-  // Function to connect/reconnect to the WebSocket server
-  const connectWebSocket = () => {
+  // Function to connect/reconnect to the WebSocket server, wrapped in useCallback
+  const connectWebSocket = useCallback(() => {
     // Close any existing socket before reconnecting
     if (socketRef.current) {
       socketRef.current.close();
@@ -51,6 +50,7 @@ export const WebSocketProvider = ({ children }) => {
     // Attempt to reconnect after disconnect
     socket.onclose = () => {
       console.log("WebSocket disconnected, retrying in 5s...");
+      // Pass the function reference directly to setTimeout
       reconnectTimeoutRef.current = setTimeout(connectWebSocket, 5000);
     };
 
@@ -59,7 +59,7 @@ export const WebSocketProvider = ({ children }) => {
       console.error("WebSocket error:", err);
       socket.close();
     };
-  };
+  }, []); // Empty dependency array means this function is created only once
 
   // Function to clear logs from state and localStorage
   const clearLogs = () => {
@@ -69,14 +69,22 @@ export const WebSocketProvider = ({ children }) => {
 
   // Effect to establish WebSocket connection on mount and clean up on unmount
   useEffect(() => {
-    if (socketRef.current) return; // Prevent reconnect on re-mount in dev
+    // The connectWebSocket function is now a stable dependency
     connectWebSocket();
     return () => {
       if (socketRef.current) socketRef.current.close();
       if (reconnectTimeoutRef.current)
         clearTimeout(reconnectTimeoutRef.current);
     };
-  }, []);
+  }, [connectWebSocket]); // Add connectWebSocket to the dependency array
+
+  const addLog = (message) => {
+    setStageLog((prev) => {
+      const updated = [...prev, message];
+      localStorage.setItem("stageLog", JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Provide stageLog and clearLogs to children components
   return (

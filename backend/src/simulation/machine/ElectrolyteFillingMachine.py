@@ -5,7 +5,6 @@ import threading
 from datetime import datetime, timedelta
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.ElectrolyteFillingProcess import ElectrolyteFillingCalculation
-from metrics.metrics import set_machine_status
 
 
 class ElectrolyteFillingMachine(BaseMachine):
@@ -115,18 +114,13 @@ class ElectrolyteFillingMachine(BaseMachine):
 
             time.sleep(0.1)
     def run(self):
-        set_machine_status(self.id, 1)
-        self.V_max = 4.2
         if self.is_on:
             try:
                 self._simulate()
                 print(f"Electrolyte Filling process completed on {self.id}")
             except Exception as e:
                 print(f"Simulation error on {self.id}: {e}")
-            finally:
-                self.completed.set()
-                set_machine_status(self.id, 0)   
-
+                
     def get_final_filling(self):
         with self.lock:
             return {

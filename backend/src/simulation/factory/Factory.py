@@ -194,7 +194,7 @@ class Factory:
         Cleanup when the factory is destroyed.
         """
         self.stop_simulation() 
-    
+    #machine metrics helpers added here - dont think they work 
     def on_machine_state(machine_name, is_running: bool, is_fault: bool=False):
         status = 2 if is_fault else (1 if is_running else 0)
         set_machine_status(machine_name, status)

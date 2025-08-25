@@ -7,7 +7,6 @@ import json
 import os
 import random
 import threading
-from metrics.metrics import set_machine_status
 
 
 class MixingMachine(BaseMachine):
@@ -215,24 +214,16 @@ class MixingMachine(BaseMachine):
             step_percent (float): Percentage of total volume to add in each step.
             pause_sec (float): Time to pause between additions in seconds.
         """
-        set_machine_status(self.id, 1)  # Set machine status to running
-        try:
-            if self.is_on:
-                from server.main import thread_broadcast
-                thread_broadcast(f"Machine {self.id} is already running.") # Broadcast message
-                for comp in ["PVDF", "CA", "AM"]:
-                    self._mix_component(comp, step_percent, pause_sec)
+        if self.is_on:
+            from server.main import thread_broadcast
+            thread_broadcast(f"Machine {self.id} is already running.") # Broadcast message
+            for comp in ["PVDF", "CA", "AM"]:
+                self._mix_component(comp, step_percent, pause_sec)
 
-                thread_broadcast(f"Machine {self.id} mixing in progress.") # Broadcast message
+            thread_broadcast(f"Machine {self.id} mixing in progress.") # Broadcast message
 
-                self._save_final_results() 
+            self._save_final_results() 
 
-                thread_broadcast(f"Machine {self.id} mixing completed.") # Broadcast message
-            pass # Subclasses will override this
-        finally:
-            # Set status to 0 (completed/idle) when the machine finishes,
-            # even if there was an error.
-            self.completed.set()
-            set_machine_status(self.id, 0)
-
+            thread_broadcast(f"Machine {self.id} mixing completed.") # Broadcast message
+ 
 

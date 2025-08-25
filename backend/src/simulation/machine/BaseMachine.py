@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from azure.iot.device import IoTHubDeviceClient, Message
 import json
-from metrics.metrics import set_machine_status
 
 class BaseMachine(ABC):
     """
@@ -57,27 +56,6 @@ class BaseMachine(ABC):
         self.is_on = False
 
     @abstractmethod
-    def run(self, dependencies_result=None):
-        """
-        Main execution logic for the machine.
-        It sets the machine status metric before and after running the subclass logic.
-        """
-        try:
-            # Report status as 'running' (1) to Prometheus
-            set_machine_status(self.id, 1)
-
-            # This is a placeholder for the actual simulation logic
-            # that will be implemented in each specific machine (like MixingMachine, etc.)
-            # Your original code likely had an abstract method or a 'pass' here,
-            # which is correct. The key is wrapping it.
-
-            print(f"[{self.id}] Child machine logic should be running now.")
-
-        except Exception as e:
-            print(f"Error in machine {self.id}: {e}")
-        finally:
-            # This block runs whether the machine succeeded or failed
-            self.completed.set()
-            # Report status as 'completed/idle' (0) to Prometheus
-            set_machine_status(self.id, 0)
-            print(f"Completed {self.id}")
+    def run(self):
+        """Abstract method that must be implemented by concrete machine classes."""
+        pass

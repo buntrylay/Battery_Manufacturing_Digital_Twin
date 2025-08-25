@@ -16,6 +16,8 @@ import "./styles/TestingPage.css";
 import SimulationPage from "./pages/SimulationPage";
 import LogsPage from "./pages/LogsPage";
 import TestingPage from "./pages/TestingPage";
+import FlowPage from "./pages/FlowPage";
+import { FlowPageProvider } from "./contexts/FlowPageContext";
 
 export default function App() {
   return (
@@ -24,6 +26,14 @@ export default function App() {
         <div className="App">
           <Navbar />
           <Routes>
+            <Route
+              path="/flow"
+              element={
+                <FlowPageProvider>
+                  <FlowPage />
+                </FlowPageProvider>
+              }
+            />
             <Route path="/" element={<SimulationPage />} />
             <Route path="/logs" element={<LogsPage />} />
             <Route path="/testing" element={<TestingPage />} />
