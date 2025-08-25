@@ -12,7 +12,7 @@ import threading
 
 class MixingMachine(BaseMachine):
     def __init__(self, id, electrode_type, slurry: Slurry, ratio_materials: dict):
-        super().__init__(id, connection_string)
+        super().__init__(id)
 
         self.slurry = slurry
         self.electrode_type = electrode_type
@@ -135,15 +135,15 @@ class MixingMachine(BaseMachine):
             with open(summary_filename, "w") as f:
                 json.dump(all_results, f, indent=4)
             print(f"Summary of all mixing data saved to {summary_filename}")
-            thread_broadcast(f"Machine {self.id} is already running.") # Broadcast message
+
             all_results = []
             self._mix_component("PVDF", step_percent, pause_sec, 8, all_results)
             self._mix_component("CA", step_percent, pause_sec, 8, all_results)
             self._mix_component("AM", step_percent, pause_sec, 10, all_results)
-            thread_broadcast(f"Machine {self.id} mixing in progress.") # Broadcast message
+
             self._save_final_results() 
-            thread_broadcast(f"Machine {self.id} mixing completed.") # Broadcast message
-             summary_filename = os.path.join(self.output_dir, f"{self.id}_mixing_summary.json")
+         
+            summary_filename = os.path.join(self.output_dir, f"{self.id}_mixing_summary.json")
             with open(summary_filename, "w") as f:
                 json.dump(all_results, f, indent=4)
             print(f"Summary of all mixing data saved to {summary_filename}")
