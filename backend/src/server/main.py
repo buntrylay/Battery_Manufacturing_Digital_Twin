@@ -30,10 +30,31 @@ from dotenv import load_dotenv
 load_dotenv()  # reads .env into os.environ
 import os
 from fastapi import FastAPI, Response
-from metrics.metrics import REGISTRY, generate_latest, CONTENT_TYPE_LATEST
 from prometheus_client import start_http_server, Gauge, Counter, Histogram
 from prometheus_client import make_asgi_app
+from prometheus_client import Counter, Gauge
+from prometheus_client import generate_latest, REGISTRY, CONTENT_TYPE_LATEST
+# --- Prometheus Metrics Definitions ---
+# A Counter to track the total number of successfully completed simulation runs.
+# It only ever goes up.
+SIMULATION_RUNS_COMPLETED_TOTAL = Counter(
+    'simulation_runs_completed_total',
+    'Total number of successful battery factory simulation runs'
+)
 
+# A Gauge to store the duration of the most recent simulation run in seconds.
+# It can go up or down.
+LAST_RUN_DURATION_SECONDS = Gauge(
+    'simulation_last_run_duration_seconds',
+    'The duration of the last simulation run in seconds'
+)
+
+# A Counter to track completed jobs by machine type
+JOBS_COMPLETED_BY_MACHINE_TOTAL = Counter(
+    'simulation_jobs_completed_by_machine_total',
+    'Total number of completed jobs, labeled by machine type',
+    ['machine_type']
+)
 
 
 #Message Storing Technique using deque for creating a "queue"
@@ -111,6 +132,7 @@ machines = {}
 @app.post("/start-both")
 def start_both_simulation(payload: DualInput):
     try:
+        simulation_start_time = time.time()
         factory.stop_simulation()
         factory.machines = []
         factory.threads = []
@@ -200,7 +222,7 @@ def start_both_simulation(payload: DualInput):
             inspection_machine = ElectrodeInspectionMachine(inspection_id, user_input_electrode_inspection)
             factory.add_machine(inspection_machine, dependencies=[slitting_id])
             machines[f"{etype}_Inspection"] = inspection_machine
-        thread_broadcast("✅ Electrode Inspection Machines Added")  # ✨ WebSocket status update
+            thread_broadcast("Electrode Inspection Machines Added")  
         
            
         user_input_rewinding = {
@@ -263,6 +285,18 @@ def start_both_simulation(payload: DualInput):
         all_completed = all(factory.machine_status.values())
         if not all_completed:
             raise Exception("Not all machines completed successfully")
+                # --- METRICS UPDATE ---
+        # Record the total duration and increment the completion counter.
+        duration = time.time() - simulation_start_time
+        LAST_RUN_DURATION_SECONDS.set(duration)
+        SIMULATION_RUNS_COMPLETED_TOTAL.inc()
+         # Increment counters for each machine that completed.
+        for machine_id, status in factory.machine_status.items():
+            if status:
+                # Extracts a clean type like 'Mix', 'Coat', 'Dry' from the machine ID
+                machine_type = machine_id.split('_')[1]
+                JOBS_COMPLETED_BY_MACHINE_TOTAL.labels(machine_type=machine_type).inc()
+        # --- END METRICS UPDATE ---
 
         for data in [payload.anode, payload.cathode]:
             machine = machines[data.electrode_type]
@@ -471,10 +505,3 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.get("/metrics")
 async def metrics():
     return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
-
-@app.get("/simulate")
-def simulate():
-    machine_status.labels(machine="mixer").set(1)
-    jobs_completed.labels(machine="mixer").inc()
-    job_duration.labels(machine="mixer").observe(2.5)
-    return {"status": "updated"}

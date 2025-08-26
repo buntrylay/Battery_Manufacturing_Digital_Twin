@@ -5,7 +5,7 @@ import threading
 from datetime import datetime, timedelta
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.ElectrodeInspectionPropertyCalculator import ElectrodeInspectionPropertyCalculator
-
+from metrics.metrics import set_machine_status
 class ElectrodeInspectionMachine(BaseMachine):
     """
     Simulates electrode inspection after slitting.
@@ -126,17 +126,22 @@ class ElectrodeInspectionMachine(BaseMachine):
 
     def run(self):
         if self.is_on:
-            if None in [self.epsilon_width, self.B]:
-                raise ValueError(f"{self.id}: Missing slitting inputs.")
-            self._simulate()
-            thread_broadcast(f"Inspection process {self.id} in progress...") # Broadcast continuation message
+            set_machine_status(self.id, 1)  # <-- ADDED: Set status to 1 (Running)
+            try:
+                if None in [self.epsilon_width, self.B]:
+                    raise ValueError(f"{self.id}: Missing slitting inputs.")
+                self._simulate()
+                thread_broadcast(f"Inspection process {self.id} in progress...") # Broadcast continuation message
 
-            final_output = self._format_result(is_final=True)
-            filename = f"final_results_{self.id}.json"
-            self._write_json(final_output, filename)
-            
-            print(f"Inspection process completed on {self.id}\n")
-            
+                final_output = self._format_result(is_final=True)
+                filename = f"final_results_{self.id}.json"
+                self._write_json(final_output, filename)
+                
+                print(f"Inspection process completed on {self.id}\n")
+                set_machine_status(self.id, 0)  # <-- ADDED: Set status to 0 (Completed)
+            except Exception as e:
+                print(f"Error during inspection process on {self.id}: {e}")
+                set_machine_status(self.id, 2)  # <-- ADDED: Set status to 2 (Fault)
     def update_from_slitting(self, slitting_data):
         with self.lock:
             self.epsilon_width = slitting_data.get("epsilon_width")

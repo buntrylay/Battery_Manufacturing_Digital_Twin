@@ -6,6 +6,7 @@ import json
 import os
 import random
 import threading
+from metrics.metrics import set_machine_status
 
 
 class CoatingMachine(BaseMachine):
@@ -132,16 +133,21 @@ class CoatingMachine(BaseMachine):
         Run the coating process with detailed step simulation.
         """
         if self.is_on:
-            from server.main import thread_broadcast
-            thread_broadcast(f"Coating process started on {self.id}") # Broadcast start message
-            self._simulate()
+            set_machine_status(self.id, 1)  # <-- ADDED: Set status to 1 (Running)
+            try:
+                from server.main import thread_broadcast
+                thread_broadcast(f"Coating process started on {self.id}") # Broadcast start message
+                self._simulate()
 
-            thread_broadcast(f"Coating process {self.id} in progress...") # Broadcast progress message
+                thread_broadcast(f"Coating process {self.id} in progress...") # Broadcast progress message
             
-            print(f"Coating process completed on {self.id}\n")
+                print(f"Coating process completed on {self.id}\n")
 
-            thread_broadcast(f"Coating process completed on {self.id}")  # Broadcast completion message
-
+                thread_broadcast(f"Coating process completed on {self.id}")  # Broadcast completion message
+                set_machine_status(self.id, 0)  # <-- ADDED: Set status to 0 (Completed)
+            except Exception as e:
+                print(f"Error during coating process on {self.id}: {e}")
+                set_machine_status(self.id, 2)
     def update_from_slurry(self, slurry):
         """
         Update coating machine properties from a slurry object.

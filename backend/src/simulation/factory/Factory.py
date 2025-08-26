@@ -10,8 +10,8 @@ from simulation.machine.RewindingMachine import RewindingMachine
 from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
 from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
 from simulation.machine.AgingMachine import AgingMachine
+# Correctly import the metric helper functions
 from metrics.metrics import set_machine_status, inc_job_completed, observe_job_duration
-
 
 import time
 
@@ -125,20 +125,22 @@ class Factory:
                 formation_data = dependency_machine.get_final_formation_properties()
                 print(f"[{machine.id}] Receiving formation data from {dependency_id}")
                 machine.update_from_formation_cycling(formation_data)
-
+                
     def run_machine(self, machine):
         """
-         Run a single machine within its own thread, handling dependencies.
+        Run a single machine, handling dependencies and metric reporting.
+        This is the primary location for metric instrumentation.
         """
+        start_time = time.time()
+        # Set status to 1 (running) as soon as the process for this machine starts.
+        set_machine_status(machine.id, 1)
+
         try:
             # Wait for dependencies if any
             if hasattr(machine, 'dependencies') and machine.dependencies:
                 self.wait_for_dependencies(machine)
 
             print(f"Starting {machine.id}...")
-             # When a machine starts:
-            machine_status.labels(machine=machine.id).set(1) # 1 = Running
-
             machine.turn_on()
             machine.run()
             machine.turn_off()
@@ -146,15 +148,25 @@ class Factory:
             # Mark machine as complete
             with self.machine_locks[machine.id]:
                 self.machine_status[machine.id] = True
-                self.machine_events[machine.id].set()  # Signal completion
-            # When a machine finishes:
-            machine_status.labels(machine=machine.id).set(0) # 0 = Idle/Completed
             print(f"Completed {machine.id}")
+
         except Exception as e:
+            # Set status to 2 (fault) if an error occurs
+            set_machine_status(machine.id, 2)
             print(f"Error in {machine.id}: {str(e)}")
+            
         finally:
-            # Ensure the event is set even if there's an error
-            self.machine_events[machine.id].set()
+            # This block will run whether the machine succeeded or failed.
+            self.machine_events[machine.id].set()  # Signal completion to other machines
+
+            duration = time.time() - start_time
+            
+            # Only record completion metrics if the machine status is True
+            if self.machine_status.get(machine.id):
+                inc_job_completed(machine.id)
+                observe_job_duration(machine.id, duration)
+                # Set status to 0 (idle/completed) after a successful run
+                set_machine_status(machine.id, 0)
 
     def start_simulation(self):
         """
@@ -167,7 +179,7 @@ class Factory:
             thread = threading.Thread(
                 target=self.run_machine,
                 args=(machine,),
-                daemon=False  # Make threads non-daemon
+                daemon=False
             )
             thread.start()
             self.threads.append(thread)
@@ -179,11 +191,9 @@ class Factory:
         self.is_running = False
         self.shutdown_event.set()
         
-        # Wait for all threads to complete
         for thread in self.threads:
-            thread.join(timeout=5.0)  # Wait up to 5 seconds for each thread
+            thread.join(timeout=5.0)
         
-        # Clear all events
         for event in self.machine_events.values():
             event.set()
             
@@ -193,13 +203,4 @@ class Factory:
         """
         Cleanup when the factory is destroyed.
         """
-        self.stop_simulation() 
-        
-    #machine metrics helpers added here - dont think they work 
-    def on_machine_state(machine_name, is_running: bool, is_fault: bool=False):
-        status = 2 if is_fault else (1 if is_running else 0)
-        set_machine_status(machine_name, status)
-
-    def on_job_completed(machine_name, duration_s: float):
-        inc_job_completed(machine_name)
-        observe_job_duration(machine_name, duration_s)
+        self.stop_simulation()

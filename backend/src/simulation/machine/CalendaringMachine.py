@@ -5,6 +5,8 @@ import threading
 import time
 import json
 import os
+from metrics.metrics import set_machine_status
+
 
 class CalendaringMachine(BaseMachine):
     """
@@ -105,12 +107,18 @@ class CalendaringMachine(BaseMachine):
         Run the calendaring simulation.
         """
         if self.is_on:
-            self._simulate()
-            thread_broadcast(f"Calendaring process {self.id} in progress...") # Broadcast continuation message
-            final_result = self._format_result(is_final=True)
-            filename = f"final_results_{self.id}.json"
-            self._write_json(final_result, filename)
-            print(f"Calendaring process completed on {self.id}\n")
+            set_machine_status(self.id, 1)  # <-- ADDED: Set status to 1 (Running)
+            try:
+                self._simulate()
+                thread_broadcast(f"Calendaring process {self.id} in progress...") # Broadcast continuation message
+                final_result = self._format_result(is_final=True)
+                filename = f"final_results_{self.id}.json"
+                self._write_json(final_result, filename)
+                print(f"Calendaring process completed on {self.id}\n")
+                set_machine_status(self.id, 0)  # <-- ADDED: Set status to 0 (Completed)
+            except Exception as e:
+                print(f"Error during calendaring process on {self.id}: {e}")    
+                set_machine_status(self.id, 2)  # <-- ADDED: Set status to 2 (Fault)
     
     def update_from_drying(self, dry_thickness_drying):
         with self.lock:

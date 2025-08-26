@@ -7,7 +7,7 @@ import json
 import os
 import random
 import threading
-
+from metrics.metrics import set_machine_status
 
 class MixingMachine(BaseMachine):
     """
@@ -215,15 +215,21 @@ class MixingMachine(BaseMachine):
             pause_sec (float): Time to pause between additions in seconds.
         """
         if self.is_on:
-            from server.main import thread_broadcast
-            thread_broadcast(f"Machine {self.id} is already running.") # Broadcast message
-            for comp in ["PVDF", "CA", "AM"]:
-                self._mix_component(comp, step_percent, pause_sec)
+            set_machine_status(self.id, 1)  # <-- ADDED: Set status to 1 (Running)
+            try:
+                from server.main import thread_broadcast
+                thread_broadcast(f"Machine {self.id} is already running.") # Broadcast message
+                for comp in ["PVDF", "CA", "AM"]:
+                    self._mix_component(comp, step_percent, pause_sec)
 
-            thread_broadcast(f"Machine {self.id} mixing in progress.") # Broadcast message
+                thread_broadcast(f"Machine {self.id} mixing in progress.") # Broadcast message
 
-            self._save_final_results() 
+                self._save_final_results() 
 
-            thread_broadcast(f"Machine {self.id} mixing completed.") # Broadcast message
- 
+                thread_broadcast(f"Machine {self.id} mixing completed.") # Broadcast message
+                print(f"Mixing process completed on {self.id}\n")
+                set_machine_status(self.id, 0)  # <-- ADDED: Set status to
+            except Exception as e:
+                print(f"Error during mixing process on {self.id}: {e}")
+                set_machine_status(self.id, 2)
 
