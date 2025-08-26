@@ -43,7 +43,7 @@ user_input_coating = {
     "coating_width": 0.5
 }
 
-# ✅ Define calendaring parameters
+# Define calendaring parameters
 user_input_calendaring = {
     "roll_gap": 100e-6,             # meters
     "roll_pressure": 2e6,           # Pascals
@@ -51,6 +51,10 @@ user_input_calendaring = {
     "dry_thickness": 150e-6,        # From coating (m)
     "initial_porosity": 0.45,       # Assumed porosity after drying
     "temperature": 25               # Optional
+}
+
+user_input_drying = {
+    "web_speed": 0.01,  # m/s
 }
 #  Slitting's input parameters - Ai Vi
 user_input_slitting = {
@@ -103,21 +107,27 @@ cathode_slurry = Slurry("Cathode")
 anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode)
 cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slurry, user_input_cathode)
 
+# anode_mixing_machine.turn_on()
+# anode_mixing_machine.run()
+# anode_mixing_machine.turn_off()
+
 # Create coating machines
 anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
 cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
 
 # Create drying machines
-anode_drying_machine = DryingMachine("MC_Dry_Anode", web_speed= 0.01)
-cathode_drying_machine = DryingMachine("MC_Dry_Cathode", web_speed= 0.01)
+anode_drying_machine = DryingMachine("MC_Dry_Anode", user_input_drying)
+cathode_drying_machine = DryingMachine("MC_Dry_Cathode", user_input_drying)
 
-# ✅ Create calendaring machine
+# Create calendaring machine
 anode_calendaring_machine = CalendaringMachine("MC_Calendar_Anode", user_input_calendaring)
 cathode_calendaring_machine = CalendaringMachine("MC_Calendar_Cathode", user_input_calendaring)
-# Create slitting machines - Ai Vi
+
+# Create slitting machines
 anode_slitting_machine = SlittingMachine("MC_Slit_Anode", user_input_slitting)
 cathode_slitting_machine = SlittingMachine("MC_Slit_Cathode", user_input_slitting)
-# Create electrode inspection machines - Ai Vi
+
+# Create electrode inspection machines 
 anode_electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect_Anode", user_input_electrode_inspection)
 cathode_electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect_Cathode", user_input_electrode_inspection)
 
@@ -160,5 +170,6 @@ factory.add_machine(anode_formation_machine, dependencies=["MC_ElecFill_Anode"])
 factory.add_machine(cathode_formation_machine, dependencies=["MC_ElecFill_Cathode"])
 factory.add_machine(anode_aging_machine, dependencies=["MC_Formation_Anode"])
 factory.add_machine(cathode_aging_machine, dependencies=["MC_Formation_Cathode"])
+
 # Start the simulation
 factory.start_simulation()
