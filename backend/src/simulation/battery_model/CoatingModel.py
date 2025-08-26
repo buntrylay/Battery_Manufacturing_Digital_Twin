@@ -1,17 +1,35 @@
-class CoatingPropertyCalculator:
-    """
-    Calculator class for coating properties and quality metrics in battery electrode manufacturing.
-    
-    This class implements physical models for calculating various coating properties including:
-    - Shear rate and flow behavior
-    - Wet coating thickness
-    - Drying characteristics
-    - Coating uniformity and defect risk assessment
-    
-    The calculations are based on fundamental coating process parameters and rheological properties.
-    """
-    
-    def __init__(self):
+from simulation.battery_model.MixingModel import MixingModel
+
+# def update_from_slurry(self, slurry):
+#         """
+#         Update coating machine properties from a slurry object.
+#         Args:
+#             slurry (Slurry): The slurry object from the mixing machine
+#         """
+#         with self.lock:
+#             # Calculate total volume of solids
+#             total_solids = slurry.AM + slurry.CA + slurry.PVDF
+#             total_volume = total_solids + getattr(slurry, slurry.solvent)
+#             self.solid_content = total_solids / total_volume if total_volume > 0 else 0
+#             # Get viscosity from the slurry's calculator
+#             self.viscosity_pa = slurry.viscosity
+#             print(f"Updated {self.id} with properties from slurry")
+#             print(f"Viscosity: {self.viscosity_pa:.2f} Pa·s, Solid Content: {self.solid_content:.2%}")
+
+from simulation.battery_model.BaseModel import BaseModel
+
+class CoatingModel(BaseModel):
+    def __init__(self, slurry: MixingModel):
+        total_solids = slurry.AM + slurry.CA + slurry.PVDF
+        total_volume = total_solids + slurry.solvent
+        self.solid_content = total_solids / total_volume if total_volume > 0 else 0
+        self.viscosity = slurry.viscosity
+        self.wet_thickness = 0
+        self.dry_thickness = 0
+        self.wet_width = 0
+        self.uniformity_std = 0
+        self.shear_rate = 0
+        self.defect_risk = False
         """
         Initialise the coating property calculator with default parameters.
         
@@ -26,8 +44,8 @@ class CoatingPropertyCalculator:
         self.base_std = 0.01  # Base standard deviation
         self.nominal_shear_rate = 500  # 1/s
         self.sample_points = 800
-        
-    def calculate_shear_rate(self, coating_speed, gap_height):
+
+    def update_shear_rate(self, coating_speed, gap_height):
         """
         Calculate the shear rate in the coating gap.
         
@@ -41,9 +59,9 @@ class CoatingPropertyCalculator:
         Returns:
             float: Shear rate in 1/s
         """
-        return coating_speed / gap_height
+        self.shear_rate = coating_speed / gap_height
     
-    def calculate_wet_thickness(self, flow_rate, coating_speed, coating_width):
+    def update_wet_thickness(self, flow_rate, coating_speed, coating_width):
         """
         Calculate the wet coating thickness based on mass balance.
         
@@ -59,9 +77,9 @@ class CoatingPropertyCalculator:
         Returns:
             float: Wet coating thickness in m
         """
-        return flow_rate / (coating_speed * coating_width)
+        self.wet_thickness = flow_rate / (coating_speed * coating_width)
     
-    def calculate_dry_thickness(self, wet_thickness, solid_content):
+    def update_dry_thickness(self):
         """
         Calculate the drying rate based on wet thickness and solid content.
         
@@ -75,9 +93,9 @@ class CoatingPropertyCalculator:
         Returns:
             float: Drying rate in m/s
         """
-        return wet_thickness * solid_content
+        self.dry_thickness = self.wet_thickness * self.solid_content
     
-    def check_defect_risk(self, coating_speed, gap_height, viscosity):
+    def update_defect_risk(self, coating_speed, gap_height, viscosity):
         """
         Assess the risk of coating defects based on process parameters.
         
@@ -94,9 +112,9 @@ class CoatingPropertyCalculator:
         Returns:
             bool: True if defect risk is high, False otherwise
         """
-        return (coating_speed / gap_height) > (self.K * viscosity)
+        self.defect_risk = (coating_speed / gap_height) > (self.K * self.viscosity)
     
-    def calculate_uniformity(self, shear_rate):
+    def update_uniformity_std(self, shear_rate):
         """
         Calculate coating uniformity based on shear rate.
         
@@ -110,3 +128,19 @@ class CoatingPropertyCalculator:
             float: Standard deviation of coating uniformity
         """
         return self.base_std * (shear_rate / self.nominal_shear_rate)
+    
+    def update_properties(self):
+        """
+        Update all computed properties.
+        """
+        self.shear_rate = self.calculate_shear_rate()
+        
+    def get_properties(self):
+        return {
+            "solid_content": self.solid_content,
+            "viscosity": self.viscosity,
+            "wet_thickness": self.wet_thickness,
+            "wet_width": self.wet_width,
+            "uniformity_wet": self.uniformity_std,
+            "shear_rate": self.shear_rate,
+        }

@@ -4,25 +4,15 @@ import os
 # Add the src directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from simulation.factory.Factory import Factory
-from simulation.battery_model.Slurry import Slurry
-from simulation.machine.MixingMachine import MixingMachine
-from simulation.machine.CoatingMachine import CoatingMachine
-from simulation.machine.CalendaringMachine import CalendaringMachine
-from simulation.machine.DryingMachine import DryingMachine 
-from simulation.machine.SlittingMachine import SlittingMachine
-from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
-from simulation.machine.RewindingMachine import RewindingMachine
-from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
-from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
-from simulation.machine.AgingMachine import AgingMachine
+from simulation.battery_model.MixingModel import MixingModel
+from simulation.machine.MixingMachine import MixingMachine, MixingParameters
 
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
     "PVDF": 0.05,
     "CA": 0.045,
     "AM": 0.495,
-    "H2O": 0.41
+    "solvent": 0.41
 }
 
 # Define the mixing ratios for cathode slurry components
@@ -97,57 +87,9 @@ user_input_aging = {
     "aging_time_days": 10
 }
 
-# Create slurry instances
-anode_slurry = Slurry("Anode")
-cathode_slurry = Slurry("Cathode")
-# Create mixing machines
-anode_mixing_machine = MixingMachine("TK_Mix_Anode", "Anode", anode_slurry, user_input_anode)
-cathode_mixing_machine = MixingMachine("TK_Mix_Cathode", "Cathode", cathode_slurry, user_input_cathode)
-# Create coating machines
-anode_coating_machine = CoatingMachine("MC_Coat_Anode", user_input_coating)
-cathode_coating_machine = CoatingMachine("MC_Coat_Cathode", user_input_coating)
-# Create drying machines
-anode_drying_machine = DryingMachine("MC_Dry_Anode", web_speed= 0.01)
-cathode_drying_machine = DryingMachine("MC_Dry_Cathode", web_speed= 0.01)
-# Create calendaring machines
-anode_calendaring_machine = CalendaringMachine("MC_Calendar_Anode", user_input_calendaring)
-cathode_calendaring_machine = CalendaringMachine("MC_Calendar_Cathode", user_input_calendaring)
-# Create slitting machine
-slitting_machine = SlittingMachine("MC_Slit", user_input_slitting)
-# Create electrode inspection machine
-electrode_inspection_machine = ElectrodeInspectionMachine("MC_Inspect", user_input_electrode_inspection)
-# Create rewinding machine
-rewinding_machine = RewindingMachine("MC_Rewind", user_input_rewinding)
-# Create electrolyte filling machine
-electrolyte_filling_machine = ElectrolyteFillingMachine("MC_ElecFill", user_input_elec_filling)
-# Create formation cycling machine
-formation_machine = FormationCyclingMachine("MC_Formation", user_input_formation)
-# Create aging machine
-aging_machine = AgingMachine("MC_Aging", user_input_aging)
-
-# Initialize factory with new pipeline structure
-factory = Factory()
-
-# Add machines to anode line
-factory.add_machine(anode_mixing_machine, 'anode', 'mixing')
-factory.add_machine(anode_coating_machine, 'anode', 'coating')
-factory.add_machine(anode_drying_machine, 'anode', 'drying')
-factory.add_machine(anode_calendaring_machine, 'anode', 'calendaring')
-
-# Add machines to cathode line
-factory.add_machine(cathode_mixing_machine, 'cathode', 'mixing')
-factory.add_machine(cathode_coating_machine, 'cathode', 'coating')
-factory.add_machine(cathode_drying_machine, 'cathode', 'drying')
-factory.add_machine(cathode_calendaring_machine, 'cathode', 'calendaring')
-
-# Add machines to merged line (after calendaring)
-factory.add_machine(slitting_machine, 'merged', 'slitting')
-factory.add_machine(electrode_inspection_machine, 'merged', 'inspection')
-factory.add_machine(rewinding_machine, 'merged', 'rewinding')
-factory.add_machine(electrolyte_filling_machine, 'merged', 'electrolyte_filling')
-factory.add_machine(formation_machine, 'merged', 'formation_cycling')
-factory.add_machine(aging_machine, 'merged', 'aging')
-
-# Start the simulation
-print("Starting Battery Manufacturing Pipeline Simulation...")
-factory.start_simulation()
+anode_mixing_model = MixingModel("Anode")
+anode_mixing_machine = MixingMachine(anode_mixing_model, MixingParameters(mixing_tank_volume=200, material_ratios=user_input_anode))
+anode_mixing_machine.run()
+# anode_coating_model = CoatingModel(anode_mixing_model)
+# anode_coating_machine = CoatingMachine(anode_coating_model, CoatingParameters(coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5))
+# anode_coating_machine.run()

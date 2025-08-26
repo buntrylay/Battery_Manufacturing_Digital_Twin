@@ -108,7 +108,7 @@ class DryingMachine(BaseMachine):
         """
         Run the drying simulation.
         """
-        if self.is_on:
+        if self.state:
             from server.main import thread_broadcast 
             thread_broadcast(f"Drying process started on {self.id}") # Broadcast start message
             self._simulate()

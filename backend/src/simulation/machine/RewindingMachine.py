@@ -129,7 +129,7 @@ class RewindingMachine(BaseMachine):
             time.sleep(0.1)
                 
     def run(self):
-        if self.is_on:
+        if self.state:
             self._simulate()
             from server.main import thread_broadcast
             thread_broadcast(f"Rewinding process {self.id} in progress...") # Broadcast continuation message

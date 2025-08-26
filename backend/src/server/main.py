@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the Factory class
 from simulation.factory.Factory import Factory
-from simulation.battery_model.Slurry import Slurry
+from backend.src.simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.MixingMachine import MixingMachine
 from simulation.machine.CoatingMachine import CoatingMachine
 from simulation.machine.DryingMachine import DryingMachine
@@ -116,7 +116,7 @@ def start_both_simulation(payload: DualInput):
         factory.machine_events = {}
         factory.thread_broadcast = {}
         for data in [payload.anode, payload.cathode]:
-            slurry = Slurry(data.electrode_type)
+            slurry = MixingModel(data.electrode_type)
             ratios = {
                 "PVDF": data.PVDF,
                 "CA": data.CA,

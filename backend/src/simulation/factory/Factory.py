@@ -28,12 +28,14 @@ New Factory class that implements a pipeline-based approach:
 #         'coating': CoatingMachine,
 #         'drying': DryingMachine,
 #         'calendaring': CalendaringMachine
+#         'slitting': SlittingMachine,
 #     }
 #     cathode_production_line: {
 #         'mixing': MixingMachine,
 #         'coating': CoatingMachine,
 #         'drying': DryingMachine,
 #         'calendaring': CalendaringMachine
+#         'slitting': SlittingMachine,
 #     }
 #     merged_line: {
 #         'slitting': SlittingMachine,
@@ -116,11 +118,26 @@ class Factory:
     # but previously the machines, although they are all BaseMachine, have different methods. 
     # therefore, we need to standardise the methods in the BaseMachine class.
     # it could be run_production_line(self, line_type: str, process_input: dict)
+    # def run_single_line(self, line_type: str):
+    #     """
+    #     usage: run_single_line("anode") or run_single_line("cathode")
+    #     Run a single production line: mixing → coating → drying → calendaring
+    #     """
+    #     for machine_type in ["mixing", "coating", "drying", "calendaring", "slitting"]:
+    #         if self.production_line[line_type][machine_type]:
+    #             print(f"Running {self.production_line[line_type][machine_type].id}...")
+    #             self.production_line[line_type][machine_type].turn_on() # turn on the machine
+    #             self.production_line[line_type][machine_type].update_from_previous_machine(self.production_line[line_type][machine_type - 1]) # update the machine with the previous machine's output
+    #             self.production_line[line_type][machine_type].run() # run the machine
+    #             self.production_line[line_type][machine_type].turn_off() # turn off the machine
+    #             print(f"{machine_type} completed.")
+                
     def run_anode_line(self):
         """
         Run the anode production line: mixing → coating → drying → calendaring
         """
         print("Starting Anode Production Line...")
+
         
         # Mixing
         if self.anode_production_line['mixing']:

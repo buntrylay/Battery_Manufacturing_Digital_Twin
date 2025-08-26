@@ -1,5 +1,6 @@
+from simulation.battery_model.CoatingModel import CoatingModel
 from simulation.machine.BaseMachine import BaseMachine
-from simulation.sensor.CoatingPropertyCalculator import CoatingPropertyCalculator
+# from simulation.sensor.CoatingPropertyCalculator import CoatingPropertyCalculator
 import time
 from datetime import datetime, timedelta
 import json
@@ -19,7 +20,7 @@ class CoatingMachine(BaseMachine):
     - Real-time data logging
     """
     
-    def __init__(self, id, machine_parameters: dict):
+    def __init__(self, id, coating_model: CoatingModel, machine_parameters: dict):
         """
         Initialize the coating machine.
         
@@ -131,7 +132,7 @@ class CoatingMachine(BaseMachine):
         """
         Run the coating process with detailed step simulation.
         """
-        if self.is_on:
+        if self.state:
             from server.main import thread_broadcast
             thread_broadcast(f"Coating process started on {self.id}") # Broadcast start message
             self._simulate()
@@ -142,22 +143,4 @@ class CoatingMachine(BaseMachine):
 
             thread_broadcast(f"Coating process completed on {self.id}")  # Broadcast completion message
 
-    def update_from_slurry(self, slurry):
-        """
-        Update coating machine properties from a slurry object.
-        
-        Args:
-            slurry (Slurry): The slurry object from the mixing machine
-        """
-        with self.lock:
-            # Calculate total volume of solids
-            total_solids = slurry.AM + slurry.CA + slurry.PVDF
-            total_volume = total_solids + getattr(slurry, slurry.solvent)
-            self.solid_content = total_solids / total_volume if total_volume > 0 else 0
-            
-            # Get viscosity from the slurry's calculator
-            self.viscosity_pa = slurry.viscosity
-            
-            print(f"Updated {self.id} with properties from slurry")
-            print(f"Viscosity: {self.viscosity_pa:.2f} Pa·s, Solid Content: {self.solid_content:.2%}") 
             

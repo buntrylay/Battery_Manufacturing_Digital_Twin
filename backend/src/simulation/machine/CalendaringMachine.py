@@ -104,7 +104,7 @@ class CalendaringMachine(BaseMachine):
         """
         Run the calendaring simulation.
         """
-        if self.is_on:
+        if self.state:
             self._simulate()
             thread_broadcast(f"Calendaring process {self.id} in progress...") # Broadcast continuation message
             final_result = self._format_result(is_final=True)

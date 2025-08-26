@@ -1,4 +1,4 @@
 # Battery model package initialization
-from .Slurry import Slurry
+from .MixingModel import MixingModel
 
-__all__ = ['Slurry']
+__all__ = ['MixingModel']

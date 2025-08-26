@@ -125,7 +125,7 @@ class ElectrodeInspectionMachine(BaseMachine):
             time.sleep(0.1)
 
     def run(self):
-        if self.is_on:
+        if self.state:
             if None in [self.epsilon_width, self.B]:
                 raise ValueError(f"{self.id}: Missing slitting inputs.")
             self._simulate()
