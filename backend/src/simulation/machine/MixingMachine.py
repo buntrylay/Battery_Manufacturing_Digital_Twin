@@ -40,19 +40,21 @@ class MixingMachine(BaseMachine):
             ratio_materials (dict): Dictionary containing mixing ratios for components.
         """
         super().__init__(id, connection_string)
+
         self.slurry = slurry
         self.electrode_type = electrode_type
-        self.volume = 200  # Default volume in litres
+        self.volume = 200
+        self.temperature = 25
+        self.k_vis = random.uniform(0.01, 0.1)  # Random decay constant for viscosity
+        self.k_yield = random.uniform(0.01, 0.1)  # Random decay constant for yield stress
         self.ratios = ratio_materials
-        self.lock = threading.Lock()  # Thread safety lock
+        self.lock = threading.Lock()
         self.total_time = 0
         self.start_datetime = datetime.now()
-
-        # Create mixing_output directory in the current working directory
         self.output_dir = os.path.join(os.getcwd(), "mixing_output")
         os.makedirs(self.output_dir, exist_ok=True)
-        print(f"Output directory created at: {self.output_dir}")
- 
+
+
         # Set density values, weight coefficients and initial solvent volume based on electrode type
         if self.electrode_type == "Anode":
             self.RHO_values = {"AM": 2.26, "CA": 1.8, "PVDF": 1.17, "H2O": 1.0}
@@ -80,21 +82,22 @@ class MixingMachine(BaseMachine):
         with self.lock:
             base = {
                 "TimeStamp": (self.start_datetime + timedelta(seconds=self.total_time)).isoformat(),
-                "Duration": round(self.total_time, 5),
+                "Duration (s)": round(self.total_time, 5),
                 "Machine ID": self.id,
                 "Process": "Mixing",
                 "Electrode Type": self.electrode_type,
+                "Temperature (C)": round(self.ref_temperature, 2)
             }
             composition = {
-                "AM": round(self.slurry.AM, 3),
-                "CA": round(self.slurry.CA, 3),
-                "PVDF": round(self.slurry.PVDF, 3),
-                f"{self.slurry.solvent}": round(getattr(self.slurry, self.slurry.solvent), 3)
+                "AM (kg)": round(getattr(self.slurry, 'AM'), 3),
+                "CA (kg)": round(getattr(self.slurry, 'CA'), 3),
+                "PVDF (kg)": round(getattr(self.slurry, 'PVDF'), 3),
+                f"{self.slurry.solvent} (kg)": round(getattr(self.slurry, self.slurry.solvent), 3)
             }
             properties = {
-                "Density": round(self.calculator.calculate_density(self.slurry), 4),
-                "Viscosity": round(self.calculator.calculate_viscosity(self.slurry), 2),
-                "YieldStress": round(self.calculator.calculate_yield_stress(self.slurry), 2)
+                "Density (g/cm3)": round(self.calculator.calculate_density(self.slurry), 4),
+                "Viscosity (mPas)": round(self.calculator.calculate_viscosity(self.slurry)* np.exp (-self.k_vis * (self.temperature - self.ref_temperature)), 4),
+                "YieldStress (Pa)": round(self.calculator.calculate_yield_stress(self.slurry)* np.exp (-self.k_yield * (self.temperature - self.ref_temperature)), 4)
             }
             if is_final:
                 base["Final Composition"] = composition
@@ -102,7 +105,7 @@ class MixingMachine(BaseMachine):
             else:
                 base.update(composition)
                 base.update(properties)
-            return base
+        return base
  
     def _write_json(self, data, filename):
         """
@@ -138,46 +141,32 @@ class MixingMachine(BaseMachine):
         """
         print(" | ".join(f"{k}: {v}" for k, v in result.items()))
  
-    def _mix_component(self, component, step_percent, pause_sec):
-        """
-        Gradually mix a single component into the slurry, simulating real-time process data.
- 
-        Args:
-            component (str): Component to be mixed.
-            step_percent (float): Percentage of total volume to add in each step.
-            pause_sec (float): Time to pause between additions in seconds.
-        """
-        total_volume_to_add = self.volume * self.ratios[component]
-        step_volume = step_percent * total_volume_to_add
-        steps = int(1 / step_percent)
- 
+    def _mix_component(self, component, step_percent, pause_sec, duration_sec, results_list):
+        total_volume = self.volume * self.ratios[component]
+        step_volume = step_percent * total_volume
+        added_volume = 0.0
+        comp_start_time = self.total_time
         last_saved_time = time.time()
-        last_saved_result = None  # Track last saved result to prevent duplicates
-
-        for _ in range(steps):
-            with self.lock:  # Use lock for thread safety
+        last_saved_result = None
+        while self.total_time - comp_start_time < duration_sec:
+            self.ref_temperature = np.random.normal(loc=25, scale=1)
+            with self.lock:
                 self.total_time += pause_sec
-                self.slurry.add(component, step_volume)
-
-            # Simulate machine parameters
-            temperature = round(random.uniform(20, 25), 2)
-            pressure = round(random.uniform(1, 2), 2)
-            rpm = random.randint(300, 600)
-
-            # Record process data
+                if added_volume < total_volume:
+                    add_amt = min(step_volume, total_volume - added_volume)
+                    self.slurry.add(component, add_amt)
+                    added_volume += add_amt
             result = self._format_result()
-            
-            # Save results periodically, but only if data has changed
+            results_list.append(result)
             now = time.time()
             if now - last_saved_time >= 0.1 and result != last_saved_result:  # Check if data has changed
-                filename = f"result_at_{round(self.total_time)}s.json"
+                filename = f"resultat{round(self.total_time)}s.json"
                 data = self._write_json(result, filename)
                 if data:
                     self.send_json_to_iothub(data)  # Send to IoT Hub
                     self._print_result(data)  # Print to console
                 last_saved_time = now
                 last_saved_result = result
-
             time.sleep(pause_sec)
 
     def get_final_slurry(self):
@@ -191,40 +180,33 @@ class MixingMachine(BaseMachine):
             return self.slurry
 
     def _save_final_results(self):
-        """
-        Save the final mixing results to a JSON file and update the slurry properties
-        """
         final_result = self._format_result(is_final=True)
-        # Get properties from the final result's nested Final Properties
-        final_properties = final_result.get("Final Properties", {})
-        viscosity = final_properties.get("Viscosity", 0.0)
-        density = final_properties.get("Density", 0.0)
-        yield_stress = final_properties.get("YieldStress", 0.0)
-        
-        # Update slurry properties
-        self.slurry.update_properties(viscosity, density, yield_stress)
-        
-        print(f"Final properties - Viscosity: {viscosity:.2f}, Density: {density:.2f}, Yield Stress: {yield_stress:.2f}")
+        props = final_result.get("Final Properties", {})
+        self.slurry.update_properties(props.get("Viscosity", 0.0), props.get("Density", 0.0), props.get("YieldStress", 0.0))
+        print(f"Final properties - Viscosity: {props.get('Viscosity', 0.0):.2f}, Density: {props.get('Density', 0.0):.2f}, Yield Stress: {props.get('YieldStress', 0.0):.2f}")
  
     def run(self, step_percent=0.02, pause_sec=0.1):
-        """
-        Run the mixing process for all components in the specified order.
- 
-        Args:
-            step_percent (float): Percentage of total volume to add in each step.
-            pause_sec (float): Time to pause between additions in seconds.
-        """
         if self.is_on:
-            from server.main import thread_broadcast
-            thread_broadcast(f"Machine {self.id} is already running.") # Broadcast message
-            for comp in ["PVDF", "CA", "AM"]:
-                self._mix_component(comp, step_percent, pause_sec)
+            all_results = []
+            self._mix_component("PVDF", step_percent, pause_sec, 8, all_results)
+            self._mix_component("CA", step_percent, pause_sec, 8, all_results)
+            self._mix_component("AM", step_percent, pause_sec, 10, all_results)
+            self._save_final_results()
+            # Write all results to a summary JSON file
+            summary_filename = os.path.join(self.output_dir, f"{self.id}_mixing_summary.json")
+            with open(summary_filename, "w") as f:
+                json.dump(all_results, f, indent=4)
+            print(f"Summary of all mixing data saved to {summary_filename}")
 
-            thread_broadcast(f"Machine {self.id} mixing in progress.") # Broadcast message
+            all_results = []
+            self._mix_component("PVDF", step_percent, pause_sec, 8, all_results)
+            self._mix_component("CA", step_percent, pause_sec, 8, all_results)
+            self._mix_component("AM", step_percent, pause_sec, 10, all_results)
 
             self._save_final_results() 
 
-            thread_broadcast(f"Machine {self.id} mixing completed.") # Broadcast message
- 
 
-
+            summary_filename = os.path.join(self.output_dir, f"{self.id}_mixing_summary.json")
+            with open(summary_filename, "w") as f:
+                json.dump(all_results, f, indent=4)
+            print(f"Summary of all mixing data saved to {summary_filename}")

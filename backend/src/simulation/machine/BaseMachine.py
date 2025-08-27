@@ -59,4 +59,3 @@ class BaseMachine(ABC):
     def run(self):
         """Abstract method that must be implemented by concrete machine classes."""
         pass
-
