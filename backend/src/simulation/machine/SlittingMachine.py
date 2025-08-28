@@ -101,14 +101,16 @@ class SlittingMachine(BaseMachine):
             time.sleep(0.1)
 
     def run(self):
-        if self.is_on:
+        if self.state:
             self._simulate()
+            from server.main import thread_broadcast
             thread_broadcast(f"Slitting process {self.id} in progress...\n") # Broadcast continuation message 
             final_result = self._format_result(is_final=True)
             filename = f"final_results_{self.id}.json"
             self._write_json(final_result, filename)
             print(f"Slitting process completed on {self.id}\n")
 
+    # it will accept inputs from both anode and cathode's calendaring machines.
     def update_from_calendaring(self, cal_data):
         with self.lock:
             self.delta_cal = cal_data.get("delta_cal_cal")
