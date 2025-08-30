@@ -6,6 +6,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.MixingMachine import MixingMachine, MixingParameters
+from simulation.battery_model.CoatingModel import CoatingModel
+from simulation.machine.CoatingMachine import CoatingMachine, CoatingParameters
 
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
@@ -41,7 +43,7 @@ user_input_calendaring = {
     "temperature": 25               # Optional
 }
 
-#  Slitting's input parameters - Ai Vi
+#  Slitting's input parameters 
 user_input_slitting = {
     "w_input": 500,
     "blade_sharpness": 8,
@@ -50,7 +52,7 @@ user_input_slitting = {
     "slitting_tension": 150,
 }
 
-#  Electrode Inspection's input parameters - Ai Vi
+#  Electrode Inspection's input parameters 
 user_input_electrode_inspection = {
     "epsilon_width_max": 0.1,  
     "epsilon_thickness_max": 10e-6,
@@ -90,6 +92,6 @@ user_input_aging = {
 anode_mixing_model = MixingModel("Anode")
 anode_mixing_machine = MixingMachine(anode_mixing_model, MixingParameters(mixing_tank_volume=200, material_ratios=user_input_anode))
 anode_mixing_machine.run()
-# anode_coating_model = CoatingModel(anode_mixing_model)
-# anode_coating_machine = CoatingMachine(anode_coating_model, CoatingParameters(coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5))
-# anode_coating_machine.run()
+anode_coating_model = CoatingModel(anode_mixing_model)
+anode_coating_machine = CoatingMachine(anode_coating_model, CoatingParameters(coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5))
+anode_coating_machine.run()
