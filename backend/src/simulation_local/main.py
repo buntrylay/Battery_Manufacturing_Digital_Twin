@@ -8,6 +8,8 @@ from simulation.machine.CoatingMachine import CoatingMachine, CoatingParameters
 from simulation.battery_model.CoatingModel import CoatingModel
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.MixingMachine import MaterialRatios, MixingMachine, MixingParameters
+from simulation.machine.DryingMachine import DryingMachine
+from simulation.battery_model.DryingModel import DryingModel, DryingParameters
 
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
@@ -33,6 +35,9 @@ user_input_coating = {
     "coating_width": 0.5
 }
 
+# Define drying parameters
+
+
 # Define calendaring parameters
 user_input_calendaring = {
     "roll_gap": 100e-6,             # meters
@@ -43,7 +48,7 @@ user_input_calendaring = {
     "temperature": 25               # Optional
 }
 
-#  Slitting's input parameters - Ai Vi
+#  Slitting's input parameters 
 user_input_slitting = {
     "w_input": 500,
     "blade_sharpness": 8,
@@ -52,7 +57,7 @@ user_input_slitting = {
     "slitting_tension": 150,
 }
 
-#  Electrode Inspection's input parameters - Ai Vi
+#  Electrode Inspection's input parameters 
 user_input_electrode_inspection = {
     "epsilon_width_max": 0.1,  
     "epsilon_thickness_max": 10e-6,
@@ -96,3 +101,7 @@ anode_mixing_machine.run()
 coating_model = CoatingModel(anode_mixing_model)
 anode_coating_machine = CoatingMachine(coating_model, CoatingParameters(coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5))
 anode_coating_machine.run()
+drying_model = DryingModel(coating_model)
+anode_drying_machine = DryingMachine(drying_model, DryingParameters(V_air=1.0, T_dry=100, H_air=80,
+    drying_length=10, web_speed=0.5))
+anode_drying_machine.run()
