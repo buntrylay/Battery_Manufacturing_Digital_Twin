@@ -11,16 +11,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import the Factory class
 from simulation.factory.Factory import Factory
 from backend.src.simulation.battery_model.MixingModel import MixingModel
-from simulation.machine.MixingMachine import MixingMachine
-from simulation.machine.CoatingMachine import CoatingMachine
-from simulation.machine.DryingMachine import DryingMachine
-from simulation.machine.CalendaringMachine import CalendaringMachine
-from simulation.machine.SlittingMachine import SlittingMachine
-from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
-from simulation.machine.RewindingMachine import RewindingMachine
-from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
-from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
-from simulation.machine.AgingMachine import AgingMachine
+# from simulation.machine.MixingMachine import MixingMachine
+# from simulation.machine.CoatingMachine import CoatingMachine
+# from simulation.machine.DryingMachine import DryingMachine
+# from simulation.machine.CalendaringMachine import CalendaringMachine
+# from simulation.machine.SlittingMachine import SlittingMachine
+# from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
+# from simulation.machine.RewindingMachine import RewindingMachine
+# from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
+# from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
+# from simulation.machine.AgingMachine import AgingMachine
 from pathlib import Path
 from zipfile import ZipFile
 import json

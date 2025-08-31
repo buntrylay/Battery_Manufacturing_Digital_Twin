@@ -16,12 +16,16 @@ class BaseMachine(ABC):
         calculator (SlurryPropertyCalculator): Calculator for slurry properties
     """
     
-    def __init__(self, process_name, battery_model: BaseModel, machine_parameters: dataclass, connection_string=None):
+    def __init__(self, process_name, battery_model: BaseModel, machine_parameters: dataclass, connection_string=None, **kwargs):
         """
         Initialise a new Machine instance.
         
         Args:
-            
+            process_name (str): The name of the process
+            battery_model (BaseModel): The battery model to be used
+            machine_parameters (dataclass): The machine parameters to be used
+            connection_string (str): The connection string for the IoT Hub
+            **kwargs: Additional keyword arguments (probably for properties that are not in the machine parameters and specific to the machine)
         """
         self.process_name = process_name
         self.battery_model = battery_model
@@ -30,6 +34,7 @@ class BaseMachine(ABC):
         self.start_datetime = None
         self.total_time = 0
         self.calculator = None
+        self.kwargs = kwargs
         # Save data to file related properties
         self.output_dir = os.path.join(os.getcwd(), f"{process_name.lower()}_output")
         os.makedirs(self.output_dir, exist_ok=True)
@@ -99,7 +104,7 @@ class BaseMachine(ABC):
         self.state = False
         self.total_time = 0
 
-    def get_current_properties(self):
+    def get_current_properties(self, process_specifics=None):
         """Get the current properties of the machine."""
         return {
             "timestamp": datetime.now().isoformat(),
@@ -107,10 +112,19 @@ class BaseMachine(ABC):
             "process": self.process_name,
             "battery_model": self.battery_model.get_properties(),
             "machine_parameters": asdict(self.machine_parameters),
+            "process_specifics": process_specifics,
         }
+    
+    # idea to standardise the step logic with decorator @abstractmethod
+    #  @abstractmethod
+    # def step_logic(self):
+    #     """
+    #     Abstract method that must be implemented by concrete machine classes.
+    #     This method is called at each step of the simulation.
+    #     """
+    #     pass
 
     @abstractmethod
     def run(self):
         """Abstract method that must be implemented by concrete machine classes."""
         pass
-
