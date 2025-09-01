@@ -119,7 +119,7 @@ class DryingMachine(BaseMachine):
             delta_coat = self.dry_thickness + (self.M_solvent / self.calculator.solvent_density)
             defect_risk = abs(evap_rate / self.calculator.area()) > self.calculator.max_safe_evap_rate
         if self.is_on:
-            set_machine_status(self.id, 1)  # <-- ADDED: Set status to 1 (Running)
+            # set_machine_status(self.id, 1)  # <-- ADDED: Set status to 1 (Running)
             try:
                 
                 from server.main import thread_broadcast 
@@ -133,7 +133,7 @@ class DryingMachine(BaseMachine):
 
                 print(f"Drying process completed on {self.id}\n")
                 thread_broadcast(f"Drying process completed on {self.id}") # Broadcast completion message
-                set_machine_status(self.id, 0)  # <-- ADDED: Set status to 0 (Completed)
+                # set_machine_status(self.id, 0)  # <-- ADDED: Set status to 0 (Completed)
             except Exception as e:
                 print(f"Error during drying process on {self.id}: {e}")
     def update_from_coating(self, wet_thickness_coating, solid_content_coating):

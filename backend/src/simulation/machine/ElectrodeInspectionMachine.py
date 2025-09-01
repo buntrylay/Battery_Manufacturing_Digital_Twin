@@ -137,7 +137,7 @@ class ElectrodeInspectionMachine(BaseMachine):
             print(f"Inspection process completed on {self.id}\n")
             
         if self.is_on:
-            set_machine_status(self.id, 1)  # <-- ADDED: Set status to 1 (Running)
+            # set_machine_status(self.id, 1)  # <-- ADDED: Set status to 1 (Running)
             try:
                 if None in [self.epsilon_width, self.B]:
                     raise ValueError(f"{self.id}: Missing slitting inputs.")
@@ -149,10 +149,10 @@ class ElectrodeInspectionMachine(BaseMachine):
                 self._write_json(final_output, filename)
                 
                 print(f"Inspection process completed on {self.id}\n")
-                set_machine_status(self.id, 0)  # <-- ADDED: Set status to 0 (Completed)
+                # set_machine_status(self.id, 0)  # <-- ADDED: Set status to 0 (Completed)
             except Exception as e:
                 print(f"Error during inspection process on {self.id}: {e}")
-                set_machine_status(self.id, 2)  # <-- ADDED: Set status to 2 (Fault)
+                # set_machine_status(self.id, 2)  # <-- ADDED: Set status to 2 (Fault)
     def update_from_slitting(self, slitting_data):
         with self.lock:
             self.epsilon_width = slitting_data.get("epsilon_width")

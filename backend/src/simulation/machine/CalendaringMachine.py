@@ -5,7 +5,7 @@ import threading
 import time
 import json
 import os
-from metrics.metrics import set_machine_status
+# from metrics.metrics import set_machine_status
 
 
 class CalendaringMachine(BaseMachine):

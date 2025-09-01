@@ -115,14 +115,14 @@ class ElectrolyteFillingMachine(BaseMachine):
             time.sleep(0.1)
     def run(self):
         if self.is_on:
-            set_machine_status(self.id, 1)  # Set status to 1 (Running)
+            # set_machine_status(self.id, 1)  # Set status to 1 (Running)
             try:
                 self._simulate()
                 print(f"Electrolyte Filling process completed on {self.id}")
-                set_machine_status(self.id, 0)  # Set status to 0 (Completed)
+                # set_machine_status(self.id, 0)  # Set status to 0 (Completed)
             except Exception as e:
                 print(f"Simulation error on {self.id}: {e}")
-                set_machine_status(self.id, 2)
+                # set_machine_status(self.id, 2)
                 
     def get_final_filling(self):
         with self.lock:

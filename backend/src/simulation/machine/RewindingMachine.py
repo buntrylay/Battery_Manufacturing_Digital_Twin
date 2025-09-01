@@ -5,7 +5,7 @@ import threading
 from datetime import datetime, timedelta
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.RewindingPropertyCalculator import RewindingPropertyCalculator
-from metrics.metrics import set_machine_status
+# from metrics.metrics import set_machine_status
 class RewindingMachine(BaseMachine):
     """
     A rewinding machine that simulates the electrode rewinding process.
