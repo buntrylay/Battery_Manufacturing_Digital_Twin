@@ -110,6 +110,7 @@ class BaseMachine(ABC):
             "timestamp": datetime.now().isoformat(),
             "duration": self.total_time,
             "process": self.process_name,
+            "temperature_C": round(self.battery_model.temperature, 2) if hasattr(self.battery_model, 'temperature') else None,
             "battery_model": self.battery_model.get_properties(),
             "machine_parameters": asdict(self.machine_parameters),
             "process_specifics": process_specifics,

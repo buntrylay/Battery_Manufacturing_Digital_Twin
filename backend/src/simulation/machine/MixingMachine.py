@@ -45,7 +45,6 @@ class MixingMachine(BaseMachine):
         last_saved_time = time.time()
         last_saved_result = None
         while self.total_time - comp_start_time < duration_sec:
-            self.ref_temperature = np.random.normal(loc=25, scale=1)
             self.total_time += pause_sec
             if added_volume < total_volume_of_material_to_add:
                 add_amt = min(volume_added_in_each_step, total_volume_of_material_to_add - added_volume)
