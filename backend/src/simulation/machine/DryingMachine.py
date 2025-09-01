@@ -109,6 +109,15 @@ class DryingMachine(BaseMachine):
         """
         Run the drying simulation.
         """
+        if self.state:
+            from server.main import thread_broadcast 
+            thread_broadcast(f"Drying process started on {self.id}") # Broadcast start message
+            self._simulate()
+            thread_broadcast(f"Drying process {self.id} in progress...") # Broadcast progress message
+            # Recalculate final values
+            evap_rate = self.calculator.evaporation_rate()
+            delta_coat = self.dry_thickness + (self.M_solvent / self.calculator.solvent_density)
+            defect_risk = abs(evap_rate / self.calculator.area()) > self.calculator.max_safe_evap_rate
         if self.is_on:
             set_machine_status(self.id, 1)  # <-- ADDED: Set status to 1 (Running)
             try:

@@ -125,6 +125,17 @@ class ElectrodeInspectionMachine(BaseMachine):
             time.sleep(0.1)
 
     def run(self):
+        if self.state:
+            if None in [self.epsilon_width, self.B]:
+                raise ValueError(f"{self.id}: Missing slitting inputs.")
+            self._simulate()
+            from server.main import thread_broadcast
+            thread_broadcast(f"Inspection process {self.id} in progress...") # Broadcast continuation message
+            final_output = self._format_result(is_final=True)
+            filename = f"final_results_{self.id}.json"
+            self._write_json(final_output, filename)
+            print(f"Inspection process completed on {self.id}\n")
+            
         if self.is_on:
             set_machine_status(self.id, 1)  # <-- ADDED: Set status to 1 (Running)
             try:

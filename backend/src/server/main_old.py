@@ -1,11 +1,15 @@
-
-
+import os
+import sys
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+
+# Add the src directory to the Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from simulation.factory.Factory import Factory
-from simulation.battery_model.Slurry import Slurry
+from backend.src.simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.MixingMachine import MixingMachine
 from simulation.machine.CoatingMachine import CoatingMachine
 from simulation.machine.DryingMachine import DryingMachine
@@ -58,7 +62,7 @@ def start_both_simulation(payload: DualInput):
         factory.machine_events = {}
 
         for data in [payload.anode, payload.cathode]:
-            slurry = Slurry(data.electrode_type)
+            slurry = MixingModel(data.electrode_type)
             ratios = {
                 "PVDF": data.PVDF,
                 "CA": data.CA,
