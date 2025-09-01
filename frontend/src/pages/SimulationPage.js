@@ -1,7 +1,7 @@
 // pages/SimulationPage.js
 import React, { useState, useContext } from "react";
 import SlurryInputs from "../components/SlurryInputs";
-import { startSimulations, downloadFile } from "../services/api";
+import { startSimulation, downloadFile } from "../services/api";
 import { WebSocketContext } from "../contexts/WebSocketContext";
 
 export default function SimulationPage() {
@@ -34,7 +34,7 @@ export default function SimulationPage() {
       return;
     }
     try {
-      const response = await startSimulations({
+      const response = await startSimulation({
         anode: { ...anode, electrode_type: "Anode" },
         cathode: { ...cathode, electrode_type: "Cathode" },
       });

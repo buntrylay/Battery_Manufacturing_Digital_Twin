@@ -74,7 +74,6 @@ urllib3==1.26.20
 uvicorn==0.34.2
 uvloop==0.21.0
 watchfiles==1.1.0
-urllib3==1.26.18
 wcwidth==0.2.13
 webencodings==0.5.1
 websockets==12.0

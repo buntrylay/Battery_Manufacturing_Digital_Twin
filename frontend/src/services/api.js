@@ -1,35 +1,68 @@
 // services/api.js
 import axios from "axios";
 
+// For development, this is fine. For production, use environment variables.
+// For example: const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 const API_URL = "http://localhost:8000";
-export { API_URL };
-export const startSimulations = (data) =>
-  axios.post(`${API_URL}/start-both`, data);
+export default API_URL;
+// --- Corrected API Functions ---
 
-export const downloadFile = (type) =>
-  window.open(`${API_URL}/files/${type}`, "_blank");
+/**
+ * Starts the simulation on the backend.
+ * NOTE: The endpoint has been corrected from /start-both to /start-simulation.
+ */
+export const startSimulation = (data) =>
+  axios.post(`${API_URL}/start-simulation`, data);
 
-export const downloadAll = () => window.open(`${API_URL}/files/all`, "_blank");
-export const resetInputs = () => axios.post(`${API_URL}/reset`);
-export const getLogs = () => axios.get(`${API_URL}/logs`);
-export const getStatus = () => axios.get(`${API_URL}/status`);
-export const getWebSocketURL = () => `${API_URL}/ws/status`;
-// Fetch plot image for a process
-export const getProcessPlot = async (processName) => {
-  const response = await fetch(`${API_URL}/plots/process/${processName}`);
-  if (!response.ok) {
-    throw new Error("Failed to generate plot");
-  }
-  const blob = await response.blob();
-  return URL.createObjectURL(blob); // returns a browser-safe object URL
+/**
+ * Resets the simulation data on the backend.
+ */
+export const resetSimulation = () => axios.post(`${API_URL}/reset`);
+
+/**
+ * Returns the correct WebSocket URL for status updates.
+ * NOTE: Replaces 'http' with 'ws'.
+ */
+export const getWebSocketURL = () => {
+  const url = API_URL.replace(/^http/, "ws");
+  return `${url}/ws/status`;
 };
 
-// Same for summary plots (could be zip, but if you want image just fetch PNGs individually)
-export const getMachinePlot = async (machineId) => {
-  const response = await fetch(`${API_URL}/plots/machine/${machineId}`);
-  if (!response.ok) {
-    throw new Error("Failed to generate machine plot");
+/**
+ * A more robust function to download a file from the backend.
+ * This handles errors and is not blocked by pop-up blockers.
+ */
+export const downloadFile = async (electrodeType) => {
+  try {
+    const response = await axios.get(`${API_URL}/files/${electrodeType}`, {
+      responseType: "blob", // Important: tells axios to expect binary data
+    });
+
+    // Create a temporary link element to trigger the download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+
+    // Extract filename from response headers if available, otherwise fallback
+    const contentDisposition = response.headers["content-disposition"];
+    let fileName = `${electrodeType}_results.zip`; // fallback filename
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (fileNameMatch && fileNameMatch.length === 2) {
+        fileName = fileNameMatch[1];
+      }
+    }
+
+    link.setAttribute("download", fileName);
+    document.body.appendChild(link);
+    link.click();
+
+    // Clean up the temporary link and object URL
+    link.parentNode.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("File download failed:", error);
+    // You can also show a user-friendly error message here
+    alert(`Failed to download file for ${electrodeType}. Check the console for details.`);
   }
-  const blob = await response.blob();
-  return URL.createObjectURL(blob);
 };
