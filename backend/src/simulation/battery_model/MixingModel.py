@@ -36,6 +36,7 @@ class MixingModel(BaseModel):
         self.solvent = 0  # Solvent volume
         self.k_vis = random.uniform(0.1, 0.3)  # Viscosity temperature coefficient
         self.k_yield = random.uniform(0.05, 0.15)  # Yield stress temperature coefficient
+        self.alpha = random.uniform(0.0005, 0.0015) 
         self.electrode_type = electrode_type
         if electrode_type == "Anode":
             self.solvent_type = "H2O"
@@ -45,8 +46,7 @@ class MixingModel(BaseModel):
         self.viscosity = 0 # mixing model's viscosity (Pa.s)
         self.density = 0 # mixing model's density (kg/m^3)
         self.yield_stress = 0 # mixing model's yield stress (Pa)
-        # Temperature fluctuation between 24 and 26°C
-        self.temperature = random.uniform(24, 26)
+        
 
     def add(self, component, amount):
         """
@@ -121,7 +121,7 @@ class MixingModel(BaseModel):
 
     def update_properties(self):
         """Update all computed properties and fluctuate temperature"""
-        self.update_temperature()  # <-- Add this line
+        self.update_temperature()
         self.density = self.calculate_density(
             self.AM, self.CA, self.PVDF, self.solvent, self.electrode_type
         )
@@ -147,7 +147,7 @@ class MixingModel(BaseModel):
             "PVDF_volume": self.PVDF,
             f"{self.solvent_type}_volume": self.solvent,
             "viscosity": round(self.viscosity* np.exp (-self.k_vis * (25 - self.temperature)), 4),
-            "density": round(self.density, 4),
+            "density": round(self.density, 4) * (1 + self.alpha * (self.temperature - 25)),
             "yield_stress": round(self.yield_stress* np.exp (-self.k_yield * (25 - self.temperature)), 4),
-            "total_volume": sum([self.AM, self.CA, self.PVDF, self.solvent])
+            "total_volume": sum([self.AM, self.CA, self.PVDF, self.solvent]) * (1 + self.alpha * (self.temperature - 25))
         }
