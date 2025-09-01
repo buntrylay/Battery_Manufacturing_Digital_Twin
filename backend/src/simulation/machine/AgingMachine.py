@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.sensor.AgingPropertyCalculator import AgingPropertyCalculator
 
+
 class AgingMachine(BaseMachine):
 
     def __init__(self, id, machine_parameters: dict):
@@ -39,17 +40,19 @@ class AgingMachine(BaseMachine):
     def _format_result(self, step=None, is_final=False):
         with self.lock:
             base = {
-                "TimeStamp": (self.start_datetime + timedelta(seconds=self.total_time)).isoformat(),
+                "TimeStamp": (
+                    self.start_datetime + timedelta(seconds=self.total_time)
+                ).isoformat(),
                 "Duration (days)": round(self.total_time / 86400, 2),
                 "Machine ID": self.id,
-                "Process": self.name
+                "Process": self.name,
             }
             properties = {
                 "Initial SOC": self.SOC_0,
                 "Temperature (C)": self.T,
                 "Final SOC (%)": round(self.SOC * 100, 2),
                 "Final OCV (V)": round(self.V_OCV, 4),
-                "Leakage Current (mA)": round(self.I_leak * 1000, 4)
+                "Leakage Current (mA)": round(self.I_leak * 1000, 4),
             }
 
             if is_final:
@@ -62,7 +65,9 @@ class AgingMachine(BaseMachine):
     def _write_json(self, data, filename):
         try:
             timestamp = data["TimeStamp"].replace(":", "-").replace(".", "-")
-            unique_filename = os.path.join(self.output_dir, f"{self.id}_{timestamp}_{filename}")
+            unique_filename = os.path.join(
+                self.output_dir, f"{self.id}_{timestamp}_{filename}"
+            )
             with open(unique_filename, "w") as f:
                 json.dump(data, f, indent=4)
             print(f"Results saved to {unique_filename}")
@@ -102,14 +107,21 @@ class AgingMachine(BaseMachine):
         final_output["defect_risk"] = defects
         self._write_json(final_output, "final_result.json")
 
-
     def assess_defect_risk(self, final_soc, final_ocv, final_i_leak):
         return {
             "OCV_Drop": bool((self.V_OCV - final_ocv) > 0.1),
             "Leakage_Current_High": bool(final_i_leak > 0.0001),
-            "SOC_Loss": bool(final_soc < 0.95 * self.SOC_0)
+            "SOC_Loss": bool(final_soc < 0.95 * self.SOC_0),
         }
 
+    def get_process_properties(self):
+        return {
+            "Initial SOC": self.SOC_0,
+            "Temperature (C)": self.T,
+            "Final SOC (%)": round(self.SOC * 100, 2),
+            "Final OCV (V)": round(self.V_OCV, 4),
+            "Leakage Current (mA)": round(self.I_leak * 1000, 4),
+        }
 
     def run(self):
         if self.is_on:
