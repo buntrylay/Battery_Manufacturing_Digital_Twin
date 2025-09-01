@@ -11,7 +11,7 @@ from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachi
 from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
 from simulation.machine.AgingMachine import AgingMachine
 # Correctly import the metric helper functions
-from metrics.metrics import set_machine_status, inc_job_completed, observe_job_duration
+#from metrics.metrics import set_machine_status, inc_job_completed, observe_job_duration
 
 import time
 
