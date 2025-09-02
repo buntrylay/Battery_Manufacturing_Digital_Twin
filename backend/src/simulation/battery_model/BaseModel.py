@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-
+#simple Nase class for battery models
 class BaseModel(ABC):
 
     @abstractmethod

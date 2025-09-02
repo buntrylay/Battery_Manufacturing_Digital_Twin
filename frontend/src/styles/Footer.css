@@ -1,0 +1,27 @@
+footer {
+  width: 100%;
+  background-color: #dfeaf3;
+  color: rgba(47, 55, 89, 0.548);
+  text-align: center;
+  margin-top: 20px;
+  min-height: 200px;
+}
+.footer-title-area {
+  padding: 20px;
+  font-size: 1.2em;
+  font-weight: 300;
+  border-bottom: 1px solid #c3d4e0;
+}
+.footer-text-area {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+}
+
+.footer-logo img {
+  max-width: 200px;
+  max-height: 100px;
+  align-items: center;
+  margin-inline: 20px;
+  margin-top: 1%;
+}

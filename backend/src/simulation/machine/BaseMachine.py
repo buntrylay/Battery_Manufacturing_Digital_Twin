@@ -104,6 +104,7 @@ class BaseMachine(ABC):
         self.state = False
         self.total_time = 0
 
+#new method to get current properties of each machine
     def get_current_properties(self, process_specifics=None):
         """Get the current properties of the machine."""
         return {
@@ -129,4 +130,3 @@ class BaseMachine(ABC):
     def run(self):
         """Abstract method that must be implemented by concrete machine classes."""
         pass
-

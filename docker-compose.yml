@@ -1,0 +1,65 @@
+version: "3.8"
+
+networks:
+  app-net:
+    driver: bridge
+
+services:
+  # React Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    networks:
+      - app-net
+    depends_on:
+      - fastapi
+
+  # FastAPI Backend Service
+  fastapi:
+    build:
+      context: ./backend
+    container_name: fastapi
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/workspaces/app
+    working_dir: /workspaces/app
+    networks:
+      - app-net
+    command: sleep infinity
+
+  # Prometheus Service
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-net
+    depends_on:
+      - fastapi
+
+  # Grafana Service
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - app-net
+    depends_on:
+      - prometheus
+
+volumes:
+  grafana-storage: {}
