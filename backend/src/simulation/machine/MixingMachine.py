@@ -1,19 +1,10 @@
 import time
 import numpy as np
-from simulation.machine.BaseMachine import BaseMachine
+from simulation.process_parameters.MixingParameters import MixingParameters
 from simulation.battery_model.MixingModel import MixingModel
-from dataclasses import asdict, dataclass
+from simulation.machine.BaseMachine import BaseMachine
+from dataclasses import asdict
 
-@dataclass
-class MaterialRatios:
-    AM: float
-    CA: float
-    PVDF: float
-    solvent: float
-
-@dataclass
-class MixingParameters:
-    material_ratios: MaterialRatios
 
 class MixingMachine(BaseMachine):
     """
@@ -51,7 +42,7 @@ class MixingMachine(BaseMachine):
                 add_amt = min(volume_added_in_each_step, total_volume_of_material_to_add - added_volume)
                 self.battery_model.add(material_type, add_amt)
                 added_volume += add_amt
-            self.battery_model.update_properties()
+            self.battery_model.update_properties(self.machine_parameters)
             result = self.get_current_properties()
             results_list.append(result)
             now = time.time()

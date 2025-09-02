@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from datetime import datetime
 import os
 from azure.iot.device import IoTHubDeviceClient, Message
 import json
+from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
+
 
 class BaseMachine(ABC):
     """
@@ -16,7 +18,7 @@ class BaseMachine(ABC):
         calculator (SlurryPropertyCalculator): Calculator for slurry properties
     """
     
-    def __init__(self, process_name, battery_model: BaseModel, machine_parameters: dataclass, connection_string=None, **kwargs):
+    def __init__(self, process_name, battery_model: BaseModel, machine_parameters: BaseMachineParameters, connection_string=None, **kwargs):
         """
         Initialise a new Machine instance.
         
@@ -108,10 +110,17 @@ class BaseMachine(ABC):
         """Get the current properties of the machine."""
         return {
             "timestamp": datetime.now().isoformat(),
-            "duration": self.total_time,
+            "duration": round(self.total_time, 2),
             "process": self.process_name,
             "battery_model": self.battery_model.get_properties(),
             "machine_parameters": asdict(self.machine_parameters),
+            "process_specifics": process_specifics,
+        }
+    
+
+    def append_process_specifics(self, process_specifics):
+        """Append the process state to the current properties."""
+        return {
             "process_specifics": process_specifics,
         }
     

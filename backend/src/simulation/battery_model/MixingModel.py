@@ -1,3 +1,4 @@
+from simulation.process_parameters.MixingParameters import MixingParameters
 from simulation.battery_model.BaseModel import BaseModel
 
 
@@ -98,7 +99,7 @@ class MixingModel(BaseModel):
             WEIGHTS = {"a": 0.85, "b": 2.2, "c": 0.3, "s": -0.4}
         elif electrode_type == "Cathode":
             RHO = {"AM": 2.11, "CA": 1.8, "PVDF": 1.78, "solvent": 1.03}
-            WEIGHTS = {"a": 0.9, "b": 2.5, "s": -0.5}
+            WEIGHTS = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5}
 
         return (
             WEIGHTS["a"] * AM_volume * RHO["AM"]
@@ -107,7 +108,7 @@ class MixingModel(BaseModel):
             + WEIGHTS["s"] * solvent_volume * RHO["solvent"]
         )
 
-    def update_properties(self):
+    def update_properties(self, machine_parameters: MixingParameters):
         """Update all computed properties"""
         self.density = self.calculate_density(
             self.AM, self.CA, self.PVDF, self.solvent, self.electrode_type
@@ -130,12 +131,12 @@ class MixingModel(BaseModel):
 
     def get_properties(self):
         return {
-            "AM_volume": self.AM,
-            "CA_volume": self.CA,
-            "PVDF_volume": self.PVDF,
-            f"{self.solvent_type}_volume": self.solvent,
+            "AM_volume": round(self.AM, 4),
+            "CA_volume": round(self.CA, 4),
+            "PVDF_volume": round(self.PVDF, 4),
+            f"{self.solvent_type}_volume": round(self.solvent, 4),
             "viscosity": round(self.viscosity, 4),
             "density": round(self.density, 4),
             "yield_stress": round(self.yield_stress, 4),
-            "total_volume": sum([self.AM, self.CA, self.PVDF, self.solvent]),
+            "total_volume": round(sum([self.AM, self.CA, self.PVDF, self.solvent]), 4),
         }

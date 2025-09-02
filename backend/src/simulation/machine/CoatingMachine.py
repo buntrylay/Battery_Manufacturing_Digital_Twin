@@ -1,16 +1,7 @@
 from simulation.battery_model.CoatingModel import CoatingModel
 from simulation.machine.BaseMachine import BaseMachine
+from simulation.process_parameters.CoatingParameters import CoatingParameters
 import time
-from dataclasses import dataclass
-
-
-@dataclass
-class CoatingParameters:
-    coating_speed: float
-    gap_height: float
-    flow_rate: float
-    coating_width: float
-
 
 class CoatingMachine(BaseMachine):
     """

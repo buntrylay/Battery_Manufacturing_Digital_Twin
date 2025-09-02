@@ -1,0 +1,29 @@
+from dataclasses import dataclass
+from simulation.process_parameters import BaseMachineParameters
+
+
+@dataclass
+class MaterialRatios:
+    AM: float
+    CA: float
+    PVDF: float
+    solvent: float
+
+
+@dataclass
+class MixingParameters(BaseMachineParameters):
+    material_ratios: MaterialRatios
+
+    def validate_parameters(self):
+        if (
+            self.material_ratios.AM
+            + self.material_ratios.CA
+            + self.material_ratios.PVDF
+            + self.material_ratios.solvent
+            != 1
+        ):
+            raise ValueError("The sum of the material ratios must be 1")
+        return True
+
+    def get_parameters_dict(self):
+        return self.material_ratios.get_dict()
