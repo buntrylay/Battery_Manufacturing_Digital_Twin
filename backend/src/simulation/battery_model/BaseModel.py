@@ -3,6 +3,9 @@ from abc import ABC, abstractmethod
 #simple Nase class for battery models
 class BaseModel(ABC):
 
+    # def __init__(self, previous_model: "BaseModel" = None):
+    #     self.previous_model = previous_model
+
     @abstractmethod
     def get_properties(self):
         pass

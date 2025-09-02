@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from simulation.battery_model.BaseModel import BaseModel
 import random
 import numpy as np
