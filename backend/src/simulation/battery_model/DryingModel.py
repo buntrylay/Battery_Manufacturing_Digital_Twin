@@ -1,7 +1,5 @@
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.CoatingModel import CoatingModel
-from dataclasses import dataclass
-
 
 
 class DryingModel(BaseModel):
