@@ -67,7 +67,7 @@ class MixingMachine(BaseMachine):
                 self.battery_model.add(material_type, add_amt)
                 added_volume += add_amt
             self.battery_model.update_properties(self.machine_parameters)
-            result = self.get_current_properties()
+            result = self.get_current_state()
             results_list.append(result)
             now = time.time()
             if (

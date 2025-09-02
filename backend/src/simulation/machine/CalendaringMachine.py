@@ -21,7 +21,7 @@ class CalendaringMachine(BaseMachine):
         for t in range(60):
             self.total_time = t
             proc = self.battery_model.update_properties(self.machine_parameters)
-            result = self.get_current_properties(process_specifics=proc)
+            result = self.get_current_state(process_specifics=proc)
             all_results.append(result)
             self.save_data_to_local_folder()
 

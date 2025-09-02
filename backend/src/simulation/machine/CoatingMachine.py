@@ -90,7 +90,7 @@ class CoatingMachine(BaseMachine):
                 self.machine_parameters.coating_width,
                 self.machine_parameters.gap_height,
             )
-            result = self.get_current_properties(
+            result = self.get_current_state(
                 process_specifics={
                     "shear_rate": self.shear_rate,
                     "uniformity_std": self.uniformity_std,
