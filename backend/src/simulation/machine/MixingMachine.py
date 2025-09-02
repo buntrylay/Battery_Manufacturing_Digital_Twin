@@ -9,27 +9,48 @@ from dataclasses import asdict
 class MixingMachine(BaseMachine):
     """
     A machine class for simulating the mixing of battery slurry components.
- 
+
     This class handles the stepwise addition of components to a slurry, simulates
     process parameters (temperature, pressure, RPM), and generates real-time
     simulation data in JSON format. Utility methods are used for formatting results,
     writing output files, and printing process information.
 
     """
-   
-    def __init__(self, mixing_model: MixingModel, mixing_parameters: MixingParameters, connection_string=None):
+
+    def __init__(
+        self,
+        process_name: str,
+        mixing_model: MixingModel = None,
+        mixing_parameters: MixingParameters = None,
+        connection_string=None,
+    ):
         """
         Initialise a new MixingMachine instance.
- 
+
         Args:
             mixing_model (MixingModel): The mixing model to be used.
             mixing_parameters (MixingParameters): The mixing parameters to be used.
         """
-        super().__init__(f"Mixing_{mixing_model.electrode_type}", mixing_model, mixing_parameters, connection_string)
+        super().__init__(
+            process_name, mixing_model, mixing_parameters, connection_string
+        )
         self.mixing_tank_volume = 200
- 
-    def __mix_component(self, material_type, step_percent=0.02, pause_sec=0.1, duration_sec=10, results_list=None):
-        total_volume_of_material_to_add = self.mixing_tank_volume * asdict(self.machine_parameters.material_ratios)[material_type]
+
+    def add_model(self, mixing_model: MixingModel):
+        self.battery_model = mixing_model
+
+    def __mix_component(
+        self,
+        material_type,
+        step_percent=0.02,
+        pause_sec=0.1,
+        duration_sec=10,
+        results_list=None,
+    ):
+        total_volume_of_material_to_add = (
+            self.mixing_tank_volume
+            * asdict(self.machine_parameters.material_ratios)[material_type]
+        )
         volume_added_in_each_step = step_percent * total_volume_of_material_to_add
         added_volume = 0.0
         comp_start_time = self.total_time
@@ -39,26 +60,36 @@ class MixingMachine(BaseMachine):
             self.ref_temperature = np.random.normal(loc=25, scale=1)
             self.total_time += pause_sec
             if added_volume < total_volume_of_material_to_add:
-                add_amt = min(volume_added_in_each_step, total_volume_of_material_to_add - added_volume)
+                add_amt = min(
+                    volume_added_in_each_step,
+                    total_volume_of_material_to_add - added_volume,
+                )
                 self.battery_model.add(material_type, add_amt)
                 added_volume += add_amt
             self.battery_model.update_properties(self.machine_parameters)
             result = self.get_current_properties()
             results_list.append(result)
             now = time.time()
-            if now - last_saved_time >= 0.1 and result != last_saved_result:  # Check if data has changed
+            if (
+                now - last_saved_time >= 0.1 and result != last_saved_result
+            ):  # Check if data has changed
                 # self.send_json_to_iothub(result)  # Send to IoT Hub
                 self.save_data_to_local_folder()  # Print to console
                 last_saved_time = now
                 last_saved_result = result
             time.sleep(pause_sec)
-    
+
     def run(self):
-        self.turn_on()
-        self.battery_model.add("solvent", self.mixing_tank_volume * asdict(self.machine_parameters.material_ratios)["solvent"])
-        all_results = []
-        self.__mix_component("PVDF", duration_sec=8, results_list=all_results)
-        self.__mix_component("CA", duration_sec=8, results_list=all_results)
-        self.__mix_component("AM", duration_sec=10, results_list=all_results)
-        self.save_all_results(all_results)
-        self.turn_off()
+        if self.pre_run_check():
+            self.turn_on()
+            self.battery_model.add(
+                "solvent",
+                self.mixing_tank_volume
+                * asdict(self.machine_parameters.material_ratios)["solvent"],
+            )
+            all_results = []
+            self.__mix_component("PVDF", duration_sec=8, results_list=all_results)
+            self.__mix_component("CA", duration_sec=8, results_list=all_results)
+            self.__mix_component("AM", duration_sec=10, results_list=all_results)
+            self.save_all_results(all_results)
+            self.turn_off()

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
+from functools import partialmethod
 import os
 from azure.iot.device import IoTHubDeviceClient, Message
 import json
@@ -11,17 +12,24 @@ from simulation.battery_model.BaseModel import BaseModel
 class BaseMachine(ABC):
     """
     Abstract base class representing a generic machine in the battery manufacturing process.
-    
+
     Attributes:
         id (str): Unique identifier for the machine
         is_on (bool): Current operational status of the machine
         calculator (SlurryPropertyCalculator): Calculator for slurry properties
     """
-    
-    def __init__(self, process_name, battery_model: BaseModel, machine_parameters: BaseMachineParameters, connection_string=None, **kwargs):
+
+    def __init__(
+        self,
+        process_name,
+        battery_model: BaseModel = None,
+        machine_parameters: BaseMachineParameters = None,
+        connection_string=None,
+        **kwargs,
+    ):
         """
         Initialise a new Machine instance.
-        
+
         Args:
             process_name (str): The name of the process
             battery_model (BaseModel): The battery model to be used
@@ -36,7 +44,7 @@ class BaseMachine(ABC):
         self.start_datetime = None
         self.total_time = 0
         self.calculator = None
-        self.kwargs = kwargs
+        # self.kwargs = kwargs
         # Save data to file related properties
         self.output_dir = os.path.join(os.getcwd(), f"{process_name.lower()}_output")
         os.makedirs(self.output_dir, exist_ok=True)
@@ -46,9 +54,23 @@ class BaseMachine(ABC):
         self.iot_client = None
         if connection_string:
             try:
-                self.iot_client = IoTHubDeviceClient.create_from_connection_string(connection_string)
+                self.iot_client = IoTHubDeviceClient.create_from_connection_string(
+                    connection_string
+                )
             except Exception as e:
                 print(f"Failed to create IoT Hub client: {e}")
+    
+    def add_model(self, model: BaseModel):
+        """Add a model to the machine."""
+        self.battery_model = model
+
+    def empty_battery_model(self):
+        """Empty the model."""
+        self.battery_model = None
+
+    def update_machine_parameters(self, machine_parameters: BaseMachineParameters):
+        """Update the machine parameters."""
+        self.machine_parameters = machine_parameters
 
     # delegate to a different class
     def send_json_to_iothub(self, data):
@@ -76,7 +98,9 @@ class BaseMachine(ABC):
         try:
             current_properties = self.get_current_properties()
             print(current_properties)
-            timestamp = current_properties["timestamp"].replace(":", "-").replace(".", "-")
+            timestamp = (
+                current_properties["timestamp"].replace(":", "-").replace(".", "-")
+            )
             unique_filename = f"{self.process_name.lower()}_output/{self.process_name.lower()}_{timestamp}_result_at_{round(self.total_time)}s.json"
             with open(unique_filename, "w") as f:
                 json.dump(current_properties, f)
@@ -90,7 +114,12 @@ class BaseMachine(ABC):
         Save all results to a local folder.
         """
         try:
-            with open(os.path.join(self.output_dir, f"{self.process_name.lower()}_summary.json"), "w") as f:
+            with open(
+                os.path.join(
+                    self.output_dir, f"{self.process_name.lower()}_summary.json"
+                ),
+                "w",
+            ) as f:
                 json.dump(results, f)
             print(f"Summary of all results saved to {self.output_dir}")
         except Exception as e:
@@ -106,6 +135,14 @@ class BaseMachine(ABC):
         self.state = False
         self.total_time = 0
 
+    def pre_run_check(self):
+        """Pre-run check for the machine."""
+        if self.battery_model is None:
+            raise ValueError("Battery model is not set")
+        if self.machine_parameters is None:
+            raise ValueError("Machine parameters are not set")
+        return True
+
     def get_current_properties(self, process_specifics=None):
         """Get the current properties of the machine."""
         return {
@@ -116,14 +153,13 @@ class BaseMachine(ABC):
             "machine_parameters": asdict(self.machine_parameters),
             "process_specifics": process_specifics,
         }
-    
 
     def append_process_specifics(self, process_specifics):
         """Append the process state to the current properties."""
         return {
             "process_specifics": process_specifics,
         }
-    
+
     # idea to standardise the step logic with decorator @abstractmethod
     #  @abstractmethod
     # def step_logic(self):
