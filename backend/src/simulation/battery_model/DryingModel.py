@@ -2,19 +2,7 @@ from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.CoatingModel import CoatingModel
 from dataclasses import dataclass
 
-@dataclass
-class DryingParameters:
-    V_air: float
-    T_dry: float
-    H_air: float
-    drying_length: float
-    web_speed: float
-    coating_width: float = 0.5
-    h_air: float = 0.1
-    density: float = 1500
-    solvent_density: float = 800
-    delta_t: float = 1
-    max_safe_evap_rate: float = 0.004
+
 
 class DryingModel(BaseModel):
     def __init__(self, coating_model: CoatingModel):

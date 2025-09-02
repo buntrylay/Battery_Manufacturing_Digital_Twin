@@ -2,20 +2,14 @@ from dataclasses import dataclass
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.DryingModel import DryingModel
 import numpy as np
-@dataclass
-class CalendaringParameters:
-    roll_gap: float
-    roll_pressure: float
-    temperature: float # (25)
-    roll_speed: float
-    dry_thickness: float
-    initial_porosity: float
+
 
 class CalendaringModel(BaseModel):
     def __init__(self, drying_model: DryingModel, initial_porosity: float):
         # from drying
         self.dry_thickness = drying_model.dry_thickness
         self.initial_porosity = initial_porosity
+
         # state
         self.final_thickness = 0
         self.porosity = 0
@@ -24,8 +18,8 @@ class CalendaringModel(BaseModel):
         self.sigma_theory = 0
 
         # material constant
-        self.E = 500e6      # Elastic modulus (Pa)
-        self.k_p = 3.0      # Porosity reduction constant
+        self.E = 500e6  # Elastic modulus (Pa)
+        self.k_p = 3.0  # Porosity reduction constant
 
     def epsilon(self, h_roll):
         return (self.dry_thickness - h_roll) / self.dry_thickness
@@ -45,14 +39,6 @@ class CalendaringModel(BaseModel):
         self.porosity = self.porosity_reduction(self.epsilon_val)
         self.final_thickness = params.roll_gap
         self.defect_risk = self.defect_check(params.roll_pressure, self.sigma_theory)
-
-        return {
-            "strain_epsilon": self.epsilon_val,
-            "calculated_stress_Pa": self.sigma_theory,
-            "final_thickness_m": self.final_thickness,
-            "porosity_after_calendaring": self.porosity,
-            "defect_risk": self.defect_risk,
-        }
 
     def get_properties(self):
         return {

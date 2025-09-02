@@ -1,4 +1,21 @@
+from dataclasses import dataclass
 from simulation.machine.BaseMachine import BaseMachine
+
+
+@dataclass
+class DryingParameters:
+    V_air: float
+    T_dry: float
+    H_air: float
+    drying_length: float
+    web_speed: float
+    coating_width: float = 0.5
+    h_air: float = 0.1
+    density: float = 1500
+    solvent_density: float = 800
+    delta_t: float = 1
+    max_safe_evap_rate: float = 0.004
+
 
 class DryingMachine(BaseMachine):
     def __init__(self, drying_model, drying_parameters):
@@ -15,14 +32,5 @@ class DryingMachine(BaseMachine):
             result = self.get_current_properties(process_specifics=proc)
             all_results.append(result)
             self.save_data_to_local_folder()
-
         self.save_all_results(all_results)
         self.turn_off()
-
-    def get_output(self):
-        """Feed sang Calendaring stage"""
-        return {
-            "dry_thickness": self.battery_model.dry_thickness,
-            "solid_content": self.battery_model.solid_content,
-            "defect_risk": self.battery_model.defect_risk
-        }
