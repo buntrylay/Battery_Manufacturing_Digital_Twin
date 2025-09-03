@@ -6,7 +6,6 @@ class SlittingModel(BaseModel):
         # from calendaring
         self.dry_thickness = calendaring_model.dry_thickness
         self.porosity = calendaring_model.porosity
-        self.final_thickness = calendaring_model.final_thickness    
        
         # state
         self.width_final = 0
@@ -33,10 +32,10 @@ class SlittingModel(BaseModel):
     def defect_check(self, epsilon_width, burr_factor):
         return abs(epsilon_width) > self.max_width_deviation or burr_factor > self.max_burr_threshold
 
-    def update_properties(self, simulate_width_variation, calculate_burr_factor, defect_check):
-        self.width_final = self.simulate_width_variation(self.target_width)
-        self.epsilon_width = self.calculate_epsilon_width(self.width_final, self.target_width)
-        self.burr_factor = self.calculate_burr_factor(self.blade_sharpness, self.slitting_speed, self.slitting_tension)
+    def update_properties(self, params):
+        self.width_final = self.simulate_width_variation(params.target_width)
+        self.epsilon_width = self.calculate_epsilon_width(self.width_final, params.target_width)
+        self.burr_factor = self.calculate_burr_factor(params.blade_sharpness, params.slitting_speed, params.slitting_tension)
         self.defect_risk = self.defect_check(self.epsilon_width, self.burr_factor)
         self.final_thickness = self.dry_thickness  # assuming no thickness change during slitting
 

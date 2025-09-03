@@ -8,7 +8,6 @@ class SlittingParameters:
     slitting_speed: float
     target_width: float
     slitting_tension: float
-    dry_thickness: float = 0.0  # from calendaring
 
 class SlittingMachine(BaseMachine):
     def __init__(self, 
@@ -28,8 +27,9 @@ class SlittingMachine(BaseMachine):
 
         for t in range(30):
             self.total_time = t
-            self.battery_model.update_properties()
-            result = self.battery_model.get_properties(process_specifics=proc)
+            self.battery_model.update_properties(self.machine_parameters)
+            proc = self.battery_model.get_properties()                     
+            result = self.get_current_properties(process_specifics=proc)   
             all_results.append(result)
             self.save_data_to_local_folder()
         self.save_all_results(all_results)
