@@ -83,4 +83,5 @@ azure-iot-device==2.11.0
 python-dotenv==1.1.1
 greenlet
 numpy
-prometheus-client
+psycopg2-binary   # PostgreSQL driver
+sqlalchemy

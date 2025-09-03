@@ -13,6 +13,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+import sqlalchemy
 
 # --- Path and Simulation Module Imports ---
 # This points from `backend/src/server` up two levels to the project root
@@ -155,3 +156,12 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+DATABASE_URL = "postgresql://postgres:password@db:5432/postgres"
+engine = sqlalchemy.create_engine(DATABASE_URL)
+
+@app.get("/")
+def root():
+    with engine.connect() as conn:
+        result = conn.execute(sqlalchemy.text("SELECT NOW()"))
+        return {"time": result.scalar()}
