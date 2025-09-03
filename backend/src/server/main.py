@@ -93,7 +93,7 @@ def run_simulation(payload: SimulationInput):
         return
 
     try:
-        thread_broadcast("✅ New simulation started.")
+        thread_broadcast("New simulation started.")
         
         # --- ANODE PRODUCTION ---
         thread_broadcast("--- Starting Anode Mixing Process ---")
@@ -129,10 +129,10 @@ def run_simulation(payload: SimulationInput):
         cathode_mixer.run()
         thread_broadcast("--- Cathode Mixing Process Finished ---")
 
-        thread_broadcast("✅ All simulation stages complete.")
+        thread_broadcast("All simulation stages complete.")
 
     except Exception as e:
-        thread_broadcast(f"❌ SIMULATION FAILED: {str(e)}")
+        thread_broadcast(f"SIMULATION FAILED: {str(e)}")
     finally:
         simulation_lock.release()
 
@@ -157,7 +157,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
-DATABASE_URL = "postgresql://postgres:password@db:5432/postgres"
+DATABASE_URL = "postgresql://postgres:password@localhost/postgres"
 engine = sqlalchemy.create_engine(DATABASE_URL)
 
 @app.get("/")
