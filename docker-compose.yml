@@ -33,19 +33,19 @@ services:
       - app-net
     command: sleep infinity
 
-  # Prometheus Service
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    restart: unless-stopped
+  #PostgreSQL database
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
     ports:
-      - "9090:9090"
+      - "5432:5432"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    networks:
-      - app-net
-    depends_on:
-      - fastapi
+      - postgres_data:/var/lib/postgresql/data
 
   # Grafana Service
   grafana:
@@ -58,8 +58,7 @@ services:
       - grafana-storage:/var/lib/grafana
     networks:
       - app-net
-    depends_on:
-      - prometheus
 
 volumes:
+  postgres_data:
   grafana-storage: {}
