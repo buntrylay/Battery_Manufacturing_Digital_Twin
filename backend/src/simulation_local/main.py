@@ -14,7 +14,8 @@ from simulation.machine.CalendaringMachine import CalendaringMachine, Calendarin
 from simulation.battery_model.CalendaringModel import CalendaringModel
 from simulation.machine.SlittingMachine import SlittingMachine, SlittingParameters
 from simulation.battery_model.SlittingModel import SlittingModel
-
+from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine, ElectrodeInspectionParameters
+from simulation.battery_model.ElectrodeInspectionModel import ElectrodeInspectionModel
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
     "PVDF": 0.05,
@@ -116,3 +117,7 @@ anode_calendaring_machine.run()
 slitting_model = SlittingModel(calendaring_model)
 anode_slitting_machine = SlittingMachine(slitting_model, SlittingParameters(blade_sharpness=8, slitting_speed=1.5, target_width=100, slitting_tension=150))
 anode_slitting_machine.run()
+
+electrode_inspection_model = ElectrodeInspectionModel(slitting_model)
+electrode_inspection_machine = ElectrodeInspectionMachine(electrode_inspection_model, ElectrodeInspectionParameters(epsilon_width_max=0.1, epsilon_thickness_max=10e-6, B_max=2.0, D_surface_max=3))
+electrode_inspection_machine.run()
