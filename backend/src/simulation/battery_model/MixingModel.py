@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from simulation.battery_model.BaseModel import BaseModel
 
 
@@ -33,9 +32,9 @@ class MixingModel(BaseModel):
         elif self.electrode_type == "Cathode":
             self.solvent_type = "NMP"
         # Computed properties (Outputs)
-        self.viscosity = 0 # mixing model's viscosity (Pa.s)
-        self.density = 0 # mixing model's density (kg/m^3)
-        self.yield_stress = 0 # mixing model's yield stress (Pa)
+        self.viscosity = 0  # mixing model's viscosity (Pa.s)
+        self.density = 0  # mixing model's density (kg/m^3)
+        self.yield_stress = 0  # mixing model's yield stress (Pa)
 
     def add(self, component, amount):
         """
