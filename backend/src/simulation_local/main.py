@@ -96,17 +96,23 @@ user_input_aging = {
     "aging_time_days": 10
 }
 
+#Mixing Process
 anode_mixing_model = MixingModel("Anode")
 anode_mixing_machine = MixingMachine(anode_mixing_model, MixingParameters(MaterialRatios(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41)))
 anode_mixing_machine.run()
+
+#Coating Process
 # __init__() CoatingModel
 coating_model = CoatingModel(anode_mixing_model)
 anode_coating_machine = CoatingMachine(coating_model, CoatingParameters(coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5))
 anode_coating_machine.run()
+
+#Drying Process
 drying_model = DryingModel(coating_model)
 anode_drying_machine = DryingMachine(drying_model, DryingParameters(V_air=1.0, T_dry=100, H_air=80, drying_length=10, web_speed=0.5))
 anode_drying_machine.run()
 
+#Calendaring Process
 calendaring_model = CalendaringModel(drying_model, initial_porosity=0.45)
 anode_calendaring_machine = CalendaringMachine(calendaring_model, CalendaringParameters(roll_gap = 100e-6, roll_pressure = 2e6, roll_speed = 2.0, dry_thickness = 150e-6, initial_porosity= 0.45, temperature =25))
 anode_calendaring_machine.run()
