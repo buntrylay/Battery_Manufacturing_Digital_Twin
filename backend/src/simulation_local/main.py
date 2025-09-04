@@ -6,13 +6,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from simulation.machine.CoatingMachine import CoatingMachine, CoatingParameters
 from simulation.battery_model.CoatingModel import CoatingModel
-from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.MixingMachine import MaterialRatios, MixingMachine, MixingParameters
-from simulation.machine.DryingMachine import DryingMachine
-from simulation.battery_model.DryingModel import DryingModel, DryingParameters
-from simulation.machine.CalendaringMachine import CalendaringMachine
-from simulation.battery_model.CalendaringModel import CalendaringModel, CalendaringParameters
-
+from simulation.battery_model.MixingModel import MixingModel
+from simulation.machine.DryingMachine import DryingMachine, DryingParameters
+from simulation.battery_model.DryingModel import DryingModel
+from simulation.machine.CalendaringMachine import CalendaringMachine, CalendaringParameters
+from simulation.battery_model.CalendaringModel import CalendaringModel
+from simulation.machine.SlittingMachine import SlittingMachine, SlittingParameters
+from simulation.battery_model.SlittingModel import SlittingModel
+from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine, ElectrodeInspectionParameters
+from simulation.battery_model.ElectrodeInspectionModel import ElectrodeInspectionModel
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
     "PVDF": 0.05,
@@ -52,7 +55,7 @@ user_input_calendaring = {
 
 #  Slitting's input parameters 
 user_input_slitting = {
-    "w_input": 500,
+    "w_input": 500, # not in need!!!
     "blade_sharpness": 8,
     "slitting_speed": 1.5, 
     "target_width": 100,
@@ -110,3 +113,11 @@ anode_drying_machine.run()
 calendaring_model = CalendaringModel(drying_model, initial_porosity=0.45)
 anode_calendaring_machine = CalendaringMachine(calendaring_model, CalendaringParameters(roll_gap = 100e-6, roll_pressure = 2e6, roll_speed = 2.0, dry_thickness = 150e-6, initial_porosity= 0.45, temperature =25))
 anode_calendaring_machine.run()
+
+slitting_model = SlittingModel(calendaring_model)
+anode_slitting_machine = SlittingMachine(slitting_model, SlittingParameters(blade_sharpness=8, slitting_speed=1.5, target_width=100, slitting_tension=150))
+anode_slitting_machine.run()
+
+electrode_inspection_model = ElectrodeInspectionModel(slitting_model)
+electrode_inspection_machine = ElectrodeInspectionMachine(electrode_inspection_model, ElectrodeInspectionParameters(epsilon_width_max=0.1, epsilon_thickness_max=10e-6, B_max=2.0, D_surface_max=3))
+electrode_inspection_machine.run()

@@ -1,8 +1,6 @@
-from dataclasses import dataclass
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.DryingModel import DryingModel
 import numpy as np
-
 
 class CalendaringModel(BaseModel):
     def __init__(self, drying_model: DryingModel, initial_porosity: float):
