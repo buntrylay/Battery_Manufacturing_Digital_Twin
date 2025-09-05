@@ -31,7 +31,6 @@ services:
     working_dir: /workspaces/app
     networks:
       - app-net
-    command: uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
 
   #PostgreSQL database
   db:
@@ -42,6 +41,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: postgres
+      POSTGRES_HOST: db
     ports:
       - "5432:5432"
     volumes:
