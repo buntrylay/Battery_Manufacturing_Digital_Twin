@@ -31,7 +31,6 @@ services:
     working_dir: /workspaces/app
     networks:
       - app-net
-    command: sleep infinity
 
   #PostgreSQL database
   db:
