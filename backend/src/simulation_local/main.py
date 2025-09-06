@@ -16,6 +16,14 @@ from simulation.machine.SlittingMachine import SlittingMachine, SlittingParamete
 from simulation.battery_model.SlittingModel import SlittingModel
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine, ElectrodeInspectionParameters
 from simulation.battery_model.ElectrodeInspectionModel import ElectrodeInspectionModel
+from simulation.machine.RewindingMachine import RewindingMachine, RewindingParameters
+from simulation.battery_model.RewindingModel import RewindingModel
+from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine, ElectrolyteFillingParameters
+from simulation.battery_model.ElectrolyteFillingModel import ElectrolyteFillingModel
+from simulation.machine.FomationCyclingMachine import FormationCyclingMachine, FormationCyclingParameters
+from simulation.battery_model.FormationCyclingModel import FormationCyclingModel
+from simulation.machine.AgingMachine import AgingMachine, AgingParameters
+from simulation.battery_model.AgingModel import AgingModel
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
     "PVDF": 0.05,
@@ -121,3 +129,19 @@ anode_slitting_machine.run()
 electrode_inspection_model = ElectrodeInspectionModel(slitting_model)
 electrode_inspection_machine = ElectrodeInspectionMachine(electrode_inspection_model, ElectrodeInspectionParameters(epsilon_width_max=0.1, epsilon_thickness_max=10e-6, B_max=2.0, D_surface_max=3))
 electrode_inspection_machine.run()
+
+rewinding_model = RewindingModel(electrode_inspection_model)    
+rewinding_machine = RewindingMachine(rewinding_model, RewindingParameters(rewinding_speed=0.5, initial_tension=100, tapering_steps=0.3, environment_humidity=30))
+rewinding_machine.run()
+
+elec_filling_model = ElectrolyteFillingModel(rewinding_model)
+elec_filling_machine = ElectrolyteFillingMachine(elec_filling_model, ElectrolyteFillingParameters(Vacuum_level=100, Vacuum_filling=100, Soaking_time=10))
+elec_filling_machine.run()
+
+formation_model = FormationCyclingModel(elec_filling_model)
+formation_machine = FormationCyclingMachine(formation_model, FormationCyclingParameters(Charge_current_A=0.05, Charge_voltage_limit_V=0.05, Voltage=4))
+formation_machine.run()
+
+aging_model = AgingModel(formation_model)
+aging_machine = AgingMachine(aging_model, AgingParameters(k_leak=1e-8, temperature=25, aging_time_days=10))
+aging_machine.run()
