@@ -33,7 +33,7 @@ main_loop = None
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
-
+ 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
@@ -156,12 +156,23 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+        
+POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "db")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 
 DATABASE_URL = "postgresql://postgres:password@localhost/postgres"
 engine = sqlalchemy.create_engine(DATABASE_URL)
 
 @app.get("/")
 def root():
-    with engine.connect() as conn:
-        result = conn.execute(sqlalchemy.text("SELECT NOW()"))
-        return {"time": result.scalar()}
+    try:
+        with engine.connect() as conn:
+            conn.execute(sqlalchemy.text("SELECT 1"))
+            print("Database connection successful.")
+        return {"status": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Database connection failed: {e}")

@@ -109,7 +109,7 @@ class BaseMachine(ABC):
         """Get the current properties of the machine."""
         return {
             "timestamp": datetime.now().isoformat(),
-            "duration": self.total_time,
+            "duration": round(self.total_time, 2),
             "process": self.process_name,
             "temperature_C": round(self.battery_model.temperature, 2) if hasattr(self.battery_model, 'temperature') else None,
             "battery_model": self.battery_model.get_properties(),
