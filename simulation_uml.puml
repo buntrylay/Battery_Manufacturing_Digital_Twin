@@ -4,7 +4,7 @@ package "simulation" {
     package "machine_parameters" {
         abstract class BaseMachineParameters {
             {abstract} +validate_parameters(): bool
-            +get_parameter_summary(): dict
+            +get_parameter_dict(): dict
         }
         
         class MixingParameters {
@@ -66,9 +66,9 @@ package "simulation" {
             +yield_stress: float
             
             +add(component: str, amount: float): void
-            +calculate_density(): float
-            +calculate_viscosity(): float
-            +calculate_yield_stress(): float
+            -calculate_density(): float
+            -calculate_viscosity(): float
+            -calculate_yield_stress(): float
             +update_properties(machine_params: MixingParameters): void
             +get_properties(): dict
         }

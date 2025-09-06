@@ -1,3 +1,4 @@
+from simulation.process_parameters.MixingParameters import MixingParameters
 from simulation.battery_model.BaseModel import BaseModel
 import random
 import numpy as np
@@ -109,7 +110,7 @@ class MixingModel(BaseModel):
             WEIGHTS = {"a": 0.85, "b": 2.2, "c": 0.3, "s": -0.4}
         elif electrode_type == "Cathode":
             RHO = {"AM": 2.11, "CA": 1.8, "PVDF": 1.78, "solvent": 1.03}
-            WEIGHTS = {"a": 0.9, "b": 2.5, "s": -0.5}
+            WEIGHTS = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5}
 
         return (
             WEIGHTS["a"] * AM_volume * RHO["AM"]

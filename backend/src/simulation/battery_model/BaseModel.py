@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from simulation.process_parameters import BaseMachineParameters
 
 #simple Nase class for battery models
 class BaseModel(ABC):
@@ -11,5 +12,5 @@ class BaseModel(ABC):
         pass
 
     @abstractmethod
-    def update_properties(self):
+    def update_properties(self, machine_parameters: BaseMachineParameters):
         pass
