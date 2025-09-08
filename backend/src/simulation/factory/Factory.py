@@ -269,6 +269,8 @@ class Factory:
             inspection_data = self.merged_line['inspection'].get_final_inspection()
             self.merged_line['inspection'].turn_off()
             print(f"Electrode inspection completed. Data: {inspection_data}")
+        # 
+        # 
         
         # Rewinding
         if self.merged_line['rewinding']:
