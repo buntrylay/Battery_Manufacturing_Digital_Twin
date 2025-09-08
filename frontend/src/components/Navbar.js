@@ -16,6 +16,9 @@ const Navbar = () => (
       <li>
         <Link to="/flow">Flow Page</Link>
       </li>
+      <li>
+        <Link to="/realtime">Real-Time Data</Link> {/* ✅ new menu item */}
+      </li>
     </ul>
   </nav>
 );
