@@ -1,10 +1,16 @@
 export const stageIcons = {
-  Mixing: "🧪",
-  Coating: "🎨",
-  Drying: "🌬️",
-  Calendaring: "⚙️",
-  Slitting: "✂️",
-  Inspection: "🔍",
+  "Anode Mixing": "🧪",
+  "Cathode Mixing": "🧪",
+  "Anode Coating": "🎨",
+  "Cathode Coating": "🎨",
+  "Anode Drying": "🌬️",
+  "Cathode Drying": "🌬️",
+  "Anode Calendaring": "⚙️",
+  "Cathode Calendaring": "⚙️",
+  "Anode Slitting": "✂️",
+  "Cathode Slitting": "✂️",
+  "Anode Inspection": "🔍",
+  "Cathode Inspection": "🔍",
   Rewinding: "♻️",
   "Electrolyte Filling": "💧",
   "Formation Cycling": "🔋",
@@ -12,28 +18,46 @@ export const stageIcons = {
 };
 
 export const stageDescriptions = {
-  Mixing:
-    "Combines active material, binder, and solvent into a uniform slurry.",
-  Coating: "Applies the slurry onto current collectors at controlled speed.",
-  Drying: "Removes solvent to solidify coating, ensuring consistent thickness.",
-  Calendaring:
-    "Compresses electrode sheets for density and mechanical strength.",
-  Slitting: "Cuts wide electrode rolls into narrower strips.",
-  Inspection: "Checks electrode quality, dimensions, and detects defects.",
+  "Anode Mixing": "Mixes anode active material, binder, and solvent.",
+  "Cathode Mixing": "Mixes cathode active material, binder, and solvent.",
+  "Anode Coating": "Applies slurry onto current collectors.",
+  "Cathode Coating": "Applies slurry onto current collectors.",
+  "Anode Drying": "Removes solvent and solidifies coating.",
+  "Cathode Drying": "Removes solvent and solidifies coating.",
+  "Anode Calendaring": "Compresses electrode sheets.",
+  "Cathode Calendaring": "Compresses electrode sheets.",
+  "Anode Slitting": "Cuts electrode rolls.",
+  "Cathode Slitting": "Cuts electrode rolls.",
+  "Anode Inspection": "Checks electrode quality.",
+  "Cathode Inspection": "Checks electrode quality.",
   Rewinding: "Re-rolls electrodes under controlled tension.",
-  "Electrolyte Filling":
-    "Injects electrolyte into assembled cells under vacuum.",
-  "Formation Cycling": "Performs charge/discharge cycles to form SEI layer.",
-  Aging: "Stabilizes cells over time to ensure reliability.",
+  "Electrolyte Filling": "Injects electrolyte into cells.",
+  "Formation Cycling": "Runs charge/discharge cycles to form SEI.",
+  Aging: "Stabilizes cells to ensure reliability.",
 };
 
 export const inputsByStage = {
-  Mixing: ["PVDF", "CA", "AM", "Solvent"],
-  Coating: ["Coating Speed", "Gap Height", "Flow Rate", "Coating Width"],
-  Drying: ["Web Speed", "Drying Temp", "Drying Time"],
-  Calendaring: ["Roll Gap", "Roll Pressure", "Roll Speed"],
-  Slitting: ["Blade Sharpness", "Slitting Speed", "Target Width"],
-  Inspection: ["Width Tolerance", "Thickness Tolerance", "Defects Allowed"],
+  // Different inputs for Mixing
+  "Anode Mixing": ["Anode PVDF", "Anode CA", "Anode AM", "Anode Solvent"],
+  "Cathode Mixing": ["Cathode PVDF", "Cathode CA", "Cathode AM", "Cathode Solvent"],
+
+  // Shared inputs duplicated for anode/cathode machines
+  "Anode Coating": ["Coating Speed", "Gap Height", "Flow Rate", "Coating Width"],
+  "Cathode Coating": ["Coating Speed", "Gap Height", "Flow Rate", "Coating Width"],
+
+  "Anode Drying": ["Web Speed", "Drying Temp", "Drying Time"],
+  "Cathode Drying": ["Web Speed", "Drying Temp", "Drying Time"],
+
+  "Anode Calendaring": ["Roll Gap", "Roll Pressure", "Roll Speed"],
+  "Cathode Calendaring": ["Roll Gap", "Roll Pressure", "Roll Speed"],
+
+  "Anode Slitting": ["Blade Sharpness", "Slitting Speed", "Target Width"],
+  "Cathode Slitting": ["Blade Sharpness", "Slitting Speed", "Target Width"],
+
+  "Anode Inspection": ["Width Tolerance", "Thickness Tolerance", "Defects Allowed"],
+  "Cathode Inspection": ["Width Tolerance", "Thickness Tolerance", "Defects Allowed"],
+
+  // Shared post-inspection machines
   Rewinding: ["Rewinding Speed", "Initial Tension"],
   "Electrolyte Filling": ["Vacuum Level", "Vacuum Filling", "Soaking Time"],
   "Formation Cycling": ["Charge Current", "Voltage"],

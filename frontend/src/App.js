@@ -25,24 +25,27 @@ export default function App() {
       <Router>
         <div className="App">
           <Navbar />
-          <Routes>
-            <Route
-              path="/flow"
-              element={
-                <FlowPageProvider>
-                  <FlowPage />
-                </FlowPageProvider>
-              }
-            />
-            <Route path="/" element={<SimulationPage />} />
-            <Route path="/logs" element={<LogsPage />} />
-            <Route path="/testing" element={<TestingPage />} />
-            <Route path="/404" element={<h1>PAGE NOT FOUND</h1>} />
-            <Route path="*" element={<h1>PAGE NOT FOUND</h1>} />
-          </Routes>
+          <main className="App-main">
+            <Routes>
+              <Route
+                path="/flow"
+                element={
+                  <FlowPageProvider>
+                    <FlowPage />
+                  </FlowPageProvider>
+                }
+              />
+              <Route path="/" element={<SimulationPage />} />
+              <Route path="/logs" element={<LogsPage />} />
+              <Route path="/testing" element={<TestingPage />} />
+              <Route path="/404" element={<h1>PAGE NOT FOUND</h1>} />
+              <Route path="*" element={<h1>PAGE NOT FOUND</h1>} />
+            </Routes>
+          </main>
+          <Footer />
         </div>
-        <Footer />
       </Router>
     </WebSocketProvider>
   );
 }
+
