@@ -12,12 +12,14 @@ import "./styles/Footer.css";
 import "./styles/SimulationPage.css";
 import "./styles/LogsPage.css";
 import "./styles/TestingPage.css";
+
 // Pages
 import SimulationPage from "./pages/SimulationPage";
 import LogsPage from "./pages/LogsPage";
 import TestingPage from "./pages/TestingPage";
 import FlowPage from "./pages/FlowPage";
 import { FlowPageProvider } from "./contexts/FlowPageContext";
+import RealTimeDataPage from "./pages/RealTimeDataPage";
 
 export default function App() {
   return (
@@ -38,6 +40,7 @@ export default function App() {
               <Route path="/" element={<SimulationPage />} />
               <Route path="/logs" element={<LogsPage />} />
               <Route path="/testing" element={<TestingPage />} />
+              <Route path="/realtime" element={<RealTimeDataPage />} />
               <Route path="/404" element={<h1>PAGE NOT FOUND</h1>} />
               <Route path="*" element={<h1>PAGE NOT FOUND</h1>} />
             </Routes>
