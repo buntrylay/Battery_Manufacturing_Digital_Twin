@@ -1,19 +1,11 @@
 from simulation.machine.BaseMachine import BaseMachine
-from dataclasses import dataclass
+from simulation.process_parameters.Parameters import CalendaringParameters
 
-@dataclass
-class CalendaringParameters:
-    roll_gap: float
-    roll_pressure: float
-    temperature: float # (25)
-    roll_speed: float
-    dry_thickness: float
-    initial_porosity: float
 
 class CalendaringMachine(BaseMachine):
     def __init__(self, 
         calendaring_model, 
-        calendaring_parameters
+        calendaring_parameters: CalendaringParameters
     ):
         super().__init__("Calendaring", 
             calendaring_model, 

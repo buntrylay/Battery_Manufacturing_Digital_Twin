@@ -2,8 +2,7 @@ import queue
 from threading import Thread
 from typing import Union
 from simulation.battery_model.MixingModel import MixingModel
-from simulation.process_parameters.MixingParameters import (
-    MaterialRatios,
+from simulation.process_parameters.Parameters import (
     MixingParameters,
 )
 from simulation.factory.Batch import Batch
@@ -44,10 +43,10 @@ class PlantSimulation:
 
     def initialise_default_factory_structure(self):
         default_mixing_parameters_anode = MixingParameters(
-            MaterialRatios(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41)
+           AM=1.495, CA=0.045, PVDF=0.05, solvent=0.41
         )
         default_mixing_parameters_cathode = MixingParameters(
-            MaterialRatios(AM=0.013, CA=0.039, PVDF=0.598, solvent=0.35)
+            AM=0.013, CA=0.039, PVDF=0.598, solvent=0.35
         )
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(

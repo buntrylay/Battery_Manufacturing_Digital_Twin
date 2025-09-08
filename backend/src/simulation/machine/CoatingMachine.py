@@ -1,16 +1,7 @@
 from simulation.battery_model.CoatingModel import CoatingModel
 from simulation.machine.BaseMachine import BaseMachine
-from simulation.process_parameters.CoatingParameters import CoatingParameters
+from simulation.process_parameters.Parameters import CoatingParameters
 import time
-from dataclasses import dataclass
-
-
-@dataclass
-class CoatingParameters:
-    coating_speed: float
-    gap_height: float
-    flow_rate: float
-    coating_width: float
 
 
 class CoatingMachine(BaseMachine):
@@ -94,13 +85,8 @@ class CoatingMachine(BaseMachine):
                 self.machine_parameters.coating_speed, self.machine_parameters.gap_height
             )
             self.uniformity_std = self.__calculate_uniformity_std(self.shear_rate)
-            self.battery_model.update_properties(
-                self.machine_parameters.flow_rate,
-                self.machine_parameters.coating_speed,
-                self.machine_parameters.coating_width,
-                self.machine_parameters.gap_height,
-            )
-            result = self.get_current_properties(
+            self.battery_model.update_properties(self.machine_parameters)
+            result = self.get_properties(
                 process_specifics={
                     "shear_rate": self.shear_rate,
                     "uniformity_std": self.uniformity_std,

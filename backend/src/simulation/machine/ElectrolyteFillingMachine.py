@@ -1,17 +1,12 @@
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import dataclass
+from simulation.process_parameters.Parameters import ElectrolyteFillingParameters
 
-@dataclass
-# initialize parameters
-class ElectrolyteFillingParameters:
-    Vacuum_level: float
-    Vacuum_filling : float
-    Soaking_time: float
 
 class ElectrolyteFillingMachine(BaseMachine):
     def __init__(self, 
         electrolyte_filling_model, 
-        machine_parameters,
+        machine_parameters: ElectrolyteFillingParameters,
         connection_string=None
     ):
         super().__init__("ElectrolyteFilling",

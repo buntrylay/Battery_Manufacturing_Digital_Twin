@@ -6,26 +6,47 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from simulation.factory import Batch, PlantSimulation
 
-from simulation.machine.CoatingMachine import CoatingMachine, CoatingParameters
-from simulation.battery_model.CoatingModel import CoatingModel
-from simulation.machine.MixingMachine import MaterialRatios, MixingMachine, MixingParameters
-from simulation.battery_model.MixingModel import MixingModel
-from simulation.machine.DryingMachine import DryingMachine, DryingParameters
-from simulation.battery_model.DryingModel import DryingModel
-from simulation.machine.CalendaringMachine import CalendaringMachine, CalendaringParameters
-from simulation.battery_model.CalendaringModel import CalendaringModel
-from simulation.machine.SlittingMachine import SlittingMachine, SlittingParameters
-from simulation.battery_model.SlittingModel import SlittingModel
-from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine, ElectrodeInspectionParameters
-from simulation.battery_model.ElectrodeInspectionModel import ElectrodeInspectionModel
-from simulation.machine.RewindingMachine import RewindingMachine, RewindingParameters
-from simulation.battery_model.RewindingModel import RewindingModel
-from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine, ElectrolyteFillingParameters
-from simulation.battery_model.ElectrolyteFillingModel import ElectrolyteFillingModel
-from simulation.machine.FomationCyclingMachine import FormationCyclingMachine, FormationCyclingParameters
-from simulation.battery_model.FormationCyclingModel import FormationCyclingModel
-from simulation.machine.AgingMachine import AgingMachine, AgingParameters
-from simulation.battery_model.AgingModel import AgingModel
+#Import Parameters Classes
+from simulation.process_parameters.Parameters import (
+    MixingParameters,
+    CoatingParameters,
+    DryingParameters,
+    CalendaringParameters,
+    SlittingParameters,
+    ElectrodeInspectionParameters,
+    RewindingParameters,
+    ElectrolyteFillingParameters,
+    FormationCyclingParameters,
+    AgingParameters
+)
+
+# Import Machines from Machines Folder
+from simulation.machine import (
+    MixingMachine,
+    CoatingMachine,
+    DryingMachine,
+    CalendaringMachine,
+    SlittingMachine,
+    ElectrodeInspectionMachine,
+    RewindingMachine,
+    ElectrolyteFillingMachine,
+    FomationCyclingMachine,
+    AgingMachine
+)
+
+# Import Models from Battery Model Folder
+from simulation.battery_model import (
+    MixingModel,
+    CoatingModel,
+    DryingModel,
+    CalendaringModel,
+    SlittingModel,
+    ElectrodeInspectionModel,
+    RewindingModel,
+    ElectrolyteFillingModel,
+    FormationCyclingModel,
+    AgingModel
+)
 # Define the mixing ratios for anode slurry components
 user_input_anode = {
     "PVDF": 0.05,
@@ -109,12 +130,14 @@ user_input_aging = {
     "aging_time_days": 10
 }
 
-batch_1 = Batch(id="Batch_1")
-plant_simulation = PlantSimulation()
-plant_simulation.add_batch(batch_1)
-plant_simulation.run()
+# batch_1 = Batch(id="Batch_1")
+# plant_simulation = PlantSimulation()
+# plant_simulation.add_batch(batch_1)
+# plant_simulation.run()
 anode_mixing_model = MixingModel("Anode")
-anode_mixing_machine = MixingMachine(anode_mixing_model, MixingParameters(MaterialRatios(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41)))
+anode_mixing_machine = MixingMachine("Anode_Mixer",
+    anode_mixing_model,
+    MixingParameters(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41))
 anode_mixing_machine.run()
 # __init__() CoatingModel
 coating_model = CoatingModel(anode_mixing_model)

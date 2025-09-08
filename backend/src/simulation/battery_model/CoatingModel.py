@@ -1,4 +1,4 @@
-from simulation.process_parameters.CoatingParameters import CoatingParameters
+from simulation.process_parameters.Parameters import CoatingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.battery_model.BaseModel import BaseModel
 

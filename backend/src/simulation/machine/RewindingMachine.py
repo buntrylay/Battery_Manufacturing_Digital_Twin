@@ -1,18 +1,12 @@
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import dataclass
+from simulation.process_parameters.Parameters import RewindingParameters
 
-@dataclass
-# initialize parameters
-class RewindingParameters:
-    rewinding_speed: float
-    initial_tension: float
-    tapering_steps: float
-    environment_humidity: float
 
 class RewindingMachine(BaseMachine):
     def __init__(self,
         rewinding_model, 
-        machine_parameters,
+        machine_parameters: RewindingParameters,
         connection_string=None
     ):
         super().__init__("Rewinding", 

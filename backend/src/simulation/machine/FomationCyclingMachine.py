@@ -1,17 +1,11 @@
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import dataclass
-
-@dataclass
-class FormationCyclingParameters:
-    Charge_current_A: float
-    Charge_voltage_limit_V: float
-    Voltage: float          
-    Formation_duration_s: int = 200 # can be adjusted based on real process time
+from simulation.process_parameters.Parameters import FormationCyclingParameters
 
 class FormationCyclingMachine(BaseMachine):
     def __init__(self,
         formation_model,
-        machine_parameters,
+        machine_parameters: FormationCyclingParameters,
         connection_string=None
     ):
         super().__init__("FormationCycling",

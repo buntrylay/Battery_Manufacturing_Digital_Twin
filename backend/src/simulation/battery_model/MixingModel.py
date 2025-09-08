@@ -1,4 +1,4 @@
-from simulation.process_parameters.MixingParameters import MixingParameters
+from simulation.process_parameters.Parameters import MixingParameters
 from simulation.battery_model.BaseModel import BaseModel
 import random
 import numpy as np
@@ -121,7 +121,7 @@ class MixingModel(BaseModel):
 
     def update_properties(self):
         """Update all computed properties and fluctuate temperature"""
-        self.update_temperature()  # <-- Add this line
+        self.update_temperature()  
         self.density = self.calculate_density(
             self.AM, self.CA, self.PVDF, self.solvent, self.electrode_type
         )

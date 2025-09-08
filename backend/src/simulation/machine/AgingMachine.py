@@ -1,12 +1,6 @@
 import simulation.machine.BaseMachine as BaseMachine
 from dataclasses import dataclass
-
-@dataclass
-# initialize parameters
-class AgingParameters:
-    k_leak : float
-    temperature: float
-    aging_time_days: float# from metrics.metrics import set_machine_status
+from simulation.process_parameters.Parameters import AgingParameters
 
 
 class AgingMachine(BaseMachine):
