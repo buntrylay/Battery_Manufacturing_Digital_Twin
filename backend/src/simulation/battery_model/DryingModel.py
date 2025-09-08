@@ -13,6 +13,11 @@ class DryingModel(BaseModel):
         self.defect_risk = False
 
         # constants
+        self.V_air = 1.0
+        self.T_dry = 100
+        self.H_air = 80
+        self.h_air = 0.1
+        self.drying_length = 10
         self.coating_width = 0.5
         self.density = 1500
         self.solvent_density = 800
@@ -24,9 +29,9 @@ class DryingModel(BaseModel):
 
     def evaporation_rate(self, params):
         k0 = 0.001
-        mass_transfer_coeff = k0 * (params.V_air / (self.coating_width * params.H_air))
+        mass_transfer_coeff = k0 * (self.V_air / (self.coating_width * self.h_air))
         C_surface = 1.0
-        C_air = params.H_air / 100
+        C_air = self.H_air / 100
         return mass_transfer_coeff * self.area(params) * (C_surface - C_air)
 
     def calculate_dry_thickness(self):
@@ -36,7 +41,7 @@ class DryingModel(BaseModel):
         return self.wet_thickness * (1 - self.solid_content) * self.density
 
     def time_steps(self, params):
-        residence_time = params.drying_length / params.web_speed
+        residence_time = self.drying_length / params.web_speed
         return int(residence_time / self.delta_t)
 
     def update_properties(self, params):
