@@ -115,7 +115,7 @@ coating_model = CoatingModel(anode_mixing_model)
 anode_coating_machine = CoatingMachine(coating_model, CoatingParameters(coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5))
 anode_coating_machine.run()
 drying_model = DryingModel(coating_model)
-anode_drying_machine = DryingMachine(drying_model, DryingParameters(V_air=1.0, T_dry=100, H_air=80, drying_length=10, web_speed=0.5))
+anode_drying_machine = DryingMachine(drying_model, DryingParameters(web_speed=0.5))
 anode_drying_machine.run()
 
 calendaring_model = CalendaringModel(drying_model, initial_porosity=0.45)
