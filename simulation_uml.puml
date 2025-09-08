@@ -1,0 +1,286 @@
+@startuml
+package "simulation" {
+    
+    package "machine_parameters" {
+        abstract class BaseMachineParameters {
+            {abstract} +validate_parameters(): bool
+            +get_parameter_dict(): dict
+        }
+        
+        class MixingParameters {
+            +material_ratios: MaterialRatios
+        }
+        
+        class CoatingParameters {
+            +coating_speed: float
+            +gap_height: float
+            +flow_rate: float
+            +coating_width: float
+        }
+        
+        class DryingParameters {
+        }
+        
+        class CalendaringParameters {
+        }
+        
+        class SlittingParameters {
+        }
+        
+        class RewindingParameters {
+        }
+        
+        class ElectrolyteFillingParameters {
+        }
+        
+        class FormationCyclingParameters {
+        }
+        
+        class AgingParameters {
+        }
+        
+        dataclass MaterialRatios {
+            +AM: float
+            +CA: float
+            +PVDF: float
+            +solvent: float
+        }
+    }
+    
+    package "battery_model" {
+        abstract class BaseModel {
+            +get_properties(): dict
+            +update_properties(machine_params: BaseMachineParameters): void
+        }
+        
+        class MixingModel {
+            +__init__(electrode_type: str)
+            +electrode_type: str
+            +AM: float
+            +CA: float
+            +PVDF: float
+            +solvent: float
+            +solvent_type: str
+            +viscosity: float
+            +density: float
+            +yield_stress: float
+            
+            +add(component: str, amount: float): void
+            -calculate_density(): float
+            -calculate_viscosity(): float
+            -calculate_yield_stress(): float
+            +update_properties(machine_params: MixingParameters): void
+            +get_properties(): dict
+        }
+        
+        class CoatingModel {
+            +__init__(mixing_model: MixingModel)
+            +update_properties(machine_params: CoatingParameters): void
+            +get_properties(): dict
+        }
+        
+        class DryingModel {
+            +__init__(coating_model: MixingModel)
+            +update_properties(machine_params: DryingParameters): void
+            +get_properties(): dict
+        }
+        
+        class CalendaringModel {
+            +update_properties(machine_params: CalendaringParameters): void
+            +get_properties(): dict
+        }
+        
+        class SlittingModel {
+            +update_properties(machine_params: SlittingParameters): void
+            +get_properties(): dict
+        }
+        
+        class RewindingModel {
+            +update_properties(machine_params: RewindingParameters): void
+            +get_properties(): dict
+        }
+        
+        class ElectrolyteFillingModel {
+            +update_properties(machine_params: ElectrolyteFillingParameters): void
+            +get_properties(): dict
+        }
+        
+        class FormationCyclingModel {
+            +update_properties(machine_params: FormationCyclingParameters): void
+            +get_properties(): dict
+        }
+        
+        class AgingModel {
+            +update_properties(machine_params: AgingParameters): void
+            +get_properties(): dict
+        }
+    }
+    
+    package "machine" {
+        abstract class BaseMachine {
+            +machine_id: str
+            +battery_model: BaseModel
+            +machine_parameters: BaseMachineParameters
+            +total_time: float
+            +is_running: bool
+            +turn_on(): void
+            +turn_off(): void
+            +get_current_properties(): dict
+            +save_data_to_local_folder(): void
+            +save_all_results(): void
+            +run(): void
+            {abstract} +step_logic(): void
+            +appendProcessState(): dict
+        }
+        
+        class MixingMachine {
+            +mixing_tank_volume: float
+            +step_logic(): void
+            +appendProcessState(): dict
+        }
+        
+        class CoatingMachine {
+            -calculate_shear_rate(): float
+            -calculate_uniformity_std(): float
+            +step_logic(): void
+            +appendProcessState(): dict
+        }
+        
+        class DryingMachine {
+            +step_logic(): void
+            +appendProcessState(): dict
+        }
+        
+        class CalendaringMachine {
+            +step_logic(): void
+            +appendProcessState(): dict
+        }
+        
+        class SlittingMachine {
+            +step_logic(): void
+            +appendProcessState(): dict
+        }
+        
+        class RewindingMachine {
+            +step_logic(): void
+            +appendProcessState(): dict
+        }
+        
+        class ElectrolyteFillingMachine {
+            +step_logic(): void
+            +appendProcessState(): dict
+        }
+        
+        class FormationCyclingMachine {
+            +step_logic(): void
+            +appendProcessState(): dict
+        }
+        
+        class AgingMachine {
+            +step_logic(): void
+            +appendProcessState(): dict
+        }
+    }
+    
+    package "factory" {
+        class Factory {
+            +batch_queue: Queue[Batch]
+            +anode_line: dict
+            +cathode_line: dict
+            +merged_line: dict
+            +run_electrode_line(): void
+            +run_merged_line(): void
+            +run_production_line(): void
+        }
+    }
+
+    package "batch" {
+        class Batch {
+
+        }
+    }
+}
+
+' Parameter inheritance relationships
+BaseMachineParameters <|-- MixingParameters
+BaseMachineParameters <|-- CoatingParameters
+BaseMachineParameters <|-- DryingParameters
+BaseMachineParameters <|-- CalendaringParameters
+BaseMachineParameters <|-- SlittingParameters
+BaseMachineParameters <|-- RewindingParameters
+BaseMachineParameters <|-- ElectrolyteFillingParameters
+BaseMachineParameters <|-- FormationCyclingParameters
+BaseMachineParameters <|-- AgingParameters
+
+' Model inheritance relationships
+BaseModel <|-- MixingModel
+BaseModel <|-- CoatingModel
+BaseModel <|-- DryingModel
+BaseModel <|-- CalendaringModel
+BaseModel <|-- SlittingModel
+BaseModel <|-- RewindingModel
+BaseModel <|-- ElectrolyteFillingModel
+BaseModel <|-- FormationCyclingModel
+BaseModel <|-- AgingModel
+
+' Machine inheritance relationships
+BaseMachine <|-- MixingMachine
+BaseMachine <|-- CoatingMachine
+BaseMachine <|-- DryingMachine
+BaseMachine <|-- CalendaringMachine
+BaseMachine <|-- SlittingMachine
+BaseMachine <|-- RewindingMachine
+BaseMachine <|-- ElectrolyteFillingMachine
+BaseMachine <|-- FormationCyclingMachine
+BaseMachine <|-- AgingMachine
+
+' Simple composition relationships (not decorator pattern)
+MixingModel ..> CoatingModel : references
+CoatingModel ..> DryingModel : references
+DryingModel ..> CalendaringModel : references
+CalendaringModel ..> SlittingModel : references
+SlittingModel ..> RewindingModel : references
+RewindingModel ..> ElectrolyteFillingModel : references
+ElectrolyteFillingModel ..> FormationCyclingModel : references
+FormationCyclingModel ..> AgingModel : references
+
+' Factory relationships
+Factory --> BaseMachine : manages
+Factory *-- Batch: receives
+
+' Machine-Model relationships
+MixingMachine o-- MixingModel : operates on
+CoatingMachine o-- CoatingModel : operates on
+DryingMachine o-- DryingModel : operates on
+CalendaringMachine o-- CalendaringModel : operates on
+SlittingMachine o-- SlittingModel : operates on
+RewindingMachine o-- RewindingModel : operates on
+ElectrolyteFillingMachine o-- ElectrolyteFillingModel : operates on
+FormationCyclingMachine o-- FormationCyclingModel : operates on
+AgingMachine o-- AgingModel : operates on
+
+' Machine-Parameter relationships
+MixingMachine o-- MixingParameters : uses
+CoatingMachine o-- CoatingParameters : uses
+DryingMachine o-- DryingParameters : uses
+CalendaringMachine o-- CalendaringParameters : uses
+SlittingMachine o-- SlittingParameters : uses
+RewindingMachine o-- RewindingParameters : uses
+ElectrolyteFillingMachine o-- ElectrolyteFillingParameters : uses
+FormationCyclingMachine o-- FormationCyclingParameters : uses
+AgingMachine o-- AgingParameters : uses
+
+' Machine-Parameter relationships
+MixingParameters *-- MaterialRatios
+
+' Model-Parameter relationships (for update_properties)
+MixingModel ..> MixingParameters : update_properties()
+CoatingModel ..> CoatingParameters : update_properties()
+DryingModel ..> DryingParameters : update_properties()
+CalendaringModel ..> CalendaringParameters : update_properties()
+SlittingModel ..> SlittingParameters : update_properties()
+RewindingModel ..> RewindingParameters : update_properties()
+ElectrolyteFillingModel ..> ElectrolyteFillingParameters : update_properties()
+FormationCyclingModel ..> FormationCyclingParameters : update_properties()
+AgingModel ..> AgingParameters : update_properties()
+@enduml

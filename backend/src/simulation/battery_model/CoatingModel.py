@@ -1,84 +1,100 @@
+from simulation.process_parameters.Parameters import CoatingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.battery_model.BaseModel import BaseModel
 import numpy as np
 import random
 
+
 class CoatingModel(BaseModel):
     def __init__(self, mixing_model: MixingModel):
-        # Passed from mixing model
-        total_solids = mixing_model.AM + mixing_model.CA + mixing_model.PVDF
-        total_volume = total_solids + mixing_model.solvent
+        # passed from mixing model
+        total_solids = (
+            mixing_model.AM + mixing_model.CA + mixing_model.PVDF
+        )  # total solids volume, taken from mixing model's AM, CA, PVDF
+        total_volume = (
+            total_solids + mixing_model.solvent
+        )  # total volume, taken from mixing model's AM, CA, PVDF, solvent
         self.electrode_type = mixing_model.electrode_type
         self.solid_content = total_solids / total_volume if total_volume > 0 else 0
-
-        # Base viscosity from mixing
-        self.base_viscosity = mixing_model.viscosity
-
-        # Calculated properties
-        self.temperature = 25  # default starting temperature
-        self.viscosity = self.base_viscosity
-        self.wet_thickness = 0
-        self.dry_thickness = 0
-        self.defect_risk = False
-        self.shear_rate = 0
-        self.uniformity = 1.0  # 1 = perfect uniformity
-
-    def update_temperature(self):
-        """
-        Update the temperature to simulate fluctuation (random between 24 and 26°C)
-        """
-        self.temperature = random.uniform(23, 27)
-
-    def calculate_viscosity_temp_adjusted(self):
-        """
-        Adjust viscosity based on coating temperature using an exponential relation.
-        """
-        k_vis = 0.1  # temperature sensitivity coefficient
-        self.viscosity = self.base_viscosity * np.exp(-k_vis * (25 - self.temperature))
+        self.viscosity = mixing_model.viscosity  # taken from mixing model's viscosity
+        # calculated properties
+        self.wet_thickness = 0  # wet thickness (m)
+        self.dry_thickness = 0  # dry thickness (m)
+        self.defect_risk = False  # defect risk (bool)
 
     def calculate_wet_thickness(self, flow_rate, coating_speed, coating_width):
-        return flow_rate / (coating_speed * coating_width) * (25 / self.temperature)
- 
+        """
+        Calculate the wet coating thickness based on mass balance.
+
+        This calculation assumes a uniform flow distribution across the coating width.
+        The wet thickness is determined by the ratio of flow rate to the product of
+        coating speed and width.
+
+        Args:
+            flow_rate (float): Volumetric flow rate in m³/s
+            coating_speed (float): Speed of the coating process in m/s
+            coating_width (float): Width of the coating in m
+
+        Returns:
+            float: Wet coating thickness in m
+        """
+        return flow_rate / (coating_speed * coating_width)
+
     def calculate_dry_thickness(self, wet_thickness, solid_content):
-        # Optional: include slight evaporation effect
-        evap_factor = 1 + 0.01 * (self.temperature - 25)
-        return wet_thickness * solid_content / evap_factor
+        """
+        Calculate the drying rate based on wet thickness and solid content.
 
-    def calculate_shear_rate(self, coating_speed, gap_height):
-        self.shear_rate = coating_speed / gap_height
-        return self.shear_rate
+        The drying rate is proportional to the wet thickness and solid content,
+        as these parameters affect the mass transfer during drying.
 
-    def calculate_uniformity(self):
-        # simple proxy: higher viscosity improves uniformity to a point
-        # normalized between 0.5 and 1.0 for simulation
-        self.uniformity = min(max(self.viscosity / 50, 0.5), 1.0)
-        return self.uniformity
+        Args:
+            wet_thickness (float): Initial wet coating thickness in m
+            solid_content (float): Fraction of solids in the coating (0-1)
 
-    def calculate_defect_risk(self, coating_speed, gap_height):
-        K = 100
-        risk = (coating_speed / gap_height) / (K * self.viscosity)
+        Returns:
+            float: Drying rate in m/s
+        """
+        return wet_thickness * solid_content
 
-        if self.temperature < 23.5:
-            risk *= 1.2
-        elif self.temperature > 26.5:
-            risk *= 1.3
+    def calculate_defect_risk(self, coating_speed, gap_height, viscosity):
+        """
+        Assess the risk of coating defects based on process parameters.
 
-        risk /= self.uniformity
+        This method implements a simplified model to predict potential coating defects
+        based on the relationship between shear rate and viscosity. Higher values of
+        the ratio indicate increased risk of defects.
 
-        return bool(risk > 1)  # ensure plain Python bool
+        Args:
+            coating_speed (float): Speed of the coating process in m/s
+            gap_height (float): Height of the coating gap in m
+            K (float): Defect risk constant (10-100), higher values indicate more conservative risk assessment
+            viscosity (float): Coating material viscosity in Pa·s
 
+        Returns:
+            bool: True if defect risk is high, False otherwise
+        """
+        K = 100  # Defect risk constant (10-100)
+        return (coating_speed / gap_height) > (K * viscosity)
 
-    def update_properties(self, flow_rate, coating_speed, coating_width, gap_height):
+    def update_properties(self, coating_parameters: CoatingParameters):
         """
         Update all computed properties dynamically.
         """
-        self.update_temperature()
-        self.calculate_viscosity_temp_adjusted()
-        self.wet_thickness = self.calculate_wet_thickness(flow_rate, coating_speed, coating_width)
-        self.dry_thickness = self.calculate_dry_thickness(self.wet_thickness, self.solid_content)
-        self.calculate_shear_rate(coating_speed, gap_height)
-        self.calculate_uniformity()
-        self.defect_risk = bool(self.calculate_defect_risk(coating_speed, gap_height))
+        self.wet_thickness = self.calculate_wet_thickness(
+            coating_parameters.flow_rate,
+            coating_parameters.coating_speed,
+            coating_parameters.coating_width,
+        )
+
+        self.dry_thickness = self.calculate_dry_thickness(
+            self.wet_thickness, self.solid_content
+        )
+        
+        self.defect_risk = self.calculate_defect_risk(
+            coating_parameters.coating_speed,
+            coating_parameters.gap_height,
+            self.viscosity,
+        )
 
     def get_properties(self):
         return {
