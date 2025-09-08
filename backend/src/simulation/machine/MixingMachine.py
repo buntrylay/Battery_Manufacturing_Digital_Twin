@@ -70,3 +70,4 @@ class MixingMachine(BaseMachine):
         self.__mix_component("AM", duration_sec=10, results_list=all_results)
         self.save_all_results(all_results)
         self.turn_off()
+        return all_results  # Add this line to return the list of results

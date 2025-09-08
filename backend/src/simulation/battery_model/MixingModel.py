@@ -40,8 +40,10 @@ class MixingModel(BaseModel):
         self.electrode_type = electrode_type
         if electrode_type == "Anode":
             self.solvent_type = "H2O"
+            self.RHO = {"AM": 2.26, "CA": 1.8, "PVDF": 1.17, "solvent": 1.0}
         elif self.electrode_type == "Cathode":
             self.solvent_type = "NMP"
+            self.RHO = {"AM": 2.11, "CA": 1.8, "PVDF": 1.78, "solvent": 1.03}
         # Computed properties (Outputs)
         self.viscosity = 0 # mixing model's viscosity (Pa.s)
         self.density = 0 # mixing model's density (kg/m^3)
@@ -63,22 +65,15 @@ class MixingModel(BaseModel):
     ):
         """Calculate density using component volumes and densities"""
 
-        if electrode_type == "Anode":
-            RHO = {"AM": 2.26, "CA": 1.8, "PVDF": 1.17, "solvent": 1.0}
-        elif electrode_type == "Cathode":
-            RHO = {"AM": 2.11, "CA": 1.8, "PVDF": 1.78, "solvent": 1.03}
-
-        total_mass = sum(
-            [
-                AM_volume * RHO["AM"],
-                CA_volume * RHO["CA"],
-                PVDF_volume * RHO["PVDF"],
-                solvent_volume * RHO["solvent"],
-            ]
-        )
-
-        volume = AM_volume + CA_volume + PVDF_volume + solvent_volume
-        return total_mass / volume if volume > 0 else 0
+        total_mass = (AM_volume * self.RHO["AM"] +
+                      CA_volume * self.RHO["CA"] +
+                      PVDF_volume * self.RHO["PVDF"] +
+                      solvent_volume * self.RHO[self.solvent_type])
+        total_volume = self.get_total_volume(AM_volume, CA_volume, PVDF_volume, solvent_volume)
+        
+        if total_volume > 0:
+            return total_mass / total_volume
+        return 0
 
     def calculate_viscosity(
         self,
@@ -110,7 +105,7 @@ class MixingModel(BaseModel):
             WEIGHTS = {"a": 0.85, "b": 2.2, "c": 0.3, "s": -0.4}
         elif electrode_type == "Cathode":
             RHO = {"AM": 2.11, "CA": 1.8, "PVDF": 1.78, "solvent": 1.03}
-            WEIGHTS = {"a": 0.9, "b": 2.5, "s": -0.5}
+            WEIGHTS = {"a": 0.9, "b": 2.5, "c": 0.3, "s": -0.5}
 
         return (
             WEIGHTS["a"] * AM_volume * RHO["AM"]
@@ -146,8 +141,8 @@ class MixingModel(BaseModel):
             "CA_volume": self.CA,
             "PVDF_volume": self.PVDF,
             f"{self.solvent_type}_volume": self.solvent,
-            "viscosity": round(self.viscosity* np.exp (-self.k_vis * (25 - self.temperature)), 4),
-            "density": round(self.density, 4) * (1 + self.alpha * (self.temperature - 25)),
-            "yield_stress": round(self.yield_stress* np.exp (-self.k_yield * (25 - self.temperature)), 4),
+            "viscosity": round(self.viscosity * np.exp(-self.k_vis * (25 - self.temperature)), 4),
+            "density": round(self.density * (1 + self.alpha * (self.temperature - 25)), 4),
+            "yield_stress": round(self.yield_stress * np.exp(-self.k_yield * (25 - self.temperature)), 4),
             "total_volume": sum([self.AM, self.CA, self.PVDF, self.solvent]) * (1 + self.alpha * (self.temperature - 25))
         }
