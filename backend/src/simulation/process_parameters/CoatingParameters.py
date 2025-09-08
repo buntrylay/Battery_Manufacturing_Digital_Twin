@@ -1,8 +1,8 @@
-
+from dataclasses import dataclass
 from simulation.process_parameters import BaseMachineParameters
 
 
-
+@dataclass
 class CoatingParameters(BaseMachineParameters):
     coating_speed: float
     gap_height: float
@@ -18,12 +18,12 @@ class CoatingParameters(BaseMachineParameters):
             raise ValueError("Flow rate must be greater than 0")
         if self.coating_width <= 0:
             raise ValueError("Coating width must be greater than 0")
-        return 
-    
+        return
+
     def get_parameters_dict(self):
         return {
             "coating_speed": self.coating_speed,
             "gap_height": self.gap_height,
             "flow_rate": self.flow_rate,
-            "coating_width": self.coating_width
+            "coating_width": self.coating_width,
         }

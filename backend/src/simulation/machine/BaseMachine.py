@@ -1,9 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
-from functools import partialmethod
-import os
-import json
 from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
@@ -49,10 +46,10 @@ class BaseMachine(ABC):
         # Helpers
         self.local_saver = LocalDataSaver(process_name)
         self.iot_sender = IoTHubSender(connection_string)
-    
-    def add_model(self, model: BaseModel):
-        """Add a model to the machine."""
-        self.battery_model = model
+
+    @abstractmethod
+    def input_model(self, previous_model: BaseModel):
+        pass
 
     def empty_battery_model(self):
         """Empty the model."""
@@ -84,7 +81,9 @@ class BaseMachine(ABC):
         try:
             current_properties = self.get_current_state()
             print(current_properties)
-            path = self.local_saver.save_current_state(current_properties, self.total_time)
+            path = self.local_saver.save_current_state(
+                current_properties, self.total_time
+            )
             print(f"Data saved to {path}")
         except Exception as e:
             print(f"Failed to save data to local folder: {e}")
@@ -120,20 +119,35 @@ class BaseMachine(ABC):
 
     def get_current_state(self, process_specifics=None):
         """Get the current properties of the machine."""
-        return {
-            "timestamp": datetime.now().isoformat(),
-            "duration": round(self.total_time, 2),
-            "process": self.process_name,
-            "battery_model": self.battery_model.get_properties(),
-            "machine_parameters": asdict(self.machine_parameters),
-            "process_specifics": process_specifics,
-        }
+        if self.state:
+            return {
+                "timestamp": datetime.now().isoformat(),
+                "state": "On",
+                "duration": round(self.total_time, 2),
+                "process": self.process_name,
+                "battery_model": self.battery_model.get_properties(),
+                "machine_parameters": asdict(self.machine_parameters),
+                "process_specifics": process_specifics,
+            }
+        else:
+            return {
+                "timestamp": datetime.now().isoformat(),
+                "process": self.process_name,
+                "state": "Off",
+                "machine_parameters": asdict(self.machine_parameters),
+                "process_specifics": process_specifics,
+            }
 
     def append_process_specifics(self, process_specifics):
         """Append the process state to the current properties."""
         return {
             "process_specifics": process_specifics,
         }
+
+    @abstractmethod
+    def run(self):
+        """Abstract method that must be implemented by concrete machine classes."""
+        pass
 
     # idea to standardise the step logic with decorator @abstractmethod
     #  @abstractmethod
@@ -143,8 +157,3 @@ class BaseMachine(ABC):
     #     This method is called at each step of the simulation.
     #     """
     #     pass
-
-    @abstractmethod
-    def run(self):
-        """Abstract method that must be implemented by concrete machine classes."""
-        pass

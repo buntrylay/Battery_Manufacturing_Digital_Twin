@@ -1,15 +1,11 @@
 import queue
 from threading import Thread
 from typing import Union
-from simulation.battery_model.MixingModel import MixingModel
-from simulation.process_parameters.MixingParameters import (
-    MaterialRatios,
-    MixingParameters,
-)
+from simulation.machine import MixingMachine, CoatingMachine
+from simulation.battery_model import MixingModel, CoatingModel
+from simulation.process_parameters import CoatingParameters, MixingParameters
+from simulation.process_parameters.MixingParameters import MaterialRatios
 from simulation.factory.Batch import Batch
-from simulation.machine.MixingMachine import MixingMachine
-
-# from simulation.machine.CoatingMachine import CoatingMachine
 
 
 class PlantSimulation:
@@ -43,12 +39,17 @@ class PlantSimulation:
         self.initialise_default_factory_structure()
 
     def initialise_default_factory_structure(self):
+        # initialise default mixing parameters
         default_mixing_parameters_anode = MixingParameters(
             MaterialRatios(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41)
         )
         default_mixing_parameters_cathode = MixingParameters(
             MaterialRatios(AM=0.013, CA=0.039, PVDF=0.598, solvent=0.35)
         )
+        default_coating_parameters = CoatingParameters(
+            coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5
+        )
+        # create and append machines to electrode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
                 process_name=f"mixing_{electrode_type}",
@@ -56,15 +57,23 @@ class PlantSimulation:
                     default_mixing_parameters_anode
                     if electrode_type == "anode"
                     else default_mixing_parameters_cathode
-                )
+                ),
             )
+            self.factory_structure[electrode_type]["coating"] = CoatingMachine(
+                process_name=f"coating_{electrode_type}",
+                coating_parameters=default_coating_parameters,
+            )
+            # drying, calendaring, slitting, inspection
+        # TODO: create and append machines to merged line
 
     def run_electrode_line(
-        self, electrode_type: Union["anode", "cathode"], mixing_model: MixingModel # type: ignore
+        self, electrode_type: Union["anode", "cathode"], battery_model: MixingModel  # type: ignore
     ):
-        self.factory_structure[electrode_type]["mixing"].add_model(mixing_model)
-        self.factory_structure[electrode_type]["mixing"].run()
-        # TODO: coating, drying, calendaring, slitting, inspection
+        for stage in ["mixing", "coating"]:
+            running_machine = self.factory_structure[electrode_type][stage]
+            running_machine.input_model(battery_model)
+            running_machine.run()
+        # TODO: drying, calendaring, slitting, inspection
 
     def run_cell_line(
         self,
