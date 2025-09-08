@@ -35,7 +35,7 @@ user_input_calendaring = {
 
 #  Slitting's input parameters
 user_input_slitting = {
-    "w_input": 500,
+    "w_input": 500, # not in need!!!
     "blade_sharpness": 8,
     "slitting_speed": 1.5,
     "target_width": 100,

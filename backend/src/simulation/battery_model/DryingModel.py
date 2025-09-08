@@ -1,7 +1,6 @@
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.CoatingModel import CoatingModel
 
-
 class DryingModel(BaseModel):
     def __init__(self, coating_model: CoatingModel):
         # from coating
@@ -44,12 +43,12 @@ class DryingModel(BaseModel):
         self.dry_thickness = self.calculate_dry_thickness()
         self.defect_risk = abs(evap_rate / self.area(params)) > params.max_safe_evap_rate
 
-        return {
-            "evap_rate": evap_rate,
-            "dry_thickness": self.dry_thickness,
-            "M_solvent": self.M_solvent,
-            "defect_risk": self.defect_risk,
-        }
+        # return {
+        #     "evap_rate": evap_rate,
+        #     "dry_thickness": self.dry_thickness,
+        #     "M_solvent": self.M_solvent,
+        #     "defect_risk": self.defect_risk,
+        # }
 
     def get_properties(self):
         return {
