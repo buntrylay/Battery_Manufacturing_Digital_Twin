@@ -1,29 +1,18 @@
-import os
-import sys
-import shutil
-import threading
 import asyncio
-from pathlib import Path
-from zipfile import ZipFile
-from collections import deque
 from datetime import datetime
+from collections import deque
 from typing import List
+import threading
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import sqlalchemy
 
-# --- Path and Simulation Module Imports ---
-# This points from `backend/src/server` up two levels to the project root
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-# Import the machine and model classes directly
+from server.db import engine, insert_flattened_data
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.MixingMachine import MixingMachine, MixingParameters, MaterialRatios
 
-# --- WebSocket and Message Queue Setup ---
+# --- WebSocket & Queue ---
 MAX_MESSAGES = 100
 message_queue = deque(maxlen=MAX_MESSAGES)
 message_lock = threading.Lock()
@@ -33,7 +22,7 @@ main_loop = None
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
- 
+
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
@@ -48,7 +37,8 @@ class ConnectionManager:
         for connection in self.active_connections:
             try:
                 asyncio.ensure_future(connection.send_text(message))
-            except Exception: pass
+            except Exception:
+                pass
 
 manager = ConnectionManager()
 
@@ -63,19 +53,17 @@ def thread_broadcast(message: str):
     if main_loop and main_loop.is_running():
         main_loop.call_soon_threadsafe(manager.broadcast, formatted_message)
 
-# --- FastAPI Application Setup ---
+# --- FastAPI App ---
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-RESULTS_PATH = Path("results")
-RESULTS_PATH.mkdir(parents=True, exist_ok=True)
 
-# --- Pydantic Models for API Input ---
+# --- Pydantic Models ---
 class SlurryInput(BaseModel):
     PVDF: float
     CA: float
@@ -86,57 +74,46 @@ class SimulationInput(BaseModel):
     anode: SlurryInput
     cathode: SlurryInput
 
-# --- Corrected Simulation Logic ---
+# --- Machine Runner ---
+def run_machine(machine_name: str, slurry_input: SlurryInput):
+    thread_broadcast(f"--- Starting {machine_name} Process ---")
+    model = MixingModel(machine_name)
+    params = MixingParameters(
+        material_ratios=MaterialRatios(
+            PVDF=slurry_input.PVDF,
+            CA=slurry_input.CA,
+            AM=slurry_input.AM,
+            solvent=slurry_input.Solvent
+        )
+    )
+    machine = MixingMachine(model, params)
+    result = machine.run()
+
+    # --- Insert into dynamic machine-specific table ---
+    insert_flattened_data(engine, machine_name.lower(), result)
+    thread_broadcast(f"--- {machine_name} Process Finished ---")
+
+# --- Simulation Runner ---
 def run_simulation(payload: SimulationInput):
     if not simulation_lock.acquire(blocking=False):
-        thread_broadcast("ERROR: A simulation is already in progress.")
+        thread_broadcast("ERROR: Simulation already in progress.")
         return
 
     try:
         thread_broadcast("✅ New simulation started.")
-        
-        # --- ANODE PRODUCTION ---
-        thread_broadcast("--- Starting Anode Mixing Process ---")
-        anode_payload = payload.anode
-        
-        anode_mixing_model = MixingModel("Anode")
-        anode_mixing_params = MixingParameters(
-            material_ratios=MaterialRatios(
-                PVDF=anode_payload.PVDF, 
-                CA=anode_payload.CA, 
-                AM=anode_payload.AM, 
-                solvent=anode_payload.Solvent
-            )
-        )
-        anode_mixer = MixingMachine(anode_mixing_model, anode_mixing_params)
-        anode_mixer.run()
-        thread_broadcast("--- Anode Mixing Process Finished ---")
-
-        # --- CATHODE PRODUCTION ---
-        thread_broadcast("--- Starting Cathode Mixing Process ---")
-        cathode_payload = payload.cathode
-        
-        cathode_mixing_model = MixingModel("Cathode")
-        cathode_mixing_params = MixingParameters(
-            material_ratios=MaterialRatios(
-                PVDF=cathode_payload.PVDF,
-                CA=cathode_payload.CA,
-                AM=cathode_payload.AM,
-                solvent=cathode_payload.Solvent
-            )
-        )
-        cathode_mixer = MixingMachine(cathode_mixing_model, cathode_mixing_params)
-        cathode_mixer.run()
-        thread_broadcast("--- Cathode Mixing Process Finished ---")
-
+        machines = [
+            ("Anode", payload.anode),
+            ("Cathode", payload.cathode),
+        ]
+        for name, slurry in machines:
+            run_machine(name, slurry)
         thread_broadcast("✅ All simulation stages complete.")
-
     except Exception as e:
         thread_broadcast(f"❌ SIMULATION FAILED: {str(e)}")
     finally:
         simulation_lock.release()
 
-# --- API Endpoints ---
+# --- FastAPI Events & Endpoints ---
 @app.on_event("startup")
 async def startup_event():
     global main_loop
@@ -144,8 +121,8 @@ async def startup_event():
 
 @app.post("/start-simulation")
 def start_simulation(payload: SimulationInput):
-    simulation_thread = threading.Thread(target=run_simulation, args=(payload,))
-    simulation_thread.start()
+    """Start simulation in a separate thread"""
+    threading.Thread(target=run_simulation, args=(payload,)).start()
     return {"message": "Simulation started. See progress via WebSocket."}
 
 @app.websocket("/ws/status")
@@ -153,26 +130,6 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            await websocket.receive_text()
+            await websocket.receive_text()  # Keep connection alive
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        
-POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
-POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST", "db")
-POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
-
-DATABASE_URL = "postgresql://postgres:password@db:5432/postgres"
-engine = sqlalchemy.create_engine(DATABASE_URL)
-
-@app.get("/")
-def root():
-    try:
-        with engine.connect() as conn:
-            conn.execute(sqlalchemy.text("SELECT 1"))
-            print("Database connection successful.")
-        return {"status": "ok"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-        print(f"Database connection failed: {e}")
