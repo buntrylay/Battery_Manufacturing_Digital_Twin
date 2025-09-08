@@ -11,8 +11,13 @@ class CalendaringParameters:
     initial_porosity: float
 
 class CalendaringMachine(BaseMachine):
-    def __init__(self, calendaring_model, calendaring_parameters):
-        super().__init__("Calendaring", calendaring_model, calendaring_parameters)
+    def __init__(self, 
+        calendaring_model, 
+        calendaring_parameters
+    ):
+        super().__init__("Calendaring", 
+            calendaring_model, 
+            calendaring_parameters)
 
     def run(self):
         self.turn_on()
@@ -21,7 +26,7 @@ class CalendaringMachine(BaseMachine):
         for t in range(60):
             self.total_time = t
             self.battery_model.update_properties(self.machine_parameters)
-            proc = self.battery_model.get_properties()                     # ✅ lấy dict state
+            proc = self.battery_model.get_properties()                    
             result = self.get_current_properties(process_specifics=proc)   
             all_results.append(result)
             self.save_data_to_local_folder()

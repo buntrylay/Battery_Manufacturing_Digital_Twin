@@ -43,19 +43,12 @@ class DryingModel(BaseModel):
         self.dry_thickness = self.calculate_dry_thickness()
         self.defect_risk = abs(evap_rate / self.area(params)) > params.max_safe_evap_rate
 
-        # return {
-        #     "evap_rate": evap_rate,
-        #     "dry_thickness": self.dry_thickness,
-        #     "M_solvent": self.M_solvent,
-        #     "defect_risk": self.defect_risk,
-        # }
-
     def get_properties(self):
         return {
-            "wet_thickness": self.wet_thickness,
-            "dry_thickness": self.dry_thickness,
-            "M_solvent": self.M_solvent,
-            "defect_risk": self.defect_risk,
-            "solid_content": self.solid_content,
+            "wet_thickness": float(self.wet_thickness),
+            "dry_thickness": float(self.dry_thickness),
+            "M_solvent": float(self.M_solvent),
+            "defect_risk": bool(self.defect_risk),
+            "solid_content": float(self.solid_content),
         }
 

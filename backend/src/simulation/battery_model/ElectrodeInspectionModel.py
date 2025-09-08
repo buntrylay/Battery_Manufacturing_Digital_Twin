@@ -10,7 +10,7 @@ class ElectrodeInspectionModel(BaseModel):
         self.final_thickness = slitting_model.final_thickness
         self.epsilon_width = slitting_model.epsilon_width
         self.burr_factor = slitting_model.burr_factor
-
+        self.porosity = slitting_model.porosity
         # state
         self.epsilon_thickness = 0
         self.D_detected = 0
