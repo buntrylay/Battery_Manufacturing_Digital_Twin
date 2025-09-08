@@ -13,8 +13,15 @@ class DryingModel(BaseModel):
         self.M_solvent = 0
         self.defect_risk = False
 
-    def area(coating_width):
-        return coating_width * 1  # length = 1m
+        # constants
+        self.coating_width = 0.5
+        self.density = 1500
+        self.solvent_density = 800
+        self.delta_t = 1
+        self.max_safe_evap_rate = 0.004
+
+    def area(self, params):
+        return self.coating_width * 1  # length = 1m
 
     def evaporation_rate(self, V_air, coating_width, h_air, H_air):
         k0 = 0.001
@@ -46,9 +53,9 @@ class DryingModel(BaseModel):
 
     def get_properties(self):
         return {
-            "wet_thickness": self.wet_thickness,
-            "dry_thickness": self.dry_thickness,
-            "M_solvent": self.M_solvent,
-            "defect_risk": self.defect_risk,
-            "solid_content": self.solid_content,
+            "wet_thickness": float(self.wet_thickness),
+            "dry_thickness": float(self.dry_thickness),
+            "M_solvent": float(self.M_solvent),
+            "defect_risk": bool(self.defect_risk),
+            "solid_content": float(self.solid_content),
         }

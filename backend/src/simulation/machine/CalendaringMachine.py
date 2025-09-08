@@ -13,8 +13,13 @@ class CalendaringParameters:
 
 
 class CalendaringMachine(BaseMachine):
-    def __init__(self, calendaring_model, calendaring_parameters):
-        super().__init__("Calendaring", calendaring_model, calendaring_parameters)
+    def __init__(self, 
+        calendaring_model, 
+        calendaring_parameters
+    ):
+        super().__init__("Calendaring", 
+            calendaring_model, 
+            calendaring_parameters)
 
     def run(self):
         self.turn_on()
