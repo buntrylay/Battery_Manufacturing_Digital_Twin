@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-
+//Navbar component with links to different pages
 const Navbar = () => (
   <nav className="nav-container">
     <ul className="nav-links">
@@ -14,7 +14,7 @@ const Navbar = () => (
         <Link to="/flow">Flow Page</Link>
       </li>
       <li>
-        <Link to="/realtime">Real-Time Data</Link> {/* ✅ new menu item */}
+        <Link to="/realtime">Real-Time Data</Link>
       </li>
     </ul>
   </nav>

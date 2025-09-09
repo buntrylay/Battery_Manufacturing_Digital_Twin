@@ -1,7 +1,8 @@
 import React from "react";
-import "../styles/Footer.css"; 
+import "../styles/Footer.css";
 import swinLogo from "../assets/swinburneLogo.jpg";
 import syncLogo from "../assets/syncrowinLogo.jpg";
+//Footer component with logos and links
 function Footer() {
   return (
     <footer>
