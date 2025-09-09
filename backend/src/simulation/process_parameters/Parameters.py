@@ -1,5 +1,3 @@
-# In file: simulation/parameters/models.py
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 import math

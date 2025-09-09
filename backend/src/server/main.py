@@ -21,7 +21,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 # Import the machine and model classes directly
 from simulation.battery_model.MixingModel import MixingModel
-from simulation.machine.MixingMachine import MixingMachine, MixingParameters, MaterialRatios
+from simulation.machine.MixingMachine import MixingMachine
 
 # --- WebSocket and Message Queue Setup ---
 MAX_MESSAGES = 100
@@ -100,16 +100,10 @@ def run_simulation(payload: SimulationInput):
         anode_payload = payload.anode
         
         anode_mixing_model = MixingModel("Anode")
-        anode_mixing_params = MixingParameters(
-            material_ratios=MaterialRatios(
-                PVDF=anode_payload.PVDF, 
-                CA=anode_payload.CA, 
-                AM=anode_payload.AM, 
-                solvent=anode_payload.Solvent
-            )
-        )
-        anode_mixer = MixingMachine(anode_mixing_model, anode_mixing_params)
-        anode_mixer.run()
+        anode_mixing_machine = MixingMachine("Anode_Mixer",
+                anode_mixing_model,
+                MixingParameters(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41))
+        anode_mixing_machine.run()
         thread_broadcast("--- Anode Mixing Process Finished ---")
 
         # --- CATHODE PRODUCTION ---
@@ -117,16 +111,10 @@ def run_simulation(payload: SimulationInput):
         cathode_payload = payload.cathode
         
         cathode_mixing_model = MixingModel("Cathode")
-        cathode_mixing_params = MixingParameters(
-            material_ratios=MaterialRatios(
-                PVDF=cathode_payload.PVDF,
-                CA=cathode_payload.CA,
-                AM=cathode_payload.AM,
-                solvent=cathode_payload.Solvent
-            )
-        )
-        cathode_mixer = MixingMachine(cathode_mixing_model, cathode_mixing_params)
-        cathode_mixer.run()
+        cathode_mixing_machine = MixingMachine("Cathode_Mixer",
+            cathode_mixing_model,
+            MixingParameters(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41))
+        cathode_mixing_machine.run()
         thread_broadcast("--- Cathode Mixing Process Finished ---")
 
         thread_broadcast("All simulation stages complete.")

@@ -7,7 +7,7 @@ class AgingMachine(BaseMachine):
 
     def __init__(self, 
         aging_model, 
-        machine_parameters,
+        machine_parameters: AgingParameters,
         connection_string=None
     ):
         super().__init__("Aging",

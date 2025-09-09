@@ -124,7 +124,7 @@ aging_params = {
 anode_mixing_model = MixingModel("Anode")
 anode_mixing_machine = MixingMachine("Anode_Mixer",
     anode_mixing_model,
-    MixingParameters(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41))
+    MixingParameters(AM=-1, CA=0.045, PVDF=0.05, solvent=0.41))
 anode_mixing_machine.run()
 # __init__() CoatingModel
 coating_model = CoatingModel(anode_mixing_model)
