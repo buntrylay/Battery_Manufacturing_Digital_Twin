@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from simulation.battery_model import CoatingModel
+from simulation.battery_model import DryingModel
 from simulation.machine.BaseMachine import BaseMachine
 
 
@@ -9,22 +11,26 @@ class DryingParameters:
     H_air: float
     drying_length: float
     web_speed: float
-    # coating_width: float = 0.5
-    # h_air: float = 0.1
-    # density: float = 1500
-    # solvent_density: float = 800
-    # delta_t: float = 1
-    # max_safe_evap_rate: float = 0.004
 
 
 class DryingMachine(BaseMachine):
-    def __init__(self, drying_model, drying_parameters):
-        super().__init__("Drying", drying_model, drying_parameters)
+    def __init__(
+        self,
+        process_name: str,
+        drying_model: DryingModel,
+        drying_parameters: DryingParameters,
+    ):
+        super().__init__(process_name, drying_model, drying_parameters)
+
+    def input_model(self, previous_model: CoatingModel):
+        self.battery_model = DryingModel(previous_model)
 
     def run(self):
         self.turn_on()
         all_results = []
-        total_steps = self.battery_model.time_steps(self.machine_parameters)
+        total_steps = self.battery_model.time_steps(
+            self.machine_parameters.drying_length, self.machine_parameters.web_speed
+        )
         for t in range(total_steps):
             self.total_time = t
             proc = self.battery_model.update_properties(self.machine_parameters)
