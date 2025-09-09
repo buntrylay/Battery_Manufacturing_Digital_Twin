@@ -12,12 +12,16 @@ class DryingModel(BaseModel):
         self.M_solvent = 0
         self.defect_risk = False
         # constants
-        self.COATING_WIDTH = 0.5
-        self.DENSITY = 1500
-        self.DELTA_T = 1
-        self.SOLVENT_DENSITY = 800
-        self.MAX_SAFE_EVAP_RATE = 0.004
-        self.AREA = self.COATING_WIDTH * 1  # length = 1m
+        self.V_air = 1.0
+        self.T_dry = 100
+        self.H_air = 80
+        self.h_air = 0.1
+        self.drying_length = 10
+        self.coating_width = 0.5
+        self.density = 1500
+        self.solvent_density = 800
+        self.delta_t = 1
+        self.max_safe_evap_rate = 0.004
 
     def evaporation_rate(self, V_air, H_air, coating_width, area):
         k0 = 0.001

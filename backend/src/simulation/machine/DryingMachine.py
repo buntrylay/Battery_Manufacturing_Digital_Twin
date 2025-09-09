@@ -6,10 +6,6 @@ from simulation.machine.BaseMachine import BaseMachine
 
 @dataclass
 class DryingParameters:
-    V_air: float
-    T_dry: float
-    H_air: float
-    drying_length: float
     web_speed: float
 
 

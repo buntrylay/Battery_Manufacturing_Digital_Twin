@@ -51,8 +51,11 @@ class PlantSimulation:
             coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5
         )
         default_drying_parameters = DryingParameters(
-            V_air=1.0, H_air=80, drying_length=10, web_speed=0.05
+            web_speed=0.05
         )
+
+        
+
         # create and append machines to electrode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
