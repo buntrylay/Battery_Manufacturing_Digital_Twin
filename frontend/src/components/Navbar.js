@@ -11,9 +11,6 @@ const Navbar = () => (
         <Link to="/logs">Live Logs</Link>
       </li>
       <li>
-        <Link to="/testing">Testing Page</Link>
-      </li>
-      <li>
         <Link to="/flow">Flow Page</Link>
       </li>
       <li>
