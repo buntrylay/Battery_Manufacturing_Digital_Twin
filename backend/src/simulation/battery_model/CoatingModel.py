@@ -1,6 +1,8 @@
 from simulation.process_parameters.Parameters import CoatingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.battery_model.BaseModel import BaseModel
+import numpy as np
+import random
 
 
 class CoatingModel(BaseModel):
@@ -76,7 +78,7 @@ class CoatingModel(BaseModel):
 
     def update_properties(self, coating_parameters: CoatingParameters):
         """
-        Update all computed properties.
+        Update all computed properties dynamically.
         """
         self.wet_thickness = self.calculate_wet_thickness(
             coating_parameters.flow_rate,
@@ -96,9 +98,12 @@ class CoatingModel(BaseModel):
 
     def get_properties(self):
         return {
+            "temperature": round(self.temperature, 2),
             "solid_content": self.solid_content,
-            "viscosity": self.viscosity,
-            "wet_thickness": self.wet_thickness,
-            "dry_thickness": self.dry_thickness,
+            "viscosity": round(self.viscosity, 4),
+            "wet_thickness": round(self.wet_thickness, 4),
+            "dry_thickness": round(self.dry_thickness, 4),
+            "shear_rate": round(self.shear_rate, 4),
+            "uniformity": round(self.uniformity, 4),
             "defect_risk": self.defect_risk,
         }

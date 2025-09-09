@@ -55,16 +55,7 @@ user_input_anode = {
     "solvent": 0.41
 }
 
-# Define the mixing ratios for cathode slurry components
-user_input_cathode = {
-    "PVDF": 0.013,
-    "CA": 0.039,
-    "AM": 0.598,
-    "NMP": 0.35
-}
-
-# Define the coating parameters
-user_input_coating = {
+coating_params = {
     "coating_speed": 0.05,
     "gap_height": 200e-6,
     "flow_rate": 5e-6,
@@ -88,9 +79,9 @@ user_input_calendaring = {
 user_input_slitting = {
     "w_input": 500, # not in need!!!
     "blade_sharpness": 8,
-    "slitting_speed": 1.5, 
+    "slitting_speed": 1.5,
     "target_width": 100,
-    "slitting_tension": 150,
+    "slitting_tension": 150
 }
 
 #  Electrode Inspection's input parameters 
@@ -101,30 +92,26 @@ user_input_electrode_inspection = {
     "D_surface_max": 3
 }
 
-#  Rewinding's input parameters
-user_input_rewinding = {
-    "rewinding_speed": 0.5,  # m/s
-    "initial_tension": 100,       # N
-    "tapering_steps": 0.3, # meters
-    "environment_humidity": 30    # %
+rewinding_params = {
+    "rewinding_speed": 0.5,
+    "initial_tension": 100,
+    "tapering_steps": 0.3,
+    "environment_humidity": 30
 }
 
-# Electrolyte Filling's input parameters
-user_input_elec_filling = {
-    "Vacuum_level" : 100,
-    "Vacuum_filling" : 100,
-    "Soaking_time" : 10
+filling_params = {
+    "Vacuum_level": 100,
+    "Vacuum_filling": 100,
+    "Soaking_time": 10
 }
 
-# Formation Cycling's input parameters
-user_input_formation = {
-    "Charge_current_A" : 0.05,
-    "Charge_voltage_limit_V" : 0.05,
+formation_params = {
+    "Charge_current_A": 0.05,
+    "Charge_voltage_limit_V": 0.05,
     "Voltage": 4
 }
 
-# Aging's input parameters
-user_input_aging = {
+aging_params = {
     "k_leak": 1e-8,
     "temperature": 25,
     "aging_time_days": 10
