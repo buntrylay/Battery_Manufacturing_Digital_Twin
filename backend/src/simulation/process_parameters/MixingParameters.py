@@ -8,6 +8,14 @@ class MaterialRatios:
     CA: float
     PVDF: float
     solvent: float
+    
+    def get_dict(self):
+        return {
+            "AM": self.AM,
+            "CA": self.CA,
+            "PVDF": self.PVDF,
+            "solvent": self.solvent
+        }
 
 
 @dataclass

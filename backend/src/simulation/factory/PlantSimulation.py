@@ -1,10 +1,12 @@
 import queue
 from threading import Thread
 from typing import Union
-from simulation.machine.DryingMachine import DryingParameters
 from simulation.machine import MixingMachine, CoatingMachine
 from simulation.battery_model import MixingModel, CoatingModel
-from simulation.process_parameters import CoatingParameters, MixingParameters
+from simulation.process_parameters import (
+    CoatingParameters,
+    MixingParameters
+)
 from simulation.process_parameters.MixingParameters import MaterialRatios
 from simulation.factory.Batch import Batch
 
@@ -12,7 +14,6 @@ from simulation.factory.Batch import Batch
 class PlantSimulation:
     def __init__(self):
         self.batch_queue = queue.Queue()
-        self.current_batch = None
         self.factory_structure = {
             "anode": {
                 "mixing": None,
@@ -50,9 +51,7 @@ class PlantSimulation:
         default_coating_parameters = CoatingParameters(
             coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5
         )
-        default_drying_parameters = DryingParameters(
-            V_air=1.0, H_air=80, drying_length=10, web_speed=0.05
-        )
+        # default_drying_parameters = DryingParameters(web_speed=0.05)
         # create and append machines to electrode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
@@ -101,9 +100,13 @@ class PlantSimulation:
             run_cathode_thread.start()
             run_anode_thread.join()
             run_cathode_thread.join()
+            self.run_cell_line(batch.anode_line_model, batch.cathode_line_model)
 
     def add_batch(self, batch: Batch):
         self.batch_queue.put(batch)
+
+    def get_machine_status(self, line_type: str, machine_id: str):
+        return self.factory_structure[line_type][machine_id].get_current_state()
 
     def get_current_plant_state(self):
         pass

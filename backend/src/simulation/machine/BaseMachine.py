@@ -55,10 +55,6 @@ class BaseMachine(ABC):
         """Empty the model."""
         self.battery_model = None
 
-    def check_machine_parameters(self, machine_parameters: BaseMachineParameters):
-        """Check the machine parameters."""
-        return machine_parameters.validate_parameters()
-
     def update_machine_parameters(self, machine_parameters: BaseMachineParameters):
         """Update the machine parameters."""
         self.machine_parameters = machine_parameters
