@@ -1,39 +1,54 @@
-from fastapi import FastAPI
+import threading
+from fastapi import FastAPI, HTTPException
 from simulation.factory.PlantSimulation import PlantSimulation
 import uvicorn
 
 
 app = FastAPI()
 battery_plant_simulation = PlantSimulation()
+factory_run_thread = threading.Thread(target=battery_plant_simulation.run_pipeline)
 
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello, World!"}
+    return {"message": "This is the V2 API for the battery manufacturing digital twin!"}
 
-@app.get("/machine/:machine_id/status")
-def get_machine_status(machine_id: str):
-    return {"message": f"Machine {machine_id} is running"}
 
-@app.post("/machine/:machine_id/parameters")
-def update_machine_params(machine_id: str):
-    return {"message": f"Machine {machine_id} is running"}
+@app.get("/machine/{line_type}/{machine_id}/status")
+def get_machine_status(line_type: str, machine_id: str):
+    return battery_plant_simulation.get_machine_status(line_type, machine_id)
+
+
+@app.patch("/machine/{line_type}/{machine_id}/parameters")
+def update_machine_params(line_type: str, machine_id: str, parameters: dict):
+    """Update machine parameters with validation."""
+    try:
+        battery_plant_simulation.update_machine_parameters(
+            line_type, machine_id, parameters
+        )
+        return {
+            "message": f"Machine {machine_id} parameters updated successfully",
+            "line_type": line_type,
+            "machine_id": machine_id,
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
 
 @app.post("/factory/start")
-def start_factory():
-    return {"message": "Factory is starting"}
+def start_factory(batch: dict):
+    battery_plant_simulation.add_batch(batch)
+    if not factory_run_thread.is_alive():
+        factory_run_thread.start()
+    return {"message": "Batch added successfully"}
 
-@app.get("/factory/logs/current")
-def get_factory_logs():
-    return {"message": "Factory logs"}
-    
-@app.get("/factory/logs/all")
+
+@app.get("/factory/logs")
 def get_factory_logs_all():
-    return {"message": "Factory logs all"}
+    return {"message": "Factory logs"}
 
-@app.websocket("/factory/logs/stream")
-async def get_factory_logs_stream():
-    return {"message": "Factory logs stream"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
