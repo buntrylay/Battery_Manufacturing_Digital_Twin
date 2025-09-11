@@ -1,0 +1,29 @@
+footer {
+  width: 100%;
+  background-color: #dfeaf3;
+  color: rgba(47, 55, 89, 0.8);
+  text-align: center;
+  margin-top: 20px;
+  padding: 15px 0;        
+}
+
+.footer-title-area {
+  font-size: 1em;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.footer-text-area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  flex-wrap: wrap;
+  font-size: 0.85em;
+}
+
+.footer-logo img {
+  max-width: 120px;
+  max-height: 50px;
+  margin-inline: 10px;
+}

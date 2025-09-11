@@ -1,6 +1,6 @@
 from simulation.battery_model import MixingModel, CoatingModel
 from simulation.machine.BaseMachine import BaseMachine
-from simulation.process_parameters.CoatingParameters import CoatingParameters
+from simulation.process_parameters.Parameters import CoatingParameters
 import time
 
 

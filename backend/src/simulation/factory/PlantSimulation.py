@@ -43,7 +43,7 @@ class PlantSimulation:
     def initialise_default_factory_structure(self):
         # initialise default mixing parameters
         default_mixing_parameters_anode = MixingParameters(
-            MaterialRatios(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41)
+           AM=1.495, CA=0.045, PVDF=0.05, solvent=0.41
         )
         default_mixing_parameters_cathode = MixingParameters(
             MaterialRatios(AM=0.013, CA=0.039, PVDF=0.598, solvent=0.35)

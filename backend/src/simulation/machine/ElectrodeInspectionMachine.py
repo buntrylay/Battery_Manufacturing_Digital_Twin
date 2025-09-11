@@ -1,14 +1,6 @@
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import dataclass
-
-@dataclass
-# initialize parameters
-class ElectrodeInspectionParameters:
-    epsilon_width_max: float
-    epsilon_thickness_max: float
-    B_max: float
-    D_surface_max: float
-
+from simulation.process_parameters.Parameters import ElectrodeInspectionParameters
 
 class ElectrodeInspectionMachine(BaseMachine):
 

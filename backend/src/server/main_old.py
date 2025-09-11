@@ -137,6 +137,7 @@ def start_both_simulation(payload: DualInput):
             "B_max": 2.0,
             "D_surface_max": 3
         }
+        
         for etype in ["Anode", "Cathode"]:
             inspection_id = f"MC_Inspect_{etype}"
             slitting_id = f"MC_Slit_{etype}"

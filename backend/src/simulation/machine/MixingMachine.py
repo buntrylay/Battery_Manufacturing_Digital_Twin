@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from simulation.process_parameters.MixingParameters import MixingParameters
+from simulation.process_parameters.Parameters import MixingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import asdict
@@ -49,7 +49,7 @@ class MixingMachine(BaseMachine):
     ):
         total_volume_of_material_to_add = (
             self.mixing_tank_volume
-            * asdict(self.machine_parameters.material_ratios)[material_type]
+            * getattr(self.machine_parameters, material_type)
         )
         volume_added_in_each_step = step_percent * total_volume_of_material_to_add
         added_volume = 0.0
@@ -57,7 +57,6 @@ class MixingMachine(BaseMachine):
         last_saved_time = time.time()
         last_saved_result = None
         while self.total_time - comp_start_time < duration_sec:
-            self.ref_temperature = np.random.normal(loc=25, scale=1)
             self.total_time += pause_sec
             if added_volume < total_volume_of_material_to_add:
                 add_amt = min(
@@ -66,7 +65,7 @@ class MixingMachine(BaseMachine):
                 )
                 self.battery_model.add(material_type, add_amt)
                 added_volume += add_amt
-            self.battery_model.update_properties(self.machine_parameters)
+            self.battery_model.update_properties()
             result = self.get_current_state()
             results_list.append(result)
             now = time.time()
@@ -85,7 +84,7 @@ class MixingMachine(BaseMachine):
             self.battery_model.add(
                 "solvent",
                 self.mixing_tank_volume
-                * asdict(self.machine_parameters.material_ratios)["solvent"],
+                * self.machine_parameters.solvent
             )
             all_results = []
             self.__mix_component("PVDF", duration_sec=8, results_list=all_results)

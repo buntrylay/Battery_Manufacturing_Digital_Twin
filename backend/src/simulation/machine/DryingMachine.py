@@ -2,16 +2,7 @@ from dataclasses import dataclass
 from simulation.battery_model import CoatingModel
 from simulation.battery_model import DryingModel
 from simulation.machine.BaseMachine import BaseMachine
-
-
-@dataclass
-class DryingParameters:
-    V_air: float
-    T_dry: float
-    H_air: float
-    drying_length: float
-    web_speed: float
-
+from simulation.process_parameters.Parameters import DryingParameters
 
 class DryingMachine(BaseMachine):
     def __init__(
@@ -24,6 +15,8 @@ class DryingMachine(BaseMachine):
 
     def input_model(self, previous_model: CoatingModel):
         self.battery_model = DryingModel(previous_model)
+    def __init__(self, drying_model, drying_parameters: DryingParameters):
+        super().__init__("Drying", drying_model, drying_parameters)
 
     def run(self):
         self.turn_on()

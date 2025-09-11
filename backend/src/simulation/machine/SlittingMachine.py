@@ -1,18 +1,12 @@
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import dataclass
+from simulation.process_parameters.Parameters import SlittingParameters
 
-@dataclass
-# initialize parameters
-class SlittingParameters:
-    blade_sharpness: float
-    slitting_speed: float
-    target_width: float
-    slitting_tension: float
 
 class SlittingMachine(BaseMachine):
     def __init__(self, 
         slitting_model, 
-        machine_parameters,
+        machine_parameters: SlittingParameters,
         connection_string=None
     ):
         super().__init__("Slitting", 
