@@ -146,8 +146,8 @@ class MixingModel(BaseModel):
             "CA_volume": self.CA,
             "PVDF_volume": self.PVDF,
             f"{self.solvent_type}_volume": self.solvent,
-            "viscosity": round(self.viscosity* np.exp (-self.k_vis * (25 - self.temperature)), 4),
-            "density": round(self.density, 4) * (1 + self.alpha * (self.temperature - 25)),
+            "viscosity": round(self.viscosity * np.exp(-self.k_vis * (25 - self.temperature)), 4),
+            "density": round(self.density * (1 + self.alpha * (self.temperature - 25)), 4),
             "yield_stress": round(self.yield_stress* np.exp (-self.k_yield * (25 - self.temperature)), 4),
             "total_volume": sum([self.AM, self.CA, self.PVDF, self.solvent]) * (1 + self.alpha * (self.temperature - 25))
         }
