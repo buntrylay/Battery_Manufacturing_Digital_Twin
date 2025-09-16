@@ -24,8 +24,7 @@ backend/
 │  │  ├─ __init__.py
 │  │  ├─ main.py                 # FastAPI app & routes
 │  │  ├─ db.py                   # DB engine & table setup
-│  │  ├─ websocket_manager.py    # WebSocket connection manager
-│  │  └─ simulation_runner.py    # Simulation execution logic
+
 
 
 ## Installation

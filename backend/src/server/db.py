@@ -37,7 +37,7 @@ def create_table_if_not_exists(engine, table_name: str):
         table_name_clean,
         metadata_dynamic,
         Column("id", Integer, primary_key=True, autoincrement=True),
-        Column("timestamp", String),
+        Column("timestamp", datetime, default=datetime.now),
         Column("duration", Float),
         Column("process", String),
         Column("temperature_c", Float),
