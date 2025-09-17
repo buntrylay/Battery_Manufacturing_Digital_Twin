@@ -74,8 +74,8 @@ user_input_formation = {
 
 # Aging's input parameters
 user_input_aging = {"k_leak": 1e-8, "temperature": 25, "aging_time_days": 10}
-
-batch_1 = Batch(id="Batch_1")
 plant_simulation = PlantSimulation()
+batch_1 = Batch(id="Batch_1")
+
 plant_simulation.add_batch(batch_1)
 plant_simulation.run_pipeline()

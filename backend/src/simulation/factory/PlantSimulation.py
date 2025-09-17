@@ -71,6 +71,14 @@ class PlantSimulation:
                 coating_parameters=default_coating_parameters,
             )
             # drying, calendaring, slitting, inspection
+            self.factory_structure[electrode_type]["drying"] = None
+
+            self.factory_structure[electrode_type]["calendaring"] = None
+
+            self.factory_structure[electrode_type]["slitting"] = None
+
+            self.factory_structure[electrode_type]["inspection"] = None
+
         # TODO: create and append machines to merged line
 
     def run_electrode_line(
