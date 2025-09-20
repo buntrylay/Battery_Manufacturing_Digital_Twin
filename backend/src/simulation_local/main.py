@@ -35,12 +35,12 @@ user_input_calendaring = {
 
 #  Slitting's input parameters
 user_input_slitting = {
-    "w_input": 500, # not in need!!!
+    "w_input": 500,  # not in need!!!
     "blade_sharpness": 8,
     "slitting_speed": 1.5,
     "slitting_speed": 1.5,
     "target_width": 100,
-    "slitting_tension": 150
+    "slitting_tension": 150,
 }
 
 #  Electrode Inspection's input parameters
