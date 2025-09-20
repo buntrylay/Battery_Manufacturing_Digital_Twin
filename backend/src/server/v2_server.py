@@ -10,8 +10,13 @@ factory_run_thread = threading.Thread(target=battery_plant_simulation.run_pipeli
 
 
 @app.get("/")
-def read_root():
+def root():
     return {"message": "This is the V2 API for the battery manufacturing digital twin!"}
+
+
+@app.get("/plant/state")
+def get_plant_state():
+    return battery_plant_simulation.get_current_plant_state()
 
 
 @app.get("/machine/{line_type}/{machine_id}/status")

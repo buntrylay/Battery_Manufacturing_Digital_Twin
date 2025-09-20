@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
+import time
 from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
@@ -126,7 +127,7 @@ class BaseMachine(ABC):
                 "duration": round(self.total_time, 2),
                 "process": self.process_name,
                 "temperature_C": round(self.battery_model.temperature, 2) if hasattr(self.battery_model, 'temperature') else None,
-            "battery_model": self.battery_model.get_properties(),
+                "battery_model": self.battery_model.get_properties(),
                 "machine_parameters": asdict(self.machine_parameters),
                 "process_specifics": process_specifics,
             }
@@ -149,6 +150,20 @@ class BaseMachine(ABC):
     def run(self):
         """Abstract method that must be implemented by concrete machine classes."""
         pass
+
+
+    def run_simulation(self, total_steps=100, pause_between_steps=0.1, verbose=True):
+        """Run the simulation."""
+        self.turn_on()
+        if verbose:
+            print(f"Machine {self.process_name} is running for {total_steps} steps")
+        for t in range(1, total_steps):
+            self.total_time = t
+            self.battery_model.update_properties(self.machine_parameters)
+            if verbose:
+                print(self.get_current_state())
+            time.sleep(pause_between_steps)
+        self.turn_off()
 
     # idea to standardise the step logic with decorator @abstractmethod
     #  @abstractmethod

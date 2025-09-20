@@ -4,6 +4,7 @@ import os
 # Add the src directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from simulation.process_parameters.Parameters import MixingParameters
 from simulation.factory import Batch, PlantSimulation
 
 # Define the mixing ratios for anode slurry components
@@ -76,7 +77,30 @@ user_input_formation = {
 # Aging's input parameters
 user_input_aging = {"k_leak": 1e-8, "temperature": 25, "aging_time_days": 10}
 
-batch_1 = Batch(id="Batch_1")
+
 plant_simulation = PlantSimulation()
-plant_simulation.add_batch(batch_1)
-plant_simulation.run_pipeline()
+
+
+def test_run_simulation():
+    batch_1 = Batch(id="Batch_1")
+    plant_simulation.add_batch(batch_1)
+    plant_simulation.run_pipeline()
+
+
+def test_get_plant_state():
+    print(plant_simulation.get_current_plant_state())
+
+
+def test_update_machine_parameters():
+    plant_simulation.update_machine_parameters(
+        "anode",
+        "mixing",
+        MixingParameters(
+            AM_ratio=0.495, CA_ratio=0.045, PVDF_ratio=0.05, solvent_ratio=0.442
+        ),
+    )
+    print(plant_simulation.get_machine_status("anode", "mixing"))
+
+
+if __name__ == "__main__":
+    test_run_simulation()

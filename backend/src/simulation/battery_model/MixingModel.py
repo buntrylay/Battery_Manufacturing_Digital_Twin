@@ -10,6 +10,7 @@ class MixingModel(BaseModel):
         Update the temperature to simulate fluctuation (random between 24 and 26°C)
         """
         self.temperature = random.uniform(24, 26)
+
     """
     A class representing a battery slurry mixture containing active material (AM),
     conductive additive (CA), PVDF binder, and solvent (H2O or NMP).
@@ -35,18 +36,19 @@ class MixingModel(BaseModel):
         self.PVDF = 0  # PVDF Binder volume
         self.solvent = 0  # Solvent volume
         self.k_vis = random.uniform(0.1, 0.3)  # Viscosity temperature coefficient
-        self.k_yield = random.uniform(0.05, 0.15)  # Yield stress temperature coefficient
-        self.alpha = random.uniform(0.0005, 0.0015) 
+        self.k_yield = random.uniform(
+            0.05, 0.15
+        )  # Yield stress temperature coefficient
+        self.alpha = random.uniform(0.0005, 0.0015)
         self.electrode_type = electrode_type
         if electrode_type == "Anode":
             self.solvent_type = "H2O"
         elif self.electrode_type == "Cathode":
             self.solvent_type = "NMP"
         # Computed properties (Outputs)
-        self.viscosity = 0 # mixing model's viscosity (Pa.s)
-        self.density = 0 # mixing model's density (kg/m^3)
-        self.yield_stress = 0 # mixing model's yield stress (Pa)
-        
+        self.viscosity = 0  # mixing model's viscosity (Pa.s)
+        self.density = 0  # mixing model's density (kg/m^3)
+        self.yield_stress = 0  # mixing model's yield stress (Pa)
 
     def add(self, component, amount):
         """
@@ -121,7 +123,7 @@ class MixingModel(BaseModel):
 
     def update_properties(self):
         """Update all computed properties and fluctuate temperature"""
-        self.update_temperature()  
+        self.update_temperature()
         self.density = self.calculate_density(
             self.AM, self.CA, self.PVDF, self.solvent, self.electrode_type
         )
@@ -131,6 +133,7 @@ class MixingModel(BaseModel):
         self.yield_stress = self.calculate_yield_stress(
             self.AM, self.CA, self.PVDF, self.solvent, self.electrode_type
         )
+
     def get_total_volume(self, AM_volume, CA_volume, PVDF_volume, solvent_volume):
         """
         Calculate the current total volume of all components in the slurry.
@@ -146,8 +149,14 @@ class MixingModel(BaseModel):
             "CA_volume": self.CA,
             "PVDF_volume": self.PVDF,
             f"{self.solvent_type}_volume": self.solvent,
-            "viscosity": round(self.viscosity* np.exp (-self.k_vis * (25 - self.temperature)), 4),
-            "density": round(self.density, 4) * (1 + self.alpha * (self.temperature - 25)),
-            "yield_stress": round(self.yield_stress* np.exp (-self.k_yield * (25 - self.temperature)), 4),
-            "total_volume": sum([self.AM, self.CA, self.PVDF, self.solvent]) * (1 + self.alpha * (self.temperature - 25))
+            "viscosity": round(
+                self.viscosity * np.exp(-self.k_vis * (25 - self.temperature)), 4
+            ),
+            "density": round(self.density, 4)
+            * (1 + self.alpha * (self.temperature - 25)),
+            "yield_stress": round(
+                self.yield_stress * np.exp(-self.k_yield * (25 - self.temperature)), 4
+            ),
+            "total_volume": sum([self.AM, self.CA, self.PVDF, self.solvent])
+            * (1 + self.alpha * (self.temperature - 25)),
         }

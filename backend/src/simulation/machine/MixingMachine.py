@@ -48,8 +48,7 @@ class MixingMachine(BaseMachine):
         results_list=None,
     ):
         total_volume_of_material_to_add = (
-            self.mixing_tank_volume
-            * getattr(self.machine_parameters, material_type)
+            self.mixing_tank_volume * getattr(self.machine_parameters, f"{material_type}_ratio")
         )
         volume_added_in_each_step = step_percent * total_volume_of_material_to_add
         added_volume = 0.0
@@ -83,8 +82,7 @@ class MixingMachine(BaseMachine):
             self.turn_on()
             self.battery_model.add(
                 "solvent",
-                self.mixing_tank_volume
-                * self.machine_parameters.solvent
+                self.mixing_tank_volume * self.machine_parameters.solvent_ratio,
             )
             all_results = []
             self.__mix_component("PVDF", duration_sec=8, results_list=all_results)

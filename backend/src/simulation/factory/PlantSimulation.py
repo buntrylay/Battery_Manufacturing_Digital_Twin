@@ -3,10 +3,7 @@ from threading import Thread
 from typing import Union
 from simulation.machine import MixingMachine, CoatingMachine
 from simulation.battery_model import MixingModel, CoatingModel
-from simulation.process_parameters import (
-    CoatingParameters,
-    MixingParameters
-)
+from simulation.process_parameters import CoatingParameters, MixingParameters
 from simulation.process_parameters.MixingParameters import MaterialRatios
 from simulation.factory.Batch import Batch
 
@@ -43,10 +40,10 @@ class PlantSimulation:
     def initialise_default_factory_structure(self):
         # initialise default mixing parameters
         default_mixing_parameters_anode = MixingParameters(
-           AM=1.495, CA=0.045, PVDF=0.05, solvent=0.41
+            AM_ratio=1.495, CA_ratio=0.045, PVDF_ratio=0.05, solvent_ratio=0.41
         )
         default_mixing_parameters_cathode = MixingParameters(
-            MaterialRatios(AM=0.013, CA=0.039, PVDF=0.598, solvent=0.35)
+            AM_ratio=0.598, CA_ratio=0.039, PVDF_ratio=0.013, solvent_ratio=0.35
         )
         default_coating_parameters = CoatingParameters(
             coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5
@@ -90,11 +87,12 @@ class PlantSimulation:
         while self.batch_queue:
             batch = self.batch_queue.get()
             run_anode_thread = Thread(
-                target=self.run_electrode_line, args=("anode", batch.mixing_model_anode)
+                target=self.run_electrode_line, 
+                args=("anode", batch.anode_line_model)
             )
             run_cathode_thread = Thread(
                 target=self.run_electrode_line,
-                args=("cathode", batch.mixing_model_cathode),
+                args=("cathode", batch.cathode_line_model),
             )
             run_anode_thread.start()
             run_cathode_thread.start()
@@ -110,3 +108,17 @@ class PlantSimulation:
 
     def get_current_plant_state(self):
         pass
+
+    def update_machine_parameters(self, line_type: str, machine_id: str, parameters):
+        """Update parameters for a specific machine."""
+        if line_type not in self.factory_structure:
+            raise ValueError(f"Line type '{line_type}' not found")
+
+        if machine_id not in self.factory_structure[line_type]:
+            raise ValueError(f"Machine '{machine_id}' not found in line '{line_type}'")
+
+        machine = self.factory_structure[line_type][machine_id]
+        if machine is None:
+            raise ValueError(f"Machine '{machine_id}' is not initialized")
+
+        machine.update_machine_parameters(parameters)
