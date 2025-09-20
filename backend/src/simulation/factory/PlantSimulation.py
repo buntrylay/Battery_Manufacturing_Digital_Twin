@@ -46,7 +46,7 @@ class PlantSimulation:
            AM=1.495, CA=0.045, PVDF=0.05, solvent=0.41
         )
         default_mixing_parameters_cathode = MixingParameters(
-            MaterialRatios(AM=0.013, CA=0.039, PVDF=0.598, solvent=0.35)
+            AM=0.013, CA=0.039, PVDF=0.598, solvent=0.35
         )
         default_coating_parameters = CoatingParameters(
             coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5
@@ -90,11 +90,12 @@ class PlantSimulation:
         while self.batch_queue:
             batch = self.batch_queue.get()
             run_anode_thread = Thread(
-                target=self.run_electrode_line, args=("anode", batch.mixing_model_anode)
+                target=self.run_electrode_line, 
+                args=("anode", batch.anode_line_model)
             )
             run_cathode_thread = Thread(
                 target=self.run_electrode_line,
-                args=("cathode", batch.mixing_model_cathode),
+                args=("cathode", batch.cathode_line_model),
             )
             run_anode_thread.start()
             run_cathode_thread.start()
