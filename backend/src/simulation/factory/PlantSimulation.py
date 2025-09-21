@@ -2,10 +2,12 @@ import queue
 from threading import Thread
 from typing import Union
 from simulation.machine import MixingMachine, CoatingMachine
-from simulation.battery_model import MixingModel, CoatingModel
+from simulation.machine.DryingMachine import DryingMachine
+from simulation.battery_model import MixingModel, CoatingModel, DryingModel
 from simulation.process_parameters import (
     CoatingParameters,
-    MixingParameters
+    MixingParameters,
+    DryingParameters,
 )
 from simulation.process_parameters.MixingParameters import MaterialRatios
 from simulation.factory.Batch import Batch
@@ -51,7 +53,9 @@ class PlantSimulation:
         default_coating_parameters = CoatingParameters(
             coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5
         )
-        # default_drying_parameters = DryingParameters(web_speed=0.05)
+        default_drying_parameters = DryingParameters(
+            web_speed=0.05
+        )
         # create and append machines to electrode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
@@ -66,16 +70,21 @@ class PlantSimulation:
                 process_name=f"coating_{electrode_type}",
                 coating_parameters=default_coating_parameters,
             )
+            self.factory_structure[electrode_type]["drying"] = DryingMachine(
+                process_name=f"drying_{electrode_type}",
+                drying_parameters=default_drying_parameters,
+            )
             # drying, calendaring, slitting, inspection
         # TODO: create and append machines to merged line
 
     def run_electrode_line(
         self, electrode_type: Union["anode", "cathode"], battery_model: MixingModel  # type: ignore
     ):
-        for stage in ["mixing", "coating"]:
+        for stage in ["mixing", "coating", "drying"]:
             running_machine = self.factory_structure[electrode_type][stage]
             running_machine.input_model(battery_model)
             running_machine.run()
+            battery_model = running_machine.battery_model
         # TODO: drying, calendaring, slitting, inspection
 
     def run_cell_line(
