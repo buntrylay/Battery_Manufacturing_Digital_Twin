@@ -1,4 +1,5 @@
 import time
+import os
 import threading
 from collections import deque
 from datetime import datetime
@@ -10,7 +11,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
-
+from simulation.battery_model.MixingModel import MixingModel
+from simulation.machine.MixingMachine import MixingMachine, MixingParameters
 # Import database functions from db.py
 from server.db import engine, insert_flattened_data
 
@@ -67,19 +69,16 @@ class SimulationInput(BaseModel):
     anode: SlurryInput
     cathode: SlurryInput
 
-from simulation.battery_model.MixingModel import MixingModel
-from simulation.machine.MixingMachine import MixingMachine, MixingParameters, MaterialRatios
+
 
 def run_machine(process: str, slurry_input: SlurryInput):
     thread_broadcast(f"--- Starting {process} ---")
     model = MixingModel(process)
     params = MixingParameters(
-        material_ratios=MaterialRatios(
-            PVDF=slurry_input.PVDF,
-            CA=slurry_input.CA,
-            AM=slurry_input.AM,
-            solvent=slurry_input.Solvent
-        )
+        PVDF=slurry_input.PVDF,
+        CA=slurry_input.CA,
+        AM=slurry_input.AM,
+        solvent=slurry_input.Solvent
     )
     machine = MixingMachine(model, params)
     all_results = machine.run()
@@ -109,12 +108,10 @@ def run_simulation(payload: SimulationInput):
         
         anode_mixing_model = MixingModel("Anode")
         anode_mixing_params = MixingParameters(
-            material_ratios=MaterialRatios(
-                PVDF=anode_payload.PVDF, 
-                CA=anode_payload.CA, 
-                AM=anode_payload.AM, 
-                solvent=anode_payload.Solvent
-            )
+            PVDF=anode_payload.PVDF, 
+            CA=anode_payload.CA, 
+            AM=anode_payload.AM, 
+            solvent=anode_payload.Solvent
         )
         anode_mixer = MixingMachine(anode_mixing_model, anode_mixing_params)
         anode_mixer.run()
@@ -126,12 +123,11 @@ def run_simulation(payload: SimulationInput):
         
         cathode_mixing_model = MixingModel("Cathode")
         cathode_mixing_params = MixingParameters(
-            material_ratios=MaterialRatios(
-                PVDF=cathode_payload.PVDF,
-                CA=cathode_payload.CA,
-                AM=cathode_payload.AM,
-                solvent=cathode_payload.Solvent
-            )
+            PVDF=cathode_payload.PVDF,
+            CA=cathode_payload.CA,
+            AM=cathode_payload.AM,
+            solvent=cathode_payload.Solvent
+            
         )
         cathode_mixer = MixingMachine(cathode_mixing_model, cathode_mixing_params)
         cathode_mixer.run()
