@@ -8,7 +8,8 @@ from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
 from simulation.machine.RewindingMachine import RewindingMachine
 from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
-from simulation.battery_model import MixingModel, CoatingModel, DryingModel, CalendaringModel, SlittingModel, ElectrodeInspectionModel, RewindingModel, ElectrolyteFillingModel
+from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
+from simulation.battery_model import MixingModel, CoatingModel, DryingModel, CalendaringModel, SlittingModel, ElectrodeInspectionModel, RewindingModel, ElectrolyteFillingModel, FormationCyclingModel
 from simulation.process_parameters import (
     CoatingParameters,
     MixingParameters,
@@ -18,6 +19,7 @@ from simulation.process_parameters import (
     ElectrodeInspectionParameters,
     RewindingParameters,
     ElectrolyteFillingParameters,
+    FormationCyclingParameters,
 )
 from simulation.process_parameters.MixingParameters import MaterialRatios
 from simulation.factory.Batch import Batch
@@ -97,6 +99,11 @@ class PlantSimulation:
             Vacuum_filling = 60,
             Soaking_time = 10,
         )
+        default_formation_cycling_parameters = FormationCyclingParameters(
+            Charge_current_A=0.05, 
+            Charge_voltage_limit_V=4.2, 
+            Initial_Voltage=1
+        )
         # create and append machines to electrode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
@@ -137,6 +144,10 @@ class PlantSimulation:
                 process_name="electrolyte_filling",
                 electrolyte_filling_parameters=default_electrolyte_filling_parameters,
             )
+            self.factory_structure["cell"]["formation_cycling"] = FormationCyclingMachine(
+                process_name="formation_cycling",
+                formation_cycling_parameters=default_formation_cycling_parameters,
+            )
 
     def run_electrode_line(
         self, electrode_type: Union["anode", "cathode"], battery_model: MixingModel  # type: ignore
@@ -158,7 +169,7 @@ class PlantSimulation:
         rewinding_machine.run()
         battery_model = rewinding_machine.battery_model
 
-        for stage in ["electrolyte_filling"]:
+        for stage in ["electrolyte_filling", "formation_cycling"]:
             running_machine = self.factory_structure["cell"][stage]
             running_machine.input_model(battery_model)
             running_machine.run()

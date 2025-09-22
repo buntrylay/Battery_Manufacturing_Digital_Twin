@@ -173,7 +173,7 @@ class ElectrolyteFillingParameters(BaseMachineParameters):
 class FormationCyclingParameters(BaseMachineParameters):
     Charge_current_A: float
     Charge_voltage_limit_V: float
-    Voltage: float
+    Initial_Voltage: float
     Formation_duration_s: int = 200  # can be adjusted based on real process time
 
     def validate_parameters(self):
