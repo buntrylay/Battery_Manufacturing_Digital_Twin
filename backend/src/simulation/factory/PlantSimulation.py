@@ -9,7 +9,8 @@ from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMac
 from simulation.machine.RewindingMachine import RewindingMachine
 from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
 from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
-from simulation.battery_model import MixingModel, CoatingModel, DryingModel, CalendaringModel, SlittingModel, ElectrodeInspectionModel, RewindingModel, ElectrolyteFillingModel, FormationCyclingModel
+from simulation.machine.AgingMachine import AgingMachine
+from simulation.battery_model import MixingModel, CoatingModel, DryingModel, CalendaringModel, SlittingModel, ElectrodeInspectionModel, RewindingModel, ElectrolyteFillingModel, FormationCyclingModel, AgingModel
 from simulation.process_parameters import (
     CoatingParameters,
     MixingParameters,
@@ -20,6 +21,7 @@ from simulation.process_parameters import (
     RewindingParameters,
     ElectrolyteFillingParameters,
     FormationCyclingParameters,
+    AgingParameters,
 )
 from simulation.process_parameters.MixingParameters import MaterialRatios
 from simulation.factory.Batch import Batch
@@ -104,6 +106,11 @@ class PlantSimulation:
             Charge_voltage_limit_V=4.2, 
             Initial_Voltage=1
         )
+        default_aging_parameters = AgingParameters(
+            k_leak=1e-8, 
+            temperature=25, 
+            aging_time_days=10
+        )
         # create and append machines to electrode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
@@ -148,6 +155,10 @@ class PlantSimulation:
                 process_name="formation_cycling",
                 formation_cycling_parameters=default_formation_cycling_parameters,
             )
+            self.factory_structure["cell"]["aging"] = AgingMachine(
+                process_name="aging",
+                aging_parameters=default_aging_parameters,
+            )
 
     def run_electrode_line(
         self, electrode_type: Union["anode", "cathode"], battery_model: MixingModel  # type: ignore
@@ -169,7 +180,7 @@ class PlantSimulation:
         rewinding_machine.run()
         battery_model = rewinding_machine.battery_model
 
-        for stage in ["electrolyte_filling", "formation_cycling"]:
+        for stage in ["electrolyte_filling", "formation_cycling", "aging"]:
             running_machine = self.factory_structure["cell"][stage]
             running_machine.input_model(battery_model)
             running_machine.run()
