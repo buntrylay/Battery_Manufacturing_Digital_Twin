@@ -16,6 +16,7 @@ class CalendaringModel(BaseModel):
         self.sigma_theory = 0
 
         # material constant
+        self.temperature = 80  # Temperature (°C)
         self.E = 500e6  # Elastic modulus (Pa)
         self.k_p = 3.0  # Porosity reduction constant
 
