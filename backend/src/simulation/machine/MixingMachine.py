@@ -90,3 +90,6 @@ class MixingMachine(BaseMachine):
             self.__mix_component("AM", duration_sec=10, results_list=all_results)
             self.save_all_results(all_results)
             self.turn_off()
+
+    def validate_parameters(self, parameters: dict):
+        return MixingParameters(**parameters).validate_parameters()

@@ -121,3 +121,6 @@ class CoatingMachine(BaseMachine):
         self.__simulate(results_list=all_results)
         self.save_all_results(all_results)
         self.turn_off()
+
+    def validate_parameters(self, parameters: dict):
+        return CoatingParameters(**parameters).validate_parameters()

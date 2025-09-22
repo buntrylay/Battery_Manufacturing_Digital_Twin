@@ -151,7 +151,7 @@ class BaseMachine(ABC):
         """Abstract method that must be implemented by concrete machine classes."""
         pass
 
-
+    # TODO: This is a future feature to run the simulation in a standardised way
     def run_simulation(self, total_steps=100, pause_between_steps=0.1, verbose=True):
         """Run the simulation."""
         self.turn_on()
@@ -173,3 +173,8 @@ class BaseMachine(ABC):
     #     This method is called at each step of the simulation.
     #     """
     #     pass
+
+    @abstractmethod
+    def validate_parameters(self, parameters: dict):
+        """Validate the parameters."""
+        pass

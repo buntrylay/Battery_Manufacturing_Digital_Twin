@@ -92,15 +92,22 @@ def test_get_plant_state():
 
 
 def test_update_machine_parameters():
-    plant_simulation.update_machine_parameters(
-        "anode",
-        "mixing",
-        MixingParameters(
-            AM_ratio=0.495, CA_ratio=0.045, PVDF_ratio=0.05, solvent_ratio=0.442
-        ),
-    )
-    print(plant_simulation.get_machine_status("anode", "mixing"))
+    try:
+        plant_simulation.update_machine_parameters(
+            "anode",
+            "mixing",
+            {
+                "A_ratio": 0.495,
+                "CA_ratio": 0.045,
+                "PVDF_ratio": 0.05,
+                "solvent_ratio": 0.442,
+            }
+        )
+        print(plant_simulation.get_machine_status("anode", "mixing"))
+    except Exception as e:
+        print(type(e))
+        print(e)
 
 
 if __name__ == "__main__":
-    test_run_simulation()
+    test_update_machine_parameters()
