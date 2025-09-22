@@ -4,12 +4,14 @@ from typing import Union
 from simulation.machine import MixingMachine, CoatingMachine
 from simulation.machine.DryingMachine import DryingMachine
 from simulation.machine.CalendaringMachine import CalendaringMachine
-from simulation.battery_model import MixingModel, CoatingModel, DryingModel, CalendaringModel
+from simulation.machine.SlittingMachine import SlittingMachine
+from simulation.battery_model import MixingModel, CoatingModel, DryingModel, CalendaringModel, SlittingModel
 from simulation.process_parameters import (
     CoatingParameters,
     MixingParameters,
     DryingParameters,
     CalendaringParameters,
+    SlittingParameters,
 )
 from simulation.process_parameters.MixingParameters import MaterialRatios
 from simulation.factory.Batch import Batch
@@ -66,6 +68,12 @@ class PlantSimulation:
             dry_thickness=100e-6,
             initial_porosity=0.4,
         )
+        default_slitting_parameters = SlittingParameters(
+            blade_sharpness=1.0,
+            slitting_speed=0.1,
+            slitting_tension=50.0,
+            target_width=0.5,
+        )
         # create and append machines to electrode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
@@ -88,13 +96,17 @@ class PlantSimulation:
                 process_name=f"calendaring_{electrode_type}",
                 calendaring_parameters=default_calendaring_parameters,
             )
+            self.factory_structure[electrode_type]["slitting"] = SlittingMachine(
+                process_name=f"slitting_{electrode_type}",
+                slitting_parameters=default_slitting_parameters,
+            )
             # drying, calendaring, slitting, inspection
         # TODO: create and append machines to merged line
 
     def run_electrode_line(
         self, electrode_type: Union["anode", "cathode"], battery_model: MixingModel  # type: ignore
     ):
-        for stage in ["mixing", "coating", "drying", "calendaring"]:
+        for stage in ["mixing", "coating", "drying", "calendaring", "slitting"]:
             running_machine = self.factory_structure[electrode_type][stage]
             running_machine.input_model(battery_model)
             running_machine.run()
