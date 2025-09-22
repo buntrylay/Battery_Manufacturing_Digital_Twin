@@ -1,19 +1,26 @@
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import dataclass
 from simulation.process_parameters.Parameters import ElectrolyteFillingParameters
+from simulation.battery_model.RewindingModel import RewindingModel
+from simulation.battery_model.ElectrolyteFillingModel import ElectrolyteFillingModel
+
 
 
 class ElectrolyteFillingMachine(BaseMachine):
-    def __init__(self, 
-        electrolyte_filling_model, 
-        machine_parameters: ElectrolyteFillingParameters,
+    def __init__(
+        self, 
+        process_name: str,
+        electrolyte_filling_parameters: ElectrolyteFillingParameters,
+        electrolyte_filling_model: ElectrolyteFillingModel = None, 
         connection_string=None
     ):
-        super().__init__("ElectrolyteFilling",
+        super().__init__(
+            process_name,
             electrolyte_filling_model,
-            machine_parameters,
-            connection_string
+            electrolyte_filling_parameters
         )
+    def input_model(self, previous_model: RewindingModel):
+        self.battery_model = ElectrolyteFillingModel(previous_model)
 
     def run(self):
         self.turn_on()
@@ -23,8 +30,7 @@ class ElectrolyteFillingMachine(BaseMachine):
         for t in range(self.machine_parameters.Soaking_time):
             self.total_time = t
             self.battery_model.update_properties(self.machine_parameters, t)
-            proc = self.battery_model.get_properties()                     
-            result = self.get_current_properties(process_specifics=proc)   
+            result = self.get_current_state()   
             all_results.append(result)
             self.save_data_to_local_folder()
         self.save_all_results(all_results)

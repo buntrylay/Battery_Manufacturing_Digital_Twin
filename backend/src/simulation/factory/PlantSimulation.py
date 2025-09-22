@@ -7,7 +7,8 @@ from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
 from simulation.machine.RewindingMachine import RewindingMachine
-from simulation.battery_model import MixingModel, CoatingModel, DryingModel, CalendaringModel, SlittingModel, ElectrodeInspectionModel, RewindingModel
+from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
+from simulation.battery_model import MixingModel, CoatingModel, DryingModel, CalendaringModel, SlittingModel, ElectrodeInspectionModel, RewindingModel, ElectrolyteFillingModel
 from simulation.process_parameters import (
     CoatingParameters,
     MixingParameters,
@@ -16,6 +17,7 @@ from simulation.process_parameters import (
     SlittingParameters,
     ElectrodeInspectionParameters,
     RewindingParameters,
+    ElectrolyteFillingParameters,
 )
 from simulation.process_parameters.MixingParameters import MaterialRatios
 from simulation.factory.Batch import Batch
@@ -90,6 +92,11 @@ class PlantSimulation:
             tapering_steps=0.3,
             environment_humidity=30.0,
         )
+        default_electrolyte_filling_parameters = ElectrolyteFillingParameters(
+            Vacuum_level = 100,
+            Vacuum_filling = 60,
+            Soaking_time = 10,
+        )
         # create and append machines to electrode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
@@ -126,6 +133,10 @@ class PlantSimulation:
                 process_name="rewinding",
                 rewinding_parameters=default_rewinding_parameters,
             )
+            self.factory_structure["cell"]["electrolyte_filling"] = ElectrolyteFillingMachine(
+                process_name="electrolyte_filling",
+                electrolyte_filling_parameters=default_electrolyte_filling_parameters,
+            )
 
     def run_electrode_line(
         self, electrode_type: Union["anode", "cathode"], battery_model: MixingModel  # type: ignore
@@ -145,7 +156,13 @@ class PlantSimulation:
         rewinding_machine = self.factory_structure["cell"]["rewinding"]
         rewinding_machine.input_model(electrode_inspection_model_anode, electrode_inspection_model_cathode)
         rewinding_machine.run()
-        rewinding_model = rewinding_machine.battery_model
+        battery_model = rewinding_machine.battery_model
+
+        for stage in ["electrolyte_filling"]:
+            running_machine = self.factory_structure["cell"][stage]
+            running_machine.input_model(battery_model)
+            running_machine.run()
+            battery_model = running_machine.battery_model
 
     def run_pipeline(self):
         while self.batch_queue:
