@@ -12,6 +12,7 @@ class DryingModel(BaseModel):
         self.M_solvent = 0
         self.defect_risk = False
         # constants
+        self.temperature = 80
         self.V_air = 1.0
         self.H_air = 80.0
         self.COATING_WIDTH = 0.5
@@ -29,10 +30,10 @@ class DryingModel(BaseModel):
         C_air = self.H_air / 100
         return mass_transfer_coeff * self.AREA * (C_surface - C_air)
 
-    def calculate_dry_thickness(self, wet_thickness, solid_content):
+    def calculate_dry_thickness(self):
         return self.wet_thickness * self.solid_content
 
-    def calculate_initial_solvent_mass(self, wet_thickness, solid_content, density):
+    def calculate_initial_solvent_mass(self):
         return self.wet_thickness * (1 - self.solid_content) * self.DENSITY
 
     def time_steps(self, web_speed, delta_t=1):
@@ -43,14 +44,12 @@ class DryingModel(BaseModel):
         evap_rate = self.evaporation_rate()
 
         if self.M_solvent == 0:
-            self.M_solvent = self.calculate_initial_solvent_mass(
-                self.wet_thickness, self.solid_content, self.DENSITY
-            )
+            self.M_solvent = self.calculate_initial_solvent_mass()        
 
         self.M_solvent -= (evap_rate / self.AREA) * self.DELTA_T
         self.M_solvent = max(self.M_solvent, 0)
 
-        self.dry_thickness = self.calculate_dry_thickness(self.wet_thickness, self.solid_content)
+        self.dry_thickness = self.calculate_dry_thickness()
         self.defect_risk = abs(evap_rate / self.AREA) > self.MAX_SAFE_EVAP_RATE
 
 
@@ -61,4 +60,5 @@ class DryingModel(BaseModel):
             "M_solvent": float(self.M_solvent),
             "defect_risk": bool(self.defect_risk),
             "solid_content": float(self.solid_content),
+            "temperature": float(self.temperature),
         }

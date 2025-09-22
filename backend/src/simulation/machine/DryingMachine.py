@@ -16,18 +16,16 @@ class DryingMachine(BaseMachine):
 
     def input_model(self, previous_model: CoatingModel):
         self.battery_model = DryingModel(previous_model)
-
     def run(self):
         self.turn_on()
         all_results = []
         total_steps = self.battery_model.time_steps(
-            self.battery_model.drying_length, 
             self.machine_parameters.web_speed
         )
         for t in range(total_steps):
             self.total_time = t
-            proc = self.battery_model.update_properties(self.machine_parameters)
-            result = self.get_current_state(process_specifics=proc)
+            self.battery_model.update_properties(self.machine_parameters)
+            result = self.get_current_state()
             all_results.append(result)
             self.save_data_to_local_folder()
         self.save_all_results(all_results)
