@@ -12,7 +12,10 @@ class DryingMachine(BaseMachine):
         drying_model: DryingModel = None,
         connection_string=None,
     ):
-        super().__init__(process_name, drying_model, drying_parameters)
+        super().__init__(
+            process_name, 
+            drying_model, 
+            drying_parameters)
 
     def input_model(self, previous_model: CoatingModel):
         self.battery_model = DryingModel(previous_model)
