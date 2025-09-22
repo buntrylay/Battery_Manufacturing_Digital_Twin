@@ -6,7 +6,8 @@ from simulation.machine.DryingMachine import DryingMachine
 from simulation.machine.CalendaringMachine import CalendaringMachine
 from simulation.machine.SlittingMachine import SlittingMachine
 from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
-from simulation.battery_model import MixingModel, CoatingModel, DryingModel, CalendaringModel, SlittingModel, ElectrodeInspectionModel
+from simulation.machine.RewindingMachine import RewindingMachine
+from simulation.battery_model import MixingModel, CoatingModel, DryingModel, CalendaringModel, SlittingModel, ElectrodeInspectionModel, RewindingModel
 from simulation.process_parameters import (
     CoatingParameters,
     MixingParameters,
@@ -14,6 +15,7 @@ from simulation.process_parameters import (
     CalendaringParameters,
     SlittingParameters,
     ElectrodeInspectionParameters,
+    RewindingParameters,
 )
 from simulation.process_parameters.MixingParameters import MaterialRatios
 from simulation.factory.Batch import Batch
@@ -82,6 +84,12 @@ class PlantSimulation:
             B_max=2.0, 
             D_surface_max=3
         )
+        default_rewinding_parameters = RewindingParameters(
+            rewinding_speed=0.5,
+            initial_tension=100.0,
+            tapering_steps=0.3,
+            environment_humidity=30.0,
+        )
         # create and append machines to electrode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
@@ -111,9 +119,13 @@ class PlantSimulation:
             self.factory_structure[electrode_type]["inspection"] = ElectrodeInspectionMachine(
                 process_name=f"inspection_{electrode_type}",
                 electrode_inspection_parameters=default_electrode_inspection_parameters,
+            )  
+
+            # start thhe cell simulation line  
+            self.factory_structure["cell"]["rewinding"] = RewindingMachine(    
+                process_name="rewinding",
+                rewinding_parameters=default_rewinding_parameters,
             )
-            # drying, calendaring, slitting, inspection
-        # TODO: create and append machines to merged line
 
     def run_electrode_line(
         self, electrode_type: Union["anode", "cathode"], battery_model: MixingModel  # type: ignore
@@ -123,15 +135,17 @@ class PlantSimulation:
             running_machine.input_model(battery_model)
             running_machine.run()
             battery_model = running_machine.battery_model
-        # TODO: drying, calendaring, slitting, inspection
 
     def run_cell_line(
         self,
-        electrode_inspection_model_anode: MixingModel,
-        electrode_inspection_model_cathode: MixingModel,
+        electrode_inspection_model_anode: ElectrodeInspectionModel,
+        electrode_inspection_model_cathode: ElectrodeInspectionModel,
     ):
         # TODO: rewinding, electrolyte_filling, formation_cycling, aging
-        pass
+        rewinding_machine = self.factory_structure["cell"]["rewinding"]
+        rewinding_machine.input_model(electrode_inspection_model_anode, electrode_inspection_model_cathode)
+        rewinding_machine.run()
+        rewinding_model = rewinding_machine.battery_model
 
     def run_pipeline(self):
         while self.batch_queue:
@@ -148,7 +162,10 @@ class PlantSimulation:
             run_cathode_thread.start()
             run_anode_thread.join()
             run_cathode_thread.join()
-            self.run_cell_line(batch.anode_line_model, batch.cathode_line_model)
+
+            inspection_model_anode = self.factory_structure["anode"]["inspection"].battery_model
+            inspection_model_cathode = self.factory_structure["cathode"]["inspection"].battery_model
+            self.run_cell_line(inspection_model_anode, inspection_model_cathode)
 
     def add_batch(self, batch: Batch):
         self.batch_queue.put(batch)
