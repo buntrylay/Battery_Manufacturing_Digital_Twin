@@ -96,7 +96,7 @@ class CoatingMachine(BaseMachine):
             self.battery_model.update_properties(self.machine_parameters)
             self.battery_model.shear_rate = self.shear_rate
             self.battery_model.uniformity = 1 - self.uniformity_std
-            self.battery_model.temperature = 25.0  
+            self.battery_model.temperature = 25.0
             result = self.get_current_state(
                 process_specifics={
                     "shear_rate": self.shear_rate,

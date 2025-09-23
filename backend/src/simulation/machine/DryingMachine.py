@@ -13,22 +13,15 @@ class DryingMachine(BaseMachine):
         drying_model: DryingModel = None,
         connection_string=None,
     ):
-        super().__init__(
-            process_name, 
-            drying_model, 
-            drying_parameters)
+        super().__init__(process_name, drying_model, drying_parameters)
 
     def receive_model_from_previous_process(self, previous_model: CoatingModel):
         self.battery_model = DryingModel(previous_model)
-    def __init__(self, drying_model, drying_parameters: DryingParameters):
-        super().__init__("Drying", drying_model, drying_parameters)
 
     def run(self):
         self.turn_on()
         all_results = []
-        total_steps = self.battery_model.time_steps(
-            self.machine_parameters.web_speed
-        )
+        total_steps = self.battery_model.time_steps(self.machine_parameters.web_speed)
         for t in range(total_steps):
             self.total_time = t
             self.battery_model.update_properties(self.machine_parameters)
@@ -37,3 +30,6 @@ class DryingMachine(BaseMachine):
             self.save_data_to_local_folder()
         self.save_all_results(all_results)
         self.turn_off()
+
+    def validate_parameters(self, parameters: dict):
+        return DryingParameters(**parameters).validate_parameters()

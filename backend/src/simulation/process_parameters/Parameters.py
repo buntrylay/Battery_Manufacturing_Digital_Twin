@@ -40,7 +40,12 @@ class MixingParameters(BaseMachineParameters):
     solvent_ratio: float
 
     def validate_parameters(self):
-        if self.AM_ratio < 0 or self.CA_ratio < 0 or self.PVDF_ratio < 0 or self.solvent_ratio < 0:
+        if (
+            self.AM_ratio < 0
+            or self.CA_ratio < 0
+            or self.PVDF_ratio < 0
+            or self.solvent_ratio < 0
+        ):
             raise ValueError("Material ratios cannot be negative.")
 
         ratio_sum = self.AM_ratio + self.CA_ratio + self.PVDF_ratio + self.solvent_ratio

@@ -36,8 +36,8 @@ class MixingMachine(BaseMachine):
         )
         self.mixing_tank_volume = 200
 
-    def receive_model_from_previous_process(self, previous_model: MixingModel):
-        self.battery_model = previous_model
+    def receive_model_from_previous_process(self, initial_mixing_model: MixingModel):
+        self.battery_model = initial_mixing_model
 
     def __mix_component(
         self,
@@ -47,8 +47,8 @@ class MixingMachine(BaseMachine):
         duration_sec=10,
         results_list=None,
     ):
-        total_volume_of_material_to_add = (
-            self.mixing_tank_volume * getattr(self.machine_parameters, f"{material_type}_ratio")
+        total_volume_of_material_to_add = self.mixing_tank_volume * getattr(
+            self.machine_parameters, f"{material_type}_ratio"
         )
         volume_added_in_each_step = step_percent * total_volume_of_material_to_add
         added_volume = 0.0

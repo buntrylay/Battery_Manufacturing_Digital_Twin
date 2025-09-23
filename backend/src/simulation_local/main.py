@@ -4,7 +4,6 @@ import os
 # Add the src directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from simulation.process_parameters.Parameters import MixingParameters
 from simulation.factory import Batch, PlantSimulation
 
 # Define the mixing ratios for anode slurry components
@@ -84,7 +83,7 @@ plant_simulation = PlantSimulation()
 def test_run_simulation():
     batch_1 = Batch(batch_id="Batch_1")
     plant_simulation.add_batch(batch_1)
-    plant_simulation.run_pipeline()
+    plant_simulation.run()
 
 
 def test_get_plant_state():
@@ -110,4 +109,4 @@ def test_update_machine_parameters():
 
 
 if __name__ == "__main__":
-    test_update_machine_parameters()
+    test_run_simulation()

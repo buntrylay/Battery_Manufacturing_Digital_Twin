@@ -1,16 +1,21 @@
 import array
+import copy
 from threading import Thread
 from typing import Union
-from simulation.machine import MixingMachine, CoatingMachine
-from simulation.machine.DryingMachine import DryingMachine
-from simulation.machine.CalendaringMachine import CalendaringMachine
-from simulation.machine.SlittingMachine import SlittingMachine
-from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
-from simulation.machine.RewindingMachine import RewindingMachine
-from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
-from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
-from simulation.machine.AgingMachine import AgingMachine
-from simulation.battery_model import MixingModel, CoatingModel, DryingModel, CalendaringModel, SlittingModel, ElectrodeInspectionModel, RewindingModel, ElectrolyteFillingModel, FormationCyclingModel, AgingModel
+from weakref import ref
+from simulation.machine import (
+    MixingMachine,
+    CoatingMachine,
+    DryingMachine,
+    CalendaringMachine,
+    SlittingMachine,
+    ElectrodeInspectionMachine,
+    RewindingMachine,
+    ElectrolyteFillingMachine,
+    FormationCyclingMachine,
+    AgingMachine,
+)
+from simulation.battery_model import BaseModel, MixingModel, RewindingModel
 from simulation.process_parameters import (
     CoatingParameters,
     MixingParameters,
@@ -23,13 +28,12 @@ from simulation.process_parameters import (
     FormationCyclingParameters,
     AgingParameters,
 )
-from simulation.process_parameters.MixingParameters import MaterialRatios
 from simulation.factory.Batch import Batch
 
 
 class PlantSimulation:
     def __init__(self):
-        self.batches = array.array()
+        self.batches: list[any] = []
         self.factory_structure = {
             "anode": {
                 "mixing": None,
@@ -54,22 +58,20 @@ class PlantSimulation:
                 "aging": None,
             },
         }
-        self.initialise_default_factory_structure()
+        self.__initialise_default_factory_structure()
 
-    def initialise_default_factory_structure(self):
-        # initialise default mixing parameters
+    def __initialise_default_factory_structure(self):
+        # initialise default parameters
         default_mixing_parameters_anode = MixingParameters(
             AM_ratio=1.495, CA_ratio=0.045, PVDF_ratio=0.05, solvent_ratio=0.41
         )
         default_mixing_parameters_cathode = MixingParameters(
-            AM=0.013, CA=0.039, PVDF=0.598, solvent=0.35
+            AM_ratio=0.013, CA_ratio=0.039, PVDF_ratio=0.598, solvent_ratio=0.35
         )
         default_coating_parameters = CoatingParameters(
             coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5
         )
-        default_drying_parameters = DryingParameters(
-            web_speed=0.05
-        )
+        default_drying_parameters = DryingParameters(web_speed=0.05)
         default_calendaring_parameters = CalendaringParameters(
             roll_gap=100e-6,
             roll_pressure=5e6,
@@ -85,10 +87,10 @@ class PlantSimulation:
             target_width=0.5,
         )
         default_electrode_inspection_parameters = ElectrodeInspectionParameters(
-            epsilon_width_max=0.1, 
-            epsilon_thickness_max=10e-6, 
-            B_max=2.0, 
-            D_surface_max=3
+            epsilon_width_max=0.1,
+            epsilon_thickness_max=10e-6,
+            B_max=2.0,
+            D_surface_max=3,
         )
         default_rewinding_parameters = RewindingParameters(
             rewinding_speed=0.5,
@@ -97,21 +99,17 @@ class PlantSimulation:
             environment_humidity=30.0,
         )
         default_electrolyte_filling_parameters = ElectrolyteFillingParameters(
-            Vacuum_level = 100,
-            Vacuum_filling = 60,
-            Soaking_time = 10,
+            Vacuum_level=100,
+            Vacuum_filling=60,
+            Soaking_time=10,
         )
         default_formation_cycling_parameters = FormationCyclingParameters(
-            Charge_current_A=0.05, 
-            Charge_voltage_limit_V=4.2, 
-            Initial_Voltage=1
+            Charge_current_A=0.05, Charge_voltage_limit_V=4.2, Initial_Voltage=1
         )
         default_aging_parameters = AgingParameters(
-            k_leak=1e-8, 
-            temperature=25, 
-            aging_time_days=10
+            k_leak=1e-8, temperature=25, aging_time_days=10
         )
-        # create and append machines to electrode lines
+        # create and append machines to the electrode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
                 process_name=f"mixing_{electrode_type}",
@@ -137,74 +135,98 @@ class PlantSimulation:
                 process_name=f"slitting_{electrode_type}",
                 slitting_parameters=default_slitting_parameters,
             )
-            self.factory_structure[electrode_type]["inspection"] = ElectrodeInspectionMachine(
-                process_name=f"inspection_{electrode_type}",
-                electrode_inspection_parameters=default_electrode_inspection_parameters,
-            )  
-
-            # start thhe cell simulation line  
-            self.factory_structure["cell"]["rewinding"] = RewindingMachine(    
-                process_name="rewinding",
-                rewinding_parameters=default_rewinding_parameters,
+            self.factory_structure[electrode_type]["inspection"] = (
+                ElectrodeInspectionMachine(
+                    process_name=f"inspection_{electrode_type}",
+                    electrode_inspection_parameters=default_electrode_inspection_parameters,
+                )
             )
-            self.factory_structure["cell"]["electrolyte_filling"] = ElectrolyteFillingMachine(
+        # create and append machines to the cell line
+        self.factory_structure["cell"]["rewinding"] = RewindingMachine(
+            process_name="rewinding",
+            rewinding_parameters=default_rewinding_parameters,
+        )
+        self.factory_structure["cell"]["electrolyte_filling"] = (
+            ElectrolyteFillingMachine(
                 process_name="electrolyte_filling",
                 electrolyte_filling_parameters=default_electrolyte_filling_parameters,
             )
-            self.factory_structure["cell"]["formation_cycling"] = FormationCyclingMachine(
-                process_name="formation_cycling",
-                formation_cycling_parameters=default_formation_cycling_parameters,
-            )
-            self.factory_structure["cell"]["aging"] = AgingMachine(
-                process_name="aging",
-                aging_parameters=default_aging_parameters,
-            )
+        )
+        self.factory_structure["cell"]["formation_cycling"] = FormationCyclingMachine(
+            process_name="formation_cycling",
+            formation_cycling_parameters=default_formation_cycling_parameters,
+        )
+        self.factory_structure["cell"]["aging"] = AgingMachine(
+            process_name="aging",
+            aging_parameters=default_aging_parameters,
+        )
 
-    def run_electrode_line(
-        self, electrode_type: Union["anode", "cathode"], battery_model: MixingModel  # type: ignore
+    def __run_electrode_line(
+        self, electrode_type: Union["anode", "cathode"], batch: Batch  # type: ignore
     ):
-        for stage in ["mixing", "coating", "drying", "calendaring", "slitting", "inspection"]:
+        model = getattr(batch, f"{electrode_type}_line_model")
+
+        for stage in [
+            "mixing",
+            "coating",
+            "drying",
+            "calendaring",
+            "slitting",
+            "inspection",
+        ]:
+            # (1) get the machine
             running_machine = self.factory_structure[electrode_type][stage]
-            running_machine.receive_model_from_previous_process(battery_model)
+            # (2) input into the machine (could be from the previous machine or from the batch model)
+            running_machine.receive_model_from_previous_process(model)
+            # (3) run the machine
             running_machine.run()
-            battery_model = running_machine.battery_model
+            # (4) update the batch model (local)
+            model = running_machine.battery_model
+            # (5) update the batch model (global)
+            setattr(
+                batch, f"{electrode_type}_line_model", running_machine.battery_model
+            )
 
-    def run_cell_line(
+    def __run_assembled_cell_line(
         self,
-        electrode_inspection_model_anode: ElectrodeInspectionModel,
-        electrode_inspection_model_cathode: ElectrodeInspectionModel,
+        batch: Batch,
     ):
-        # TODO: rewinding, electrolyte_filling, formation_cycling, aging
-        rewinding_machine = self.factory_structure["cell"]["rewinding"]
-        rewinding_machine.input_model(electrode_inspection_model_anode, electrode_inspection_model_cathode)
-        rewinding_machine.run()
-        battery_model = rewinding_machine.battery_model
-
-        for stage in ["electrolyte_filling", "formation_cycling", "aging"]:
+        model = batch.cell_line_model
+        for stage in ["rewinding", "electrolyte_filling", "formation_cycling", "aging"]:
             running_machine = self.factory_structure["cell"][stage]
-            running_machine.input_model(battery_model)
+            running_machine.receive_model_from_previous_process(model)
             running_machine.run()
-            battery_model = running_machine.battery_model
+            model = running_machine.battery_model
+            setattr(batch, f"cell_line_model", running_machine.battery_model)
 
-    def run_pipeline(self):
-        while self.batch_queue:
-            batch = self.batch_queue.get()
-            run_anode_thread = Thread(
-                target=self.run_electrode_line, 
-                args=("anode", batch.anode_line_model)
-            )
-            run_cathode_thread = Thread(
-                target=self.run_electrode_line,
-                args=("cathode", batch.cathode_line_model),
-            )
-            run_anode_thread.start()
-            run_cathode_thread.start()
-            run_anode_thread.join()
-            run_cathode_thread.join()
-
-            inspection_model_anode = self.factory_structure["anode"]["inspection"].battery_model
-            inspection_model_cathode = self.factory_structure["cathode"]["inspection"].battery_model
-            self.run_cell_line(inspection_model_anode, inspection_model_cathode)
+    def __run_pipeline_on_batch(self, batch: Batch):
+        print(
+            "this is the anode line model before thread",
+            batch.anode_line_model,
+            type(batch.anode_line_model),
+        )
+        print(
+            "this is the cathode line model before thread",
+            batch.cathode_line_model,
+            type(batch.cathode_line_model),
+        )
+        run_anode_thread = Thread(
+            target=self.__run_electrode_line, args=("anode", batch)
+        )
+        run_cathode_thread = Thread(
+            target=self.__run_electrode_line, args=("cathode", batch)
+        )
+        # start electrode lines' simulation
+        run_anode_thread.start()
+        run_cathode_thread.start()
+        # wait for the electrode lines' simulation to finish
+        run_anode_thread.join()
+        run_cathode_thread.join()
+        # assemble the cell line model
+        batch.assemble_cell_line_model()
+        # run the assembled cell line
+        self.__run_assembled_cell_line(batch)
+        return
 
     def add_batch(self, batch: Batch):
         if len(self.batches) >= 10:
@@ -212,10 +234,22 @@ class PlantSimulation:
         else:
             self.batches.append(batch)
 
+    def run(self):
+        if len(self.batches) > 0:
+            anode_mixing_machine = self.factory_structure["anode"]["mixing"].state
+            cathode_mixing_machine = self.factory_structure["cathode"]["mixing"].state
+            if anode_mixing_machine or cathode_mixing_machine:
+                raise ValueError("Anode or cathode mixing machine is still running")
+            else:
+                batch = self.batches.pop(0)
+                self.__run_pipeline_on_batch(batch)
+
     def get_machine_status(self, line_type: str, machine_id: str):
-        return self.factory_structure[line_type][machine_id].get_current_state()
+        machine = self.__get_machine(line_type, machine_id)
+        return machine.get_current_state()
 
     def get_current_plant_state(self):
+
         pass
         # plant_state = {
         #     "batch_queue": self.batch_queue.qsize(),
@@ -225,12 +259,15 @@ class PlantSimulation:
 
     def update_machine_parameters(self, line_type: str, machine_id: str, parameters):
         """Update parameters for a specific machine."""
-        machine = self.get_machine(line_type, machine_id)
-        if machine is None:
-            raise ValueError(f"Machine '{machine_id}' is not found")
+        machine = self.__get_machine(line_type, machine_id)
         machine.validate_parameters(parameters)
         machine.update_machine_parameters(parameters)
         return True
 
-    def get_machine(self, line_type: str, machine_id: str):
-        return self.factory_structure[line_type][machine_id]
+    def __get_machine(self, line_type: str, machine_id: str):
+        if line_type not in self.factory_structure:
+            raise ValueError(f"Line type '{line_type}' is not found")
+        elif machine_id not in self.factory_structure[line_type]:
+            raise ValueError(f"Machine '{machine_id}' is not found")
+        else:
+            return self.factory_structure[line_type][machine_id]

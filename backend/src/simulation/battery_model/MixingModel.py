@@ -35,6 +35,8 @@ class MixingModel(BaseModel):
         self.CA = 0  # Conductive Additive volume
         self.PVDF = 0  # PVDF Binder volume
         self.solvent = 0  # Solvent volume
+        # random parameters
+        self.temperature = random.uniform(24, 26)
         self.k_vis = random.uniform(0.1, 0.3)  # Viscosity temperature coefficient
         self.k_yield = random.uniform(
             0.05, 0.15
