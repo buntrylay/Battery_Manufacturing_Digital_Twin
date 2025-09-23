@@ -68,6 +68,11 @@ class MixingMachine(BaseMachine):
             self.battery_model.update_properties()
             result = self.get_current_state()
             results_list.append(result)
+            # Attempt real-time broadcast (throttled by BaseMachine)
+            try:
+                self._maybe_broadcast_data(result)
+            except Exception:
+                pass
             now = time.time()
             if (
                 now - last_saved_time >= 0.1 and result != last_saved_result
@@ -92,3 +97,4 @@ class MixingMachine(BaseMachine):
             self.__mix_component("AM", duration_sec=10, results_list=all_results)
             self.save_all_results(all_results)
             self.turn_off()
+            return all_results

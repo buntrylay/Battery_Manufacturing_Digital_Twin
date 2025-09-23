@@ -49,6 +49,10 @@ class BaseMachine(ABC):
         # Helpers
         self.local_saver = LocalDataSaver(process_name)
         self.iot_sender = IoTHubSender(connection_string)
+        # Real-time broadcast config (optional)
+        self.data_broadcast_interval_sec = None
+        self.data_broadcast_fn = None
+        self._last_broadcast_monotonic = None
     
     def add_model(self, model: BaseModel):
         """Add a model to the machine."""
@@ -88,6 +92,25 @@ class BaseMachine(ABC):
             print(f"Data saved to {path}")
         except Exception as e:
             print(f"Failed to save data to local folder: {e}")
+
+    def _maybe_broadcast_data(self, payload):
+        """
+        If data broadcasting is configured, send JSON payload no more frequently than
+        data_broadcast_interval_sec. Uses a monotonic clock to avoid wall-clock drift.
+        """
+        try:
+            if not self.data_broadcast_fn or not self.data_broadcast_interval_sec:
+                return
+            import time as _t
+            now = _t.monotonic()
+            if self._last_broadcast_monotonic is None or (
+                now - self._last_broadcast_monotonic >= self.data_broadcast_interval_sec
+            ):
+                self.data_broadcast_fn(payload)
+                self._last_broadcast_monotonic = now
+        except Exception:
+            # Never let broadcasting break simulation loop
+            pass
 
     # delegate to a different class
     def save_all_results(self, results):
