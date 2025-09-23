@@ -25,7 +25,7 @@ const ImageNode = ({ data }) => {
         backgroundColor: "#fff",
         textAlign: "center",
         width: 150,
-        transition: "border 0.3s ease", // Smooth transition for color changes
+        transition: "border 0.3s ease", 
       }}
     >
       <Handle type="target" position={Position.Left} />
