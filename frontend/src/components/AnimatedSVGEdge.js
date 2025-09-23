@@ -1,4 +1,3 @@
-// src/components/AnimatedSVGEdge.js
 import React from "react";
 import { BaseEdge, getSmoothStepPath } from "@xyflow/react";
 

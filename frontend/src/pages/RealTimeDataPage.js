@@ -4,6 +4,8 @@ import "../styles/RealTimeDataPage.css";
 function RealTimeDataPage() {
   const [selectedMachine, setSelectedMachine] = useState("Mixing (Cathode)");
 
+  //Conditionally rendering the iframe based on machine selected
+
   return (
     <div className="realtime-page">
       <h2 className="page-title">Real-Time Data</h2>
@@ -67,12 +69,57 @@ function RealTimeDataPage() {
         </div>
       </div>
       <div>
-        <iframe
-          title="Real-Time Data Visualization"
-          src="http://localhost:3001"
-          style={{ width: "100%", height: "600px", border: "none" }}
-        ></iframe>
+        <h3>Live Data Visualization for {selectedMachine}</h3>
+        {selectedMachine === "Cathode Mixing" && (
+          <p>Displaying real-time data for Cathode Mixing machine.</p>
+        )}
+        {selectedMachine === "Cathode Coating" && (
+          <p>Displaying real-time data for Cathode Coating machine.</p>
+        )}
+        {selectedMachine === "Cathode Drying" && (
+          <p>Displaying real-time data for Cathode Drying machine.</p>
+        )}
+        {selectedMachine === "Cathode Calendaring" && (
+          <p>Displaying real-time data for Cathode Calendaring machine.</p>
+        )}
+        {selectedMachine === "Cathode Slitting" && (
+          <p>Displaying real-time data for Cathode Slitting machine.</p>
+        )}
+        {selectedMachine === "Cathode Inspection" && (
+          <p>Displaying real-time data for Cathode Inspection machine.</p>
+        )}
+        {selectedMachine === "Anode Mixing" && (
+          <p>Displaying real-time data for Anode  Mixing machine.</p>
+        )}
+        {selectedMachine === "Anode Coating" && (
+          <p>Displaying real-time data for Anode Coating machine.</p>
+        )}
+        {selectedMachine === "Anode Drying" && (
+          <p>Displaying real-time data for Anode Drying machine.</p>
+        )}
+        {selectedMachine === "Anode Calendaring" && (
+          <p>Displaying real-time data for Anode Calendaring machine.</p>
+        )}
+        {selectedMachine === "Anode Slitting" && (
+          <p>Displaying real-time data for Anode Slitting machine.</p>
+        )}
+        {selectedMachine === "Anode Inspection" && (
+          <p>Displaying real-time data for Anode Inspection machine.</p>
+        )}
+        {selectedMachine === "Rewinding" && (
+          <p>Displaying real-time data for Rewinding machine.</p>
+        )}
+        {selectedMachine === "Electrolyte Filling" && (
+          <p>Displaying real-time data for Electro  lyte Filling machine.</p>
+        )}
+        {selectedMachine === "Formation Cycling" && (
+          <p>Displaying real-time data for Formation Cycling machine.</p>
+        )}
+        {selectedMachine === "Aging" && (
+          <p>Displaying real-time data for Aging machine.</p>
+        )} 
       </div>
+     
     </div>
   );
 }
