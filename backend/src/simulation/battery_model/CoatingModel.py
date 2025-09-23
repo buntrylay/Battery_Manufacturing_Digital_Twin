@@ -22,6 +22,10 @@ class CoatingModel(BaseModel):
         self.dry_thickness = 0  # dry thickness (m)
         self.defect_risk = False  # defect risk (bool)
 
+        self.temperature = 25  # temperature (°C)
+        self.shear_rate = 0  # shear rate (1/s)
+        self.uniformity = 0  # coating uniformity (std, m)
+
     def calculate_wet_thickness(self, flow_rate, coating_speed, coating_width):
         """
         Calculate the wet coating thickness based on mass balance.
