@@ -1,19 +1,25 @@
 import os
 import sys
+# for simulation & concurrency
 import threading
+# for API
 from fastapi import FastAPI, HTTPException
 import uvicorn
+# for generation of unique batch ID
+import uuid
 
 # --- Path and Simulation Module Imports ---
 # This points from `backend/src/server` up one level to `backend/src` so that `simulation` can be imported
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the core simulation class
+from simulation.factory.Batch import Batch
 from simulation.factory.PlantSimulation import PlantSimulation
 
 app = FastAPI()
 battery_plant_simulation = PlantSimulation()
-factory_run_thread = threading.Thread(target=battery_plant_simulation.run_pipeline)
+factory_run_thread = None
+out_of_batch_event = None
 
 
 @app.get("/")
@@ -56,12 +62,17 @@ def update_machine_params(line_type: str, machine_id: str, parameters: dict):
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@app.post("/factory/start")
-def start_factory(batch: dict):
+@app.post("/plant/batch")
+def add_batch():
+    """Add a batch to the plant."""
+    batch = Batch(batch_id=str(uuid.uuid4()))
     battery_plant_simulation.add_batch(batch)
-    if not factory_run_thread.is_alive():
-        factory_run_thread.start()
-    return {"message": "Batch added successfully"}
+    # when the factory receives the first batch request, start the factory run thread
+    # if not factory_run_thread:
+    #     factory_run_thread = threading.Thread(target=battery_plant_simulation.run_pipeline)
+    #     factory_run_thread.start()
+    # else:
+
 
 
 if __name__ == "__main__":

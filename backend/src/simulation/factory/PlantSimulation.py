@@ -1,4 +1,4 @@
-import queue
+import array
 from threading import Thread
 from typing import Union
 from simulation.machine import MixingMachine, CoatingMachine
@@ -9,7 +9,7 @@ from simulation.factory.Batch import Batch
 
 class PlantSimulation:
     def __init__(self):
-        self.batch_queue = queue.Queue()
+        self.batches = array.array()
         self.factory_structure = {
             "anode": {
                 "mixing": None,
@@ -84,7 +84,7 @@ class PlantSimulation:
 
     def run_pipeline(self):
         """Run the pipeline. This is the main function that runs the pipeline."""
-        batch = self.batch_queue.get()
+        batch = self.batches.get()
         run_anode_thread = Thread(
             target=self.run_electrode_line, args=("anode", batch.anode_line_model)
         )
@@ -100,7 +100,10 @@ class PlantSimulation:
         return
 
     def add_batch(self, batch: Batch):
-        self.batch_queue.put(batch)
+        if len(self.batches) >= 10:
+            raise ValueError("Maximum number of batches reached")
+        else:
+            self.batches.append(batch)
 
     def get_machine_status(self, line_type: str, machine_id: str):
         return self.factory_structure[line_type][machine_id].get_current_state()
@@ -115,13 +118,12 @@ class PlantSimulation:
 
     def update_machine_parameters(self, line_type: str, machine_id: str, parameters):
         """Update parameters for a specific machine."""
-        if line_type not in self.factory_structure:
-            raise ValueError(f"Line type '{line_type}' not found")
-        if machine_id not in self.factory_structure[line_type]:
-            raise ValueError(f"Machine '{machine_id}' not found in line '{line_type}'")
-        machine = self.factory_structure[line_type][machine_id]
+        machine = self.get_machine(line_type, machine_id)
         if machine is None:
-            raise ValueError(f"Machine '{machine_id}' is not initialized")
+            raise ValueError(f"Machine '{machine_id}' is not found")
         machine.validate_parameters(parameters)
         machine.update_machine_parameters(parameters)
         return True
+
+    def get_machine(self, line_type: str, machine_id: str):
+        return self.factory_structure[line_type][machine_id]
