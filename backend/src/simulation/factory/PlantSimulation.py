@@ -70,7 +70,7 @@ class PlantSimulation:
     ):
         for stage in ["mixing", "coating"]:
             running_machine = self.factory_structure[electrode_type][stage]
-            running_machine.input_model(battery_model)
+            running_machine.receive_model_from_previous_process(battery_model)
             running_machine.run()
         # TODO: drying, calendaring, slitting, inspection
 
@@ -84,21 +84,20 @@ class PlantSimulation:
 
     def run_pipeline(self):
         """Run the pipeline. This is the main function that runs the pipeline."""
-        while self.batch_queue:
-            batch = self.batch_queue.get()
-            run_anode_thread = Thread(
-                target=self.run_electrode_line, args=("anode", batch.anode_line_model)
-            )
-            run_cathode_thread = Thread(
-                target=self.run_electrode_line,
-                args=("cathode", batch.cathode_line_model),
-            )
-            run_anode_thread.start()
-            run_cathode_thread.start()
-            run_anode_thread.join()
-            run_cathode_thread.join()
-            self.run_cell_line(batch.anode_line_model, batch.cathode_line_model)
-            return
+        batch = self.batch_queue.get()
+        run_anode_thread = Thread(
+            target=self.run_electrode_line, args=("anode", batch.anode_line_model)
+        )
+        run_cathode_thread = Thread(
+            target=self.run_electrode_line,
+            args=("cathode", batch.cathode_line_model),
+        )
+        run_anode_thread.start()
+        run_cathode_thread.start()
+        run_anode_thread.join()
+        run_cathode_thread.join()
+        self.run_cell_line(batch.anode_line_model, batch.cathode_line_model)
+        return
 
     def add_batch(self, batch: Batch):
         self.batch_queue.put(batch)
@@ -107,7 +106,12 @@ class PlantSimulation:
         return self.factory_structure[line_type][machine_id].get_current_state()
 
     def get_current_plant_state(self):
-        raise NotImplementedError("This function is not implemented")
+        pass
+        # plant_state = {
+        #     "batch_queue": self.batch_queue.qsize(),
+        #     "factory_structure": self.factory_structure,
+        # }
+        # return plant_state
 
     def update_machine_parameters(self, line_type: str, machine_id: str, parameters):
         """Update parameters for a specific machine."""

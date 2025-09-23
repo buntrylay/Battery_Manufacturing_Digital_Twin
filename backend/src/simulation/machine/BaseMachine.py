@@ -49,7 +49,7 @@ class BaseMachine(ABC):
         self.iot_sender = IoTHubSender(connection_string)
 
     @abstractmethod
-    def input_model(self, previous_model: BaseModel):
+    def receive_model_from_previous_process(self, previous_model: BaseModel):
         pass
 
     def empty_battery_model(self):

@@ -71,8 +71,8 @@ class CoatingMachine(BaseMachine):
             coating_parameters,
             connection_string,
         )
-        
-    def input_model(self, previous_model: MixingModel):
+
+    def receive_model_from_previous_process(self, previous_model: MixingModel):
         self.battery_model = CoatingModel(previous_model)
 
     def __simulate(self, duration_sec=100, results_list=None):

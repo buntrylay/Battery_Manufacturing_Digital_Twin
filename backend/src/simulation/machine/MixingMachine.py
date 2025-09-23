@@ -36,7 +36,7 @@ class MixingMachine(BaseMachine):
         )
         self.mixing_tank_volume = 200
 
-    def input_model(self, previous_model: MixingModel):
+    def receive_model_from_previous_process(self, previous_model: MixingModel):
         self.battery_model = previous_model
 
     def __mix_component(

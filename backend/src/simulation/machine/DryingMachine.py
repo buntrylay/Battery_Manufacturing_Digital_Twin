@@ -4,6 +4,7 @@ from simulation.battery_model import DryingModel
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.process_parameters.Parameters import DryingParameters
 
+
 class DryingMachine(BaseMachine):
     def __init__(
         self,
@@ -13,8 +14,9 @@ class DryingMachine(BaseMachine):
     ):
         super().__init__(process_name, drying_model, drying_parameters)
 
-    def input_model(self, previous_model: CoatingModel):
+    def receive_model_from_previous_process(self, previous_model: CoatingModel):
         self.battery_model = DryingModel(previous_model)
+
     def __init__(self, drying_model, drying_parameters: DryingParameters):
         super().__init__("Drying", drying_model, drying_parameters)
 

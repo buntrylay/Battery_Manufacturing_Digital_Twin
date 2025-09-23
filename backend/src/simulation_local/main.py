@@ -82,7 +82,7 @@ plant_simulation = PlantSimulation()
 
 
 def test_run_simulation():
-    batch_1 = Batch(id="Batch_1")
+    batch_1 = Batch(batch_id="Batch_1")
     plant_simulation.add_batch(batch_1)
     plant_simulation.run_pipeline()
 
