@@ -1,11 +1,12 @@
 import React from "react";
+import "../styles/Footer.css"; 
 import swinLogo from "../assets/swinburneLogo.jpg";
 import syncLogo from "../assets/syncrowinLogo.jpg";
 function Footer() {
   return (
     <footer>
       <div className="footer-title-area">
-        <h2>battery manufacturing simulation</h2>
+        <h2>Battery Manufacturing Simulation</h2>
       </div>
       <div className="footer-text-area">
         <div className="footer-logo">

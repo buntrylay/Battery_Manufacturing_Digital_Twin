@@ -1,33 +1,58 @@
 import sys
 import os
-import threading
-import json
-from pathlib import Path
-from simulation.factory.Factory import Factory
-from simulation.battery_model.MixingModel import MixingModel
-from simulation.machine.MixingMachine import MixingMachine
-from simulation.machine.CoatingMachine import CoatingMachine
-from simulation.machine.DryingMachine import DryingMachine
-from simulation.machine.CalendaringMachine import CalendaringMachine
-from simulation.machine.SlittingMachine import SlittingMachine
-from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
-from simulation.machine.RewindingMachine import RewindingMachine
-from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
-from simulation.machine.FomationCyclingMachine import FormationCyclingMachine
-from simulation.machine.AgingMachine import AgingMachine
 
-# -----------------------------
-# Paths
-# -----------------------------
-RESULTS_PATH = Path("results")
-RESULTS_PATH.mkdir(parents=True, exist_ok=True)
+# Add the src directory to the Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# -----------------------------
-# User input parameters
-# -----------------------------
-mixing_ratios = {
-    "Anode": {"AM": 0.495, "CA": 0.045, "PVDF": 0.05, "H2O": 0.41},
-    "Cathode": {"AM": 0.598, "CA": 0.039, "PVDF": 0.013, "NMP": 0.35}
+from simulation.factory import Batch, PlantSimulation
+
+#Import Parameters Classes
+from simulation.process_parameters.Parameters import (
+    MixingParameters,
+    CoatingParameters,
+    DryingParameters,
+    CalendaringParameters,
+    SlittingParameters,
+    ElectrodeInspectionParameters,
+    RewindingParameters,
+    ElectrolyteFillingParameters,
+    FormationCyclingParameters,
+    AgingParameters
+)
+
+# Import Machines from Machines Folder
+from simulation.machine import (
+    MixingMachine,
+    CoatingMachine,
+    DryingMachine,
+    CalendaringMachine,
+    SlittingMachine,
+    ElectrodeInspectionMachine,
+    RewindingMachine,
+    ElectrolyteFillingMachine,
+    FomationCyclingMachine,
+    AgingMachine
+)
+
+# Import Models from Battery Model Folder
+from simulation.battery_model import (
+    MixingModel,
+    CoatingModel,
+    DryingModel,
+    CalendaringModel,
+    SlittingModel,
+    ElectrodeInspectionModel,
+    RewindingModel,
+    ElectrolyteFillingModel,
+    FormationCyclingModel,
+    AgingModel
+)
+# Define the mixing ratios for anode slurry components
+user_input_anode = {
+    "PVDF": 0.05,
+    "CA": 0.045,
+    "AM": 0.495,
+    "solvent": 0.41
 }
 
 coating_params = {
@@ -37,27 +62,31 @@ coating_params = {
     "coating_width": 0.5
 }
 
-drying_params = {"web_speed": 0.5}
+# Define drying parameters
 
-calendaring_params = {
-    "roll_gap": 100e-6,
-    "roll_pressure": 2e6,
-    "roll_speed": 2.0,
-    "dry_thickness": 150e-6,
-    "initial_porosity": 0.45,
-    "temperature": 25
+
+# Define calendaring parameters
+user_input_calendaring = {
+    "roll_gap": 100e-6,             # meters
+    "roll_pressure": 2e6,           # Pascals
+    "roll_speed": 2.0,              # m/s
+    "dry_thickness": 150e-6,        # From coating (m)
+    "initial_porosity": 0.45,       # Assumed porosity after drying
+    "temperature": 25               # Optional
 }
 
-slitting_params = {
-    "w_input": 500,
+#  Slitting's input parameters 
+user_input_slitting = {
+    "w_input": 500, # not in need!!!
     "blade_sharpness": 8,
     "slitting_speed": 1.5,
     "target_width": 100,
     "slitting_tension": 150
 }
 
-inspection_params = {
-    "epsilon_width_max": 0.1,
+#  Electrode Inspection's input parameters 
+user_input_electrode_inspection = {
+    "epsilon_width_max": 0.1,  
     "epsilon_thickness_max": 10e-6,
     "B_max": 2.0,
     "D_surface_max": 3
@@ -88,113 +117,47 @@ aging_params = {
     "aging_time_days": 10
 }
 
-# -----------------------------
-# Factory setup
-# -----------------------------
-factory = Factory()
-machines = {}
+# batch_1 = Batch(id="Batch_1")
+# plant_simulation = PlantSimulation()
+# plant_simulation.add_batch(batch_1)
+# plant_simulation.run()
+anode_mixing_model = MixingModel("Anode")
+anode_mixing_machine = MixingMachine("Anode_Mixer",
+    anode_mixing_model,
+    MixingParameters(AM=-1, CA=0.045, PVDF=0.05, solvent=0.41))
+anode_mixing_machine.run()
+# __init__() CoatingModel
+coating_model = CoatingModel(anode_mixing_model)
+anode_coating_machine = CoatingMachine(coating_model, CoatingParameters(coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5))
+anode_coating_machine.run()
+drying_model = DryingModel(coating_model)
+anode_drying_machine = DryingMachine(drying_model, DryingParameters(V_air=1.0, T_dry=100, H_air=80, drying_length=10, web_speed=0.5))
+anode_drying_machine.run()
 
-for etype in ["Anode", "Cathode"]:
-    # 1. Mixing
-    mixing_model = MixingModel(etype)
-    mix_machine = MixingMachine(
-        machine_id=f"TK_Mix_{etype}",
-        electrode_type=etype,
-        mixing_model=mixing_model,
-        ratios=mixing_ratios[etype]
-    )
-    factory.add_machine(mix_machine)
-    machines[f"{etype}_Mixing"] = mix_machine
+calendaring_model = CalendaringModel(drying_model, initial_porosity=0.45)
+anode_calendaring_machine = CalendaringMachine(calendaring_model, CalendaringParameters(roll_gap = 100e-6, roll_pressure = 2e6, roll_speed = 2.0, dry_thickness = 150e-6, initial_porosity= 0.45, temperature =25))
+anode_calendaring_machine.run()
 
-    # 2. Coating
-    coating_machine = CoatingMachine(
-        machine_id=f"MC_Coat_{etype}",
-        user_input=coating_params
-    )
-    factory.add_machine(coating_machine, dependencies=[f"TK_Mix_{etype}"])
-    machines[f"{etype}_Coating"] = coating_machine
+slitting_model = SlittingModel(calendaring_model)
+anode_slitting_machine = SlittingMachine(slitting_model, SlittingParameters(blade_sharpness=8, slitting_speed=1.5, target_width=100, slitting_tension=150))
+anode_slitting_machine.run()
 
-    # 3. Drying
-    drying_machine = DryingMachine(
-        machine_id=f"MC_Dry_{etype}",
-        web_speed=drying_params["web_speed"]
-    )
-    factory.add_machine(drying_machine, dependencies=[f"MC_Coat_{etype}"])
-    machines[f"{etype}_Drying"] = drying_machine
+electrode_inspection_model = ElectrodeInspectionModel(slitting_model)
+electrode_inspection_machine = ElectrodeInspectionMachine(electrode_inspection_model, ElectrodeInspectionParameters(epsilon_width_max=0.1, epsilon_thickness_max=10e-6, B_max=2.0, D_surface_max=3))
+electrode_inspection_machine.run()
 
-    # 4. Calendaring
-    calendaring_machine = CalendaringMachine(
-        machine_id=f"MC_Cal_{etype}",
-        user_input=calendaring_params
-    )
-    factory.add_machine(calendaring_machine, dependencies=[f"MC_Dry_{etype}"])
-    machines[f"{etype}_Calendaring"] = calendaring_machine
+rewinding_model = RewindingModel(electrode_inspection_model)    
+rewinding_machine = RewindingMachine(rewinding_model, RewindingParameters(rewinding_speed=0.5, initial_tension=100, tapering_steps=0.3, environment_humidity=30))
+rewinding_machine.run()
 
-    # 5. Slitting
-    slitting_machine = SlittingMachine(
-        machine_id=f"MC_Slit_{etype}",
-        user_input=slitting_params
-    )
-    factory.add_machine(slitting_machine, dependencies=[f"MC_Cal_{etype}"])
-    machines[f"{etype}_Slitting"] = slitting_machine
+elec_filling_model = ElectrolyteFillingModel(rewinding_model)
+elec_filling_machine = ElectrolyteFillingMachine(elec_filling_model, ElectrolyteFillingParameters(Vacuum_level=100, Vacuum_filling=100, Soaking_time=10))
+elec_filling_machine.run()
 
-    # 6. Inspection
-    inspection_machine = ElectrodeInspectionMachine(
-        machine_id=f"MC_Inspect_{etype}",
-        user_input=inspection_params
-    )
-    factory.add_machine(inspection_machine, dependencies=[f"MC_Slit_{etype}"])
-    machines[f"{etype}_Inspection"] = inspection_machine
+formation_model = FormationCyclingModel(elec_filling_model)
+formation_machine = FormationCyclingMachine(formation_model, FormationCyclingParameters(Charge_current_A=0.05, Charge_voltage_limit_V=0.05, Voltage=4))
+formation_machine.run()
 
-    # 7. Rewinding
-    rewinding_machine = RewindingMachine(
-        machine_id=f"MC_Rewind_{etype}",
-        user_input=rewinding_params
-    )
-    factory.add_machine(rewinding_machine, dependencies=[f"MC_Inspect_{etype}"])
-    machines[f"{etype}_Rewinding"] = rewinding_machine
-
-    # 8. Electrolyte Filling
-    filling_machine = ElectrolyteFillingMachine(
-        machine_id=f"MC_Filling_{etype}",
-        user_input=filling_params
-    )
-    factory.add_machine(filling_machine, dependencies=[f"MC_Rewind_{etype}"])
-    machines[f"{etype}_Electrolyte_Filling"] = filling_machine
-
-    # 9. Formation Cycling
-    formation_machine = FormationCyclingMachine(
-        machine_id=f"MC_Formation_{etype}",
-        user_input=formation_params
-    )
-    factory.add_machine(formation_machine, dependencies=[f"MC_Filling_{etype}"])
-    machines[f"{etype}_Formation_Cycling"] = formation_machine
-
-    # 10. Aging
-    aging_machine = AgingMachine(
-        machine_id=f"MC_Aging_{etype}",
-        user_input=aging_params
-    )
-    factory.add_machine(aging_machine, dependencies=[f"MC_Formation_{etype}"])
-    machines[f"{etype}_Aging"] = aging_machine
-
-# -----------------------------
-# Start factory simulation
-# -----------------------------
-factory.start_simulation()
-
-# Wait for all threads to complete
-for t in factory.threads:
-    t.join()
-
-# -----------------------------
-# Save final results
-# -----------------------------
-for etype in ["Anode", "Cathode"]:
-    machine = machines[f"{etype}_Mixing"]  # You can choose any machine to get final result
-    final_result = machine._format_result(is_final=True)
-    result_file = RESULTS_PATH / f"{etype}_result.json"
-    with open(result_file, "w") as f:
-        json.dump(final_result, f, indent=4)
-
-print("✅ Full simulation completed. Results saved in 'results/' folder.")
+aging_model = AgingModel(formation_model)
+aging_machine = AgingMachine(aging_model, AgingParameters(k_leak=1e-8, temperature=25, aging_time_days=10))
+aging_machine.run()

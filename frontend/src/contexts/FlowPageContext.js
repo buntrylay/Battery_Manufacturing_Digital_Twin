@@ -2,28 +2,31 @@ import React, { createContext, useState, useMemo, useContext } from "react";
 
 export const FlowPageContext = createContext(null);
 
-// Custom hook for access to the context
+// Custom hook
 export const useFlowPage = () => useContext(FlowPageContext);
 
 const MACHINE_FLOW_DATA = [
-  { id: "Mixing", label: "Mixing", group: "Mixing" },
-  { id: "Coating", label: "Coating", group: "Coating" },
-  { id: "Drying", label: "Drying", group: "Drying" },
-  { id: "Calendaring", label: "Calendaring", group: "Calendaring" },
-  { id: "Slitting", label: "Slitting", group: "Slitting" },
-  { id: "Inspection", label: "Inspection", group: "Inspection" },
-  { id: "Rewinding", label: "Rewinding", group: "Rewinding" },
-  {
-    id: "Electrolyte Filling",
-    label: "Electrolyte Filling",
-    group: "Electrolyte Filling",
-  },
-  {
-    id: "Formation Cycling",
-    label: "Formation Cycling",
-    group: "Formation Cycling",
-  },
-  { id: "Aging", label: "Aging", group: "Aging" },
+  // Cathode line
+  { id: "Cathode Mixing", label: "Mixing" },
+  { id: "Cathode Coating", label: "Coating" },
+  { id: "Cathode Drying", label: "Drying" },
+  { id: "Cathode Calendaring", label: "Calendaring" },
+  { id: "Cathode Slitting", label: "Slitting" },
+  { id: "Cathode Inspection", label: "Inspection" },
+
+  // Anode line
+  { id: "Anode Mixing", label: "Mixing" },
+  { id: "Anode Coating", label: "Coating" },
+  { id: "Anode Drying", label: "Drying" },
+  { id: "Anode Calendaring", label: "Calendaring" },
+  { id: "Anode Slitting", label: "Slitting" },
+  { id: "Anode Inspection", label: "Inspection" },
+
+  // Shared stages
+  { id: "Rewinding", label: "Rewinding" },
+  { id: "Electrolyte Filling", label: "Electrolyte Filling" },
+  { id: "Formation Cycling", label: "Formation Cycling" },
+  { id: "Aging", label: "Aging" },
 ];
 
 export const FlowPageProvider = ({ children }) => {

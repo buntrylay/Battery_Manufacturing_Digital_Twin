@@ -14,6 +14,9 @@ import asyncio
 # Import database functions from db.py
 from server.db import engine, insert_flattened_data
 
+# Import the machine and model classes directly
+from simulation.battery_model.MixingModel import MixingModel
+from simulation.machine.MixingMachine import MixingMachine
 
 MAX_MESSAGES = 100
 message_queue = deque(maxlen=MAX_MESSAGES)
@@ -102,10 +105,33 @@ def run_simulation(payload: SimulationInput):
 
     try:
         thread_broadcast("New simulation started.")
-        machines = [("Anode", payload.anode), ("Cathode", payload.cathode)]
-        for name, slurry in machines:
-            run_machine(name, slurry)
-        thread_broadcast("Simulation complete.")
+        
+        # --- ANODE PRODUCTION ---
+        thread_broadcast("--- Starting Anode Mixing Process ---")
+        anode_payload = payload.anode
+        
+        anode_mixing_model = MixingModel("Anode")
+        anode_mixing_machine = MixingMachine("Anode_Mixer",
+                anode_mixing_model,
+                MixingParameters(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41))
+        anode_mixing_machine.run()
+        thread_broadcast("--- Anode Mixing Process Finished ---")
+
+        # --- CATHODE PRODUCTION ---
+        thread_broadcast("--- Starting Cathode Mixing Process ---")
+        cathode_payload = payload.cathode
+        
+        cathode_mixing_model = MixingModel("Cathode")
+        cathode_mixing_machine = MixingMachine("Cathode_Mixer",
+            cathode_mixing_model,
+            MixingParameters(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41))
+        cathode_mixing_machine.run()
+        thread_broadcast("--- Cathode Mixing Process Finished ---")
+
+        thread_broadcast("All simulation stages complete.")
+
+    except Exception as e:
+        thread_broadcast(f"SIMULATION FAILED: {str(e)}")
     finally:
         simulation_lock.release()
 
@@ -132,7 +158,6 @@ def start_simulation(payload: SimulationInput):
     threading.Thread(target=run_simulation, args=(payload,)).start()
     return {"message": "Simulation started. See WebSocket for progress."}
 
-
 @app.websocket("/ws/status")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
@@ -141,3 +166,13 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+@app.get("/")
+def root():
+    try:
+        with engine.connect() as conn:
+            conn.execute(sqlalchemy.text("SELECT 1"))
+            print("Database connection successful.")
+        return {"status": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

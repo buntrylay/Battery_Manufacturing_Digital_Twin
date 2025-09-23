@@ -47,7 +47,7 @@ pip install -e .
 ### Running the Simulation
 
 ```bash
-python3 -m src.server.main
+python3 -m src.simulation_local.main
 ```
 
 ### Running Tests
