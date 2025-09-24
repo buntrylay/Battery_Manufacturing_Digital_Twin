@@ -120,20 +120,20 @@ const generateLayout = (machineData) => {
     target: "Rewinding",
   });
 
-  return { initialNodes: nodes, initialEdges: edges };
+  return { defaultNodes: nodes, defaultEdges: edges };
 };
 
 const MachineFlowDiagram = () => {
   const { MACHINE_FLOW, setSelectedId } = useFlowPage();
   const { stageLog } = useLogs();
-  // Generate initial layout only once
-  const { initialNodes, initialEdges } = useMemo(
+  // Generate default layout only once
+  const { defaultNodes, defaultEdges } = useMemo(
     () => generateLayout(MACHINE_FLOW),
     [MACHINE_FLOW]
   );
   //Setting states for Node edge and stage completion
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(defaultNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(defaultEdges);
   const [machineStatus, setMachineStatus] = useState({});
   useEffect(() => {
     setNodes((nds) =>
@@ -187,10 +187,11 @@ const MachineFlowDiagram = () => {
 
         if (sourceStatus === "completed" && targetStatus === "running") {
           return { ...edge, type: "animated" };
+        } else {
         }
 
         // Revert all other edges to the default type
-        return { ...edge, animated: true };
+        return { ...edge, type: "default", animated: true };
       })
     );
   }, [machineStatus, setEdges]);

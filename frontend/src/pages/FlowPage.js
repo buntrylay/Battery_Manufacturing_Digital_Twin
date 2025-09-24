@@ -4,6 +4,7 @@ import SidePanel from "../components/SidePanel";
 import MachineFlowDiagram from "../components/MachineFlowDiagram";
 import "../styles/FlowPage.css";
 import { useLogs } from "../contexts/WebSocketContext";
+
 const FlowPage = () => {
   const { MACHINE_FLOW, setSelectedId, selectedStage } = useFlowPage();
   const { addLog, clearLogs } = useLogs();

@@ -26,7 +26,7 @@ export function AnimatedSVGEdge({
 
       <circle r="4" fill="#007bff">
         <animateMotion
-          dur="1s"
+          dur="3s"
           repeatCount="indefinite"
           path={edgePath}
           fill="freeze"

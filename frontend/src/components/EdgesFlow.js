@@ -8,7 +8,7 @@ import {
 
 import "@xyflow/react/dist/style.css";
 import { AnimatedSVGEdge } from "./AnimatedSVGEdge";
-const initialNodes = [
+const defaultNodes = [
   { id: "1", position: { x: -100, y: -200 }, data: { label: "A" } },
   { id: "2", position: { x: 100, y: 200 }, data: { label: "B" } },
 ];
@@ -17,7 +17,7 @@ const edgeTypes = {
   animatedSvg: AnimatedSVGEdge,
 };
 
-const initialEdges = [
+const defaultEdges = [
   {
     id: "1->2",
     type: "animatedSvg",
@@ -27,8 +27,8 @@ const initialEdges = [
 ];
 
 const EdgesFlow = () => {
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, , onNodesChange] = useNodesState(defaultNodes);
+  const [edges, , onEdgesChange] = useEdgesState(defaultEdges);
 
   return (
     <ReactFlow
