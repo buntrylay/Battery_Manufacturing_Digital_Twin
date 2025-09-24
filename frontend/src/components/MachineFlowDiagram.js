@@ -186,12 +186,10 @@ const MachineFlowDiagram = () => {
         const targetStatus = machineStatus[edge.target];
 
         if (sourceStatus === "completed" && targetStatus === "running") {
-          return { ...edge, type: "animated" };
+          return { ...edge, type: "animated", animated: true };
         } else {
+          return { ...edge, type: "default", animated: true };
         }
-
-        // Revert all other edges to the default type
-        return { ...edge, type: "default", animated: true };
       })
     );
   }, [machineStatus, setEdges]);

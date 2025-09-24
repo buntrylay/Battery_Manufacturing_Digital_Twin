@@ -23,14 +23,9 @@ export function AnimatedSVGEdge({
     <>
       {/* The base line of the edge */}
       <BaseEdge id={id} path={edgePath} />
-
+      {/* TODO: Add in animation time updates once flow been updated*/}
       <circle r="4" fill="#007bff">
-        <animateMotion
-          dur="3s"
-          repeatCount="indefinite"
-          path={edgePath}
-          fill="freeze"
-        />
+        <animateMotion dur="4s" repeatCount="indefinite" path={edgePath} />
       </circle>
     </>
   );
