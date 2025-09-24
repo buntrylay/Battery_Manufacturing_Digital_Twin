@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 
 # Add the src directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -107,6 +108,17 @@ def test_update_machine_parameters():
         print(type(e))
         print(e)
 
+def test_two_batches():
+    batch_1 = Batch(batch_id="Batch_1")
+    batch_2 = Batch(batch_id="Batch_2")
+    plant_simulation.add_batch(batch_1)
+    plant_simulation.run()
+    time.sleep(2) # wait for the first batch to run for some time
+    plant_simulation.add_batch(batch_2)
+    plant_simulation.run()
+
+def test_get_plant_state():
+    print(plant_simulation.get_current_plant_state())
 
 if __name__ == "__main__":
-    test_run_simulation()
+    test_get_plant_state()

@@ -1,8 +1,5 @@
-import array
-import copy
 from threading import Thread
 from typing import Union
-from weakref import ref
 from simulation.machine import (
     MixingMachine,
     CoatingMachine,
@@ -15,7 +12,6 @@ from simulation.machine import (
     FormationCyclingMachine,
     AgingMachine,
 )
-from simulation.battery_model import BaseModel, MixingModel, RewindingModel
 from simulation.process_parameters import (
     CoatingParameters,
     MixingParameters,
@@ -33,7 +29,8 @@ from simulation.factory.Batch import Batch
 
 class PlantSimulation:
     def __init__(self):
-        self.batches: list[any] = []
+        self.batch_requests: list[any] = []
+        self.running_batches: list[any] = []
         self.factory_structure = {
             "anode": {
                 "mixing": None,
@@ -164,6 +161,7 @@ class PlantSimulation:
     def __run_electrode_line(
         self, electrode_type: Union["anode", "cathode"], batch: Batch  # type: ignore
     ):
+        """this function is to run the electrode line for a specific batch (part of __run_pipeline_on_batch)"""
         model = getattr(batch, f"{electrode_type}_line_model")
 
         for stage in [
@@ -174,42 +172,34 @@ class PlantSimulation:
             "slitting",
             "inspection",
         ]:
-            # (1) get the machine
+            # (1) get the machine in order in the electrode line
             running_machine = self.factory_structure[electrode_type][stage]
-            # (2) input into the machine (could be from the previous machine or from the batch model)
+            # (2) input into the machine (could be from the previous stage or from the initial mixing machine)
             running_machine.receive_model_from_previous_process(model)
-            # (3) run the machine
+            # (3) run the machine (start the simulation)
             running_machine.run()
             # (4) update the batch model (local)
             model = running_machine.battery_model
-            # (5) update the batch model (global)
-            setattr(
-                batch, f"{electrode_type}_line_model", running_machine.battery_model
-            )
+            # (5) clean up the machine (turn off the machine and empty the battery model (possibly for the next batch))
+            running_machine.clean_up()
+            # (6) update the batch model (global)
+            setattr(batch, f"{electrode_type}_line_model", model)
 
     def __run_assembled_cell_line(
         self,
         batch: Batch,
     ):
+        """this function is to run the assembled cell line for a specific batch (part of __run_pipeline_on_batch)"""
         model = batch.cell_line_model
         for stage in ["rewinding", "electrolyte_filling", "formation_cycling", "aging"]:
             running_machine = self.factory_structure["cell"][stage]
             running_machine.receive_model_from_previous_process(model)
             running_machine.run()
             model = running_machine.battery_model
-            setattr(batch, f"cell_line_model", running_machine.battery_model)
+            running_machine.clean_up()
+            setattr(batch, f"cell_line_model", model)
 
     def __run_pipeline_on_batch(self, batch: Batch):
-        print(
-            "this is the anode line model before thread",
-            batch.anode_line_model,
-            type(batch.anode_line_model),
-        )
-        print(
-            "this is the cathode line model before thread",
-            batch.cathode_line_model,
-            type(batch.cathode_line_model),
-        )
         run_anode_thread = Thread(
             target=self.__run_electrode_line, args=("anode", batch)
         )
@@ -229,33 +219,44 @@ class PlantSimulation:
         return
 
     def add_batch(self, batch: Batch):
-        if len(self.batches) >= 10:
+        if len(self.batch_requests) >= 10:
             raise ValueError("Maximum number of batches reached")
         else:
-            self.batches.append(batch)
+            self.batch_requests.append(batch)
 
     def run(self):
-        if len(self.batches) > 0:
+        """this function is to run the pipeline for a specific batch (part of __run_pipeline_on_batch)"""
+        while self.batch_requests:
+            # check the mixing machines
             anode_mixing_machine = self.factory_structure["anode"]["mixing"].state
             cathode_mixing_machine = self.factory_structure["cathode"]["mixing"].state
-            if anode_mixing_machine or cathode_mixing_machine:
-                raise ValueError("Anode or cathode mixing machine is still running")
-            else:
-                batch = self.batches.pop(0)
-                self.__run_pipeline_on_batch(batch)
+            if not anode_mixing_machine and not cathode_mixing_machine:
+                batch = self.batch_requests.pop(0)
+                run_batch_thread = Thread(
+                    target=self.__run_pipeline_on_batch, args=(batch,)
+                )
+                run_batch_thread.start()
+                self.running_batches.append(batch)
+                run_batch_thread.join()
+                self.running_batches.remove(batch)
 
     def get_machine_status(self, line_type: str, machine_id: str):
         machine = self.__get_machine(line_type, machine_id)
         return machine.get_current_state()
 
     def get_current_plant_state(self):
-
-        pass
-        # plant_state = {
-        #     "batch_queue": self.batch_queue.qsize(),
-        #     "factory_structure": self.factory_structure,
-        # }
-        # return plant_state
+        batch_requests = [batch.get_batch_state() for batch in self.batch_requests]
+        running_batches = [batch.get_batch_state() for batch in self.running_batches]
+        machine_statuses = [
+            self.factory_structure[line_type][machine_id].get_current_state()
+            for line_type in self.factory_structure
+            for machine_id in self.factory_structure[line_type]
+        ]
+        return {
+            "batch_requests": batch_requests,
+            "running_batches": running_batches,
+            "machine_statuses": machine_statuses,
+        }
 
     def update_machine_parameters(self, line_type: str, machine_id: str, parameters):
         """Update parameters for a specific machine."""

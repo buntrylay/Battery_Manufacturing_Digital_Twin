@@ -42,8 +42,6 @@ class BaseMachine(ABC):
         self.state = False
         self.start_datetime = None
         self.total_time = 0
-        self.calculator = None
-        # self.kwargs = kwargs
         # Helpers
         self.local_saver = LocalDataSaver(process_name)
         self.iot_sender = IoTHubSender(connection_string)
@@ -168,6 +166,14 @@ class BaseMachine(ABC):
                 print(self.get_current_state())
             time.sleep(pause_between_steps)
         self.turn_off()
+
+    def clean_up(self):
+        """Clean up the machine."""
+        self.turn_off()
+        self.battery_model = None
+        self.state = False
+        self.total_time = 0
+        self.start_datetime = None
 
     # idea to standardise the step logic with decorator @abstractmethod
     #  @abstractmethod
