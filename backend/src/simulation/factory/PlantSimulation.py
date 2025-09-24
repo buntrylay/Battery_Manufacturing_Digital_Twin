@@ -312,6 +312,8 @@ class PlantSimulation:
     def update_machine_parameters(self, line_type: str, machine_id: str, parameters):
         """Update parameters for a specific machine."""
         machine = self.__get_machine(line_type, machine_id)
+        if machine.state:
+            raise ValueError("Machine is running, cannot update parameters")
         machine.validate_parameters(parameters)
         machine.update_machine_parameters(parameters)
         return True
