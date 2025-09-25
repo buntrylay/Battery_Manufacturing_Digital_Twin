@@ -22,7 +22,7 @@ class FormationCyclingModel(BaseModel):
         self.sei_efficiency = float(1 / (1 + np.exp(-self.k_sei * (t - self.t50))))
         self.capacity = self.sei_efficiency * self.Q_theoretical_Ah * self.eta_wetting
         self.voltage = min(
-            params.Voltage + (params.Charge_current_A * t) / (self.capacity + 1e-6),
+            params.Initial_Voltage + (params.Charge_current_A * t) / (self.capacity + 1e-6),
             params.Charge_voltage_limit_V
         )
 

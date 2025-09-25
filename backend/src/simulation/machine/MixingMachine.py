@@ -36,8 +36,8 @@ class MixingMachine(BaseMachine):
         )
         self.mixing_tank_volume = 200
 
-    def add_model(self, mixing_model: MixingModel):
-        self.battery_model = mixing_model
+    def receive_model_from_previous_process(self, initial_mixing_model: MixingModel):
+        self.battery_model = initial_mixing_model
 
     def __mix_component(
         self,
@@ -47,9 +47,8 @@ class MixingMachine(BaseMachine):
         duration_sec=10,
         results_list=None,
     ):
-        total_volume_of_material_to_add = (
-            self.mixing_tank_volume
-            * getattr(self.machine_parameters, material_type)
+        total_volume_of_material_to_add = self.mixing_tank_volume * getattr(
+            self.machine_parameters, f"{material_type}_ratio"
         )
         volume_added_in_each_step = step_percent * total_volume_of_material_to_add
         added_volume = 0.0
@@ -83,8 +82,7 @@ class MixingMachine(BaseMachine):
             self.turn_on()
             self.battery_model.add(
                 "solvent",
-                self.mixing_tank_volume
-                * self.machine_parameters.solvent
+                self.mixing_tank_volume * self.machine_parameters.solvent_ratio,
             )
             all_results = []
             self.__mix_component("PVDF", duration_sec=8, results_list=all_results)
@@ -92,3 +90,6 @@ class MixingMachine(BaseMachine):
             self.__mix_component("AM", duration_sec=10, results_list=all_results)
             self.save_all_results(all_results)
             self.turn_off()
+
+    def validate_parameters(self, parameters: dict):
+        return MixingParameters(**parameters).validate_parameters()
