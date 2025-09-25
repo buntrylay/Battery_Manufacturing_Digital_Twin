@@ -8,7 +8,10 @@ package "simulation" {
         }
         
         class MixingParameters {
-            +material_ratios: MaterialRatios
+            +AM: float
+            +CA: float
+            +PVDF: float
+            +solvent: float
         }
         
         class CoatingParameters {
@@ -18,39 +21,19 @@ package "simulation" {
             +coating_width: float
         }
         
-        class DryingParameters {
-        }
-        
-        class CalendaringParameters {
-        }
-        
-        class SlittingParameters {
-        }
-        
-        class RewindingParameters {
-        }
-        
-        class ElectrolyteFillingParameters {
-        }
-        
-        class FormationCyclingParameters {
-        }
-        
-        class AgingParameters {
-        }
-        
-        dataclass MaterialRatios {
-            +AM: float
-            +CA: float
-            +PVDF: float
-            +solvent: float
-        }
+        class DryingParameters
+        class CalendaringParameters
+        class SlittingParameters
+        class RewindingParameters
+        class ElectrolyteFillingParameters
+        class FormationCyclingParameters
+        class AgingParameters
     }
     
     package "battery_model" {
         abstract class BaseModel {
-            +get_properties(): dict
-            +update_properties(machine_params: BaseMachineParameters): void
+            {abstract} +get_properties(): dict
+            {abstract} +update_properties(machine_params: BaseMachineParameters): void
         }
         
         class MixingModel {
@@ -140,43 +123,6 @@ package "simulation" {
         }
         
         class CoatingMachine {
-            -calculate_shear_rate(): float
-            -calculate_uniformity_std(): float
-            +step_logic(): void
-            +appendProcessState(): dict
-        }
-        
-        class DryingMachine {
-            +step_logic(): void
-            +appendProcessState(): dict
-        }
-        
-        class CalendaringMachine {
-            +step_logic(): void
-            +appendProcessState(): dict
-        }
-        
-        class SlittingMachine {
-            +step_logic(): void
-            +appendProcessState(): dict
-        }
-        
-        class RewindingMachine {
-            +step_logic(): void
-            +appendProcessState(): dict
-        }
-        
-        class ElectrolyteFillingMachine {
-            +step_logic(): void
-            +appendProcessState(): dict
-        }
-        
-        class FormationCyclingMachine {
-            +step_logic(): void
-            +appendProcessState(): dict
-        }
-        
-        class AgingMachine {
             +step_logic(): void
             +appendProcessState(): dict
         }
@@ -185,18 +131,12 @@ package "simulation" {
     package "factory" {
         class Factory {
             +batch_queue: Queue[Batch]
-            +anode_line: dict
-            +cathode_line: dict
-            +merged_line: dict
             +run_electrode_line(): void
             +run_merged_line(): void
             +run_production_line(): void
+            +get_plant_state(): dict
         }
-    }
-
-    package "batch" {
         class Batch {
-
         }
     }
 }
@@ -226,13 +166,6 @@ BaseModel <|-- AgingModel
 ' Machine inheritance relationships
 BaseMachine <|-- MixingMachine
 BaseMachine <|-- CoatingMachine
-BaseMachine <|-- DryingMachine
-BaseMachine <|-- CalendaringMachine
-BaseMachine <|-- SlittingMachine
-BaseMachine <|-- RewindingMachine
-BaseMachine <|-- ElectrolyteFillingMachine
-BaseMachine <|-- FormationCyclingMachine
-BaseMachine <|-- AgingMachine
 
 ' Simple composition relationships (not decorator pattern)
 MixingModel ..> CoatingModel : references
@@ -245,42 +178,14 @@ ElectrolyteFillingModel ..> FormationCyclingModel : references
 FormationCyclingModel ..> AgingModel : references
 
 ' Factory relationships
-Factory --> BaseMachine : manages
-Factory *-- Batch: receives
+Factory *-- BaseMachine : manages
+Factory o-- Batch: receives
 
 ' Machine-Model relationships
 MixingMachine o-- MixingModel : operates on
 CoatingMachine o-- CoatingModel : operates on
-DryingMachine o-- DryingModel : operates on
-CalendaringMachine o-- CalendaringModel : operates on
-SlittingMachine o-- SlittingModel : operates on
-RewindingMachine o-- RewindingModel : operates on
-ElectrolyteFillingMachine o-- ElectrolyteFillingModel : operates on
-FormationCyclingMachine o-- FormationCyclingModel : operates on
-AgingMachine o-- AgingModel : operates on
 
 ' Machine-Parameter relationships
 MixingMachine o-- MixingParameters : uses
 CoatingMachine o-- CoatingParameters : uses
-DryingMachine o-- DryingParameters : uses
-CalendaringMachine o-- CalendaringParameters : uses
-SlittingMachine o-- SlittingParameters : uses
-RewindingMachine o-- RewindingParameters : uses
-ElectrolyteFillingMachine o-- ElectrolyteFillingParameters : uses
-FormationCyclingMachine o-- FormationCyclingParameters : uses
-AgingMachine o-- AgingParameters : uses
-
-' Machine-Parameter relationships
-MixingParameters *-- MaterialRatios
-
-' Model-Parameter relationships (for update_properties)
-MixingModel ..> MixingParameters : update_properties()
-CoatingModel ..> CoatingParameters : update_properties()
-DryingModel ..> DryingParameters : update_properties()
-CalendaringModel ..> CalendaringParameters : update_properties()
-SlittingModel ..> SlittingParameters : update_properties()
-RewindingModel ..> RewindingParameters : update_properties()
-ElectrolyteFillingModel ..> ElectrolyteFillingParameters : update_properties()
-FormationCyclingModel ..> FormationCyclingParameters : update_properties()
-AgingModel ..> AgingParameters : update_properties()
 @enduml

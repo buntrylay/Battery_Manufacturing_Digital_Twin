@@ -1,7 +1,42 @@
-from simulation.battery_model.CoatingModel import CoatingModel
+from simulation.battery_model import MixingModel, CoatingModel
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.process_parameters.Parameters import CoatingParameters
 import time
+
+
+def calculate_shear_rate(coating_speed, gap_height):
+    """
+    Calculate the shear rate in the coating gap.
+
+    The shear rate is a fundamental parameter that affects coating quality and uniformity.
+    It is calculated as the ratio of coating speed to gap height.
+
+    Args:
+        coating_speed (float): Speed of the coating process in mm/s
+        gap_height (float): Height of the coating gap in m
+
+    Returns:
+        float: Shear rate in 1/s
+    """
+    return coating_speed / gap_height
+
+
+def calculate_uniformity_std(shear_rate):
+    """
+    Calculate coating uniformity based on shear rate.
+
+    The uniformity is expressed as a standard deviation relative to the nominal
+    shear rate. Lower values indicate better coating uniformity.
+
+    Args:
+        shear_rate (float): Calculated shear rate in 1/s
+
+    Returns:
+        float: Standard deviation of coating uniformity
+    """
+    base_std = 0.01  # 1%
+    nominal_shear_rate = 500  # 1/s
+    return base_std * (shear_rate / nominal_shear_rate)
 
 
 class CoatingMachine(BaseMachine):
@@ -17,8 +52,9 @@ class CoatingMachine(BaseMachine):
 
     def __init__(
         self,
-        coating_model: CoatingModel,
-        machine_parameters: CoatingParameters,
+        process_name: str,
+        coating_parameters: CoatingParameters,
+        coating_model: CoatingModel = None,
         connection_string=None,
     ):
         """
@@ -30,44 +66,14 @@ class CoatingMachine(BaseMachine):
         self.shear_rate = 0
         self.uniformity_std = 0
         super().__init__(
-            f"Coating_{coating_model.electrode_type}",
+            process_name,
             coating_model,
-            machine_parameters,
+            coating_parameters,
             connection_string,
         )
 
-    def __calculate_shear_rate(self, coating_speed, gap_height):
-        """
-        Calculate the shear rate in the coating gap.
-
-        The shear rate is a fundamental parameter that affects coating quality and uniformity.
-        It is calculated as the ratio of coating speed to gap height.
-
-        Args:
-            coating_speed (float): Speed of the coating process in mm/s
-            gap_height (float): Height of the coating gap in m
-
-        Returns:
-            float: Shear rate in 1/s
-        """
-        return coating_speed / gap_height
-
-    def __calculate_uniformity_std(self, shear_rate):
-        """
-        Calculate coating uniformity based on shear rate.
-
-        The uniformity is expressed as a standard deviation relative to the nominal
-        shear rate. Lower values indicate better coating uniformity.
-
-        Args:
-            shear_rate (float): Calculated shear rate in 1/s
-
-        Returns:
-            float: Standard deviation of coating uniformity
-        """
-        base_std = 0.01  # 1%
-        nominal_shear_rate = 500  # 1/s
-        return base_std * (shear_rate / nominal_shear_rate)
+    def receive_model_from_previous_process(self, previous_model: MixingModel):
+        self.battery_model = CoatingModel(previous_model)
 
     def __simulate(self, duration_sec=100, results_list=None):
         """
@@ -81,12 +87,17 @@ class CoatingMachine(BaseMachine):
         for t in range(0, duration_sec + 1, 5):
             self.total_time = t
             # update shear rate and wet thickness first to trigger changes in other properties
-            self.shear_rate = self.__calculate_shear_rate(
-                self.machine_parameters.coating_speed, self.machine_parameters.gap_height
+            self.shear_rate = calculate_shear_rate(
+                self.machine_parameters.coating_speed,
+                self.machine_parameters.gap_height,
             )
-            self.uniformity_std = self.__calculate_uniformity_std(self.shear_rate)
+            self.uniformity_std = calculate_uniformity_std(self.shear_rate)
+            # Update model using the full parameters object
             self.battery_model.update_properties(self.machine_parameters)
-            result = self.get_properties(
+            self.battery_model.shear_rate = self.shear_rate
+            self.battery_model.uniformity = 1 - self.uniformity_std
+            self.battery_model.temperature = 25.0
+            result = self.get_current_state(
                 process_specifics={
                     "shear_rate": self.shear_rate,
                     "uniformity_std": self.uniformity_std,
@@ -113,3 +124,6 @@ class CoatingMachine(BaseMachine):
         self.__simulate(results_list=all_results)
         self.save_all_results(all_results)
         self.turn_off()
+
+    def validate_parameters(self, parameters: dict):
+        return CoatingParameters(**parameters).validate_parameters()
