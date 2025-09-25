@@ -1,19 +1,25 @@
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import dataclass
 from simulation.process_parameters.Parameters import FormationCyclingParameters
+from simulation.battery_model.FormationCyclingModel import FormationCyclingModel
+from simulation.battery_model.ElectrolyteFillingModel import ElectrolyteFillingModel
 
 class FormationCyclingMachine(BaseMachine):
-    def __init__(self,
-        formation_model,
-        machine_parameters: FormationCyclingParameters,
+    def __init__(
+        self,
+        process_name: str,
+        formation_cycling_parameters: FormationCyclingParameters,
+        formation_model: FormationCyclingModel = None,
         connection_string=None
     ):
-        super().__init__("FormationCycling",
+        super().__init__(
+            process_name,
             formation_model,
-            machine_parameters,
-            connection_string
+            formation_cycling_parameters,
         )
 
+    def input_model(self, previous_model: ElectrolyteFillingModel):
+        self.battery_model = FormationCyclingModel(previous_model)
     def run(self):
         self.turn_on()
         all_results = []
@@ -22,7 +28,7 @@ class FormationCyclingMachine(BaseMachine):
             self.total_time = t
             self.battery_model.update_properties(self.machine_parameters, t)
             proc = self.battery_model.get_properties()
-            result = self.get_current_properties(process_specifics=proc)
+            result = self.get_current_state(process_specifics=proc)
             all_results.append(result)
             self.save_data_to_local_folder()
 

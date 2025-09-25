@@ -3,5 +3,6 @@ from simulation.battery_model import MixingModel
 
 class Batch:
     def __init__(self, id: str):
-        self.mixing_model_anode = MixingModel("Anode")
-        self.mixing_model_cathode = MixingModel("Cathode")
+        self.anode_line_model = MixingModel("Anode")
+        self.cathode_line_model = MixingModel("Cathode")
+        self.cell_line_model = None

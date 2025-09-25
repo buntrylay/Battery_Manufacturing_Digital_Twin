@@ -4,17 +4,17 @@ import math
 
 # All public class parameters wihtin this file
 __all__ = [
-    'BaseMachineParameters',
-    'MixingParameters',
-    'CoatingParameters',
-    'DryingParameters',
-    'CalendaringParameters',
-    'SlittingParameters',
-    'ElectrodeInspectionParameters',
-    'RewindingParameters',
-    'ElectrolyteFillingParameters',
-    'FormationCyclingParameters',
-    'AgingParameters'
+    "BaseMachineParameters",
+    "MixingParameters",
+    "CoatingParameters",
+    "DryingParameters",
+    "CalendaringParameters",
+    "SlittingParameters",
+    "ElectrodeInspectionParameters",
+    "RewindingParameters",
+    "ElectrolyteFillingParameters",
+    "FormationCyclingParameters",
+    "AgingParameters",
 ]
 
 
@@ -25,34 +25,27 @@ class BaseMachineParameters(ABC):
     def validate_parameters(self):
         pass
 
-    @abstractmethod
     def get_parameters_dict(self):
-        pass
-    def __post_init__(self):
-        """
-        Automatically calls the validation logic right after any subclass is created.
-        """
-        self.validate_parameters()
+        return asdict(self)
 
-# Parameter implementations
 
+# Parameter Implementations
 @dataclass
 class MixingParameters(BaseMachineParameters):
     AM: float
     CA: float
     PVDF: float
     solvent: float
-    
+
     def validate_parameters(self):
         if self.AM < 0 or self.CA < 0 or self.PVDF < 0 or self.solvent < 0:
             raise ValueError("Material ratios cannot be negative.")
-        
+
         ratio_sum = self.AM + self.CA + self.PVDF + self.solvent
         if not math.isclose(ratio_sum, 1.0):
-            raise ValueError(f"The sum of material ratios must be 1, but it was {ratio_sum}")
-    
-    def get_parameters_dict(self):
-        return asdict(self)
+            raise ValueError(
+                f"The sum of material ratios must be 1, but it was {ratio_sum}"
+            )
 
 
 @dataclass
@@ -72,51 +65,15 @@ class CoatingParameters(BaseMachineParameters):
         if self.coating_width <= 0:
             raise ValueError("Coating width must be greater than 0")
 
-    def get_parameters_dict(self):
-        return asdict(self)
-
-
 
 @dataclass
-class DryingParameters:
-    V_air: float
-    T_dry: float
-    H_air: float
-    drying_length: float
+class DryingParameters(BaseMachineParameters):
     web_speed: float
-    coating_width: float = 0.5
-    h_air: float = 0.1
-    density: float = 1500
-    solvent_density: float = 800
-    delta_t: float = 1
-    max_safe_evap_rate: float = 0.004
 
     def validate_parameters(self):
-        if self.V_air <= 0:
-            raise ValueError("Air velocity must be positive.")
-        if self.T_dry <= 0:
-            raise ValueError("Drying temperature must be positive.")
-        if self.H_air < 0 or self.H_air > 1:
-            raise ValueError("Relative humidity must be between 0 and 1.")
-        if self.drying_length <= 0:
-            raise ValueError("Drying length must be positive.")
         if self.web_speed <= 0:
             raise ValueError("Web speed must be positive.")
-        if self.coating_width <= 0:
-            raise ValueError("Coating width must be positive.")
-        if self.h_air <= 0:
-            raise ValueError("Heat transfer coefficient must be positive.")
-        if self.density <= 0:
-            raise ValueError("Density must be positive.")
-        if self.solvent_density <= 0:
-            raise ValueError("Solvent density must be positive.")
-        if self.delta_t <= 0:
-            raise ValueError("Time step must be positive.")
-        if self.max_safe_evap_rate <= 0:
-            raise ValueError("Max safe evaporation rate must be positive.")
-    
-    def get_parameters_dict(self):
-        return asdict(self)
+
 
 @dataclass
 class CalendaringParameters(BaseMachineParameters):
@@ -138,9 +95,6 @@ class CalendaringParameters(BaseMachineParameters):
             raise ValueError("Initial porosity must be between 0 and 1.")
         if self.dry_thickness <= 0:
             raise ValueError("Dry thickness must be positive.")
-        
-    def get_parameters_dict(self):
-        return asdict(self)
 
 
 @dataclass
@@ -153,17 +107,15 @@ class SlittingParameters(BaseMachineParameters):
 
     def validate_parameters(self):
         if self.blade_sharpness <= 0:
-            raise ValueError("Blade Value must eb greater than 0")
+            raise ValueError("Blade sharpness must be greater than 0")
         if self.slitting_speed <= 0:
             raise ValueError("Slitting speed must be greater than 0")
         if self.target_width <= 0:
             raise ValueError("Target width must be greater than 0")
         if self.slitting_tension <= 0:
             raise ValueError("Slitting tension must be greater than 0")
-    def get_parameters_dict(self):
-        return asdict(self)
 
-    
+
 @dataclass
 class ElectrodeInspectionParameters(BaseMachineParameters):
     epsilon_width_max: float
@@ -181,11 +133,9 @@ class ElectrodeInspectionParameters(BaseMachineParameters):
         if self.D_surface_max <= 0:
             raise ValueError("D surface max must be greater than 0")
 
-    def get_parameters_dict(self):
-        return asdict(self)
 
 @dataclass
-class RewindingParameters:
+class RewindingParameters(BaseMachineParameters):
     rewinding_speed: float
     initial_tension: float
     tapering_steps: float
@@ -198,52 +148,46 @@ class RewindingParameters:
             raise ValueError("Initial tension must be greater than 0")
         if self.tapering_steps < 0:
             raise ValueError("Tapering steps must be non-negative")
-        if not (0 <= self.environment_humidity <= 1):
-            raise ValueError("Environment humidity must be between 0 and 1")
+        if not (0 <= self.environment_humidity <= 100):
+            raise ValueError("Environment humidity must be between 0 and 100%")
 
-    def get_parameters_dict(self):
-        return asdict(self)
 
 @dataclass
-class ElectrolyteFillingParameters:
-    vacuum_level: float
-    vacuum_filling : float
-    soaking_time: float
+class ElectrolyteFillingParameters(BaseMachineParameters):
+    Vacuum_level: float
+    Vacuum_filling: float
+    Soaking_time: float
 
     def validate_parameters(self):
-        if self.vacuum_level <= 0:
+        if self.Vacuum_level <= 0:
             raise ValueError("Vacuum level must be greater than 0")
-        if self.vacuum_filling <= 0:
+        if self.Vacuum_filling <= 0:
             raise ValueError("Vacuum filling must be greater than 0")
-        if self.soaking_time <= 0:
+        if self.Soaking_time <= 0:
             raise ValueError("Soaking time must be greater than 0")
 
-    def get_parameters_dict(self):
-        return asdict(self)
 
 @dataclass
-class FormationCyclingParameters:
-    charge_current_A: float
-    charge_voltage_limit_V: float
-    voltage: float          
-    formation_duration_s: int = 200 # can be adjusted based on real process time
+class FormationCyclingParameters(BaseMachineParameters):
+    Charge_current_A: float
+    Charge_voltage_limit_V: float
+    Initial_Voltage: float
+    Formation_duration_s: int = 200  # can be adjusted based on real process time
 
     def validate_parameters(self):
-        if charge_current_A <= 0:
+        if self.Charge_current_A <= 0:
             raise ValueError("Charge current must be greater than 0")
-        if charge_voltage_limit_V <= 0:
+        if self.Charge_voltage_limit_V <= 0:
             raise ValueError("Charge voltage limit must be greater than 0")
-        if voltage <= 0:
+        if self.Voltage <= 0:
             raise ValueError("Voltage must be greater than 0")
-        if formation_duration_s <= 0:
+        if self.Formation_duration_s <= 0:
             raise ValueError("Formation duration must be greater than 0")
 
-    def get_parameters_dict(self):
-        return asdict(self)
 
 @dataclass
-class AgingParameters:
-    k_leak : float
+class AgingParameters(BaseMachineParameters):
+    k_leak: float
     temperature: float
     aging_time_days: float
 
@@ -254,6 +198,3 @@ class AgingParameters:
             raise ValueError("Temperature must be greater than 0")
         if self.aging_time_days <= 0:
             raise ValueError("Aging time (days) must be greater than 0")
-    
-    def get_parameters_dict(self):
-        return asdict(self)

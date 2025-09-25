@@ -3,20 +3,40 @@ from simulation.battery_model.ElectrodeInspectionModel import ElectrodeInspectio
 import numpy as np
 
 class RewindingModel(BaseModel):
-    def __init__(self, 
-        inspection_model : ElectrodeInspectionModel):        
-        # from inspection
-        self.delta_sl = inspection_model.final_thickness
-        self.porosity = inspection_model.porosity
-        self.final_width = inspection_model.final_width
-        self.epsilon_width = inspection_model.epsilon_width
-
+    def __init__(
+        self, 
+        electrode_inspection_model_anode: ElectrodeInspectionModel, 
+        electrode_inspection_model_cathode: ElectrodeInspectionModel
+        ):        
         # state
         self.L_wound = 0
         self.D_roll = 0
         self.H_roll = 0
         self.tau_rewind = 0
         self.D_core = 0.2
+        # the thickness of the separator (m)
+        self.separator_thickness = 20e-6
+
+        # from inspection of the 2 electrodes and performing merging purpose
+        self.delta_sl = (
+            electrode_inspection_model_anode.final_thickness
+            + electrode_inspection_model_cathode.final_thickness
+            + self.separator_thickness)
+
+        self.porosity = (
+            electrode_inspection_model_anode.porosity
+            + electrode_inspection_model_cathode.porosity
+            )/2
+
+        self.final_width = (
+            electrode_inspection_model_anode.final_width
+            + electrode_inspection_model_cathode.final_width
+            )/ 2
+        # alignment error between the two electrodes
+        self.epsilon_width = abs(
+            electrode_inspection_model_anode.final_width
+            - electrode_inspection_model_cathode.final_width
+            )
 
     def D_roll_calc(self, L_wound, delta_sl, D_core):
         return np.sqrt(D_core**2 + (4 * L_wound * delta_sl) / np.pi)

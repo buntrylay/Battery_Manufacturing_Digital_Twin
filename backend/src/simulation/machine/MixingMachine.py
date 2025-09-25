@@ -36,8 +36,8 @@ class MixingMachine(BaseMachine):
         )
         self.mixing_tank_volume = 200
 
-    def add_model(self, mixing_model: MixingModel):
-        self.battery_model = mixing_model
+    def input_model(self, previous_model: MixingModel):
+        self.battery_model = previous_model
 
     def __mix_component(
         self,
