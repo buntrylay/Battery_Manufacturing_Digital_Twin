@@ -1,29 +1,19 @@
+import time
 import os
-import sys
-import shutil
 import threading
-import asyncio
-from pathlib import Path
-from zipfile import ZipFile
 from collections import deque
 from datetime import datetime
 from typing import List
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
 import sqlalchemy
-
-# --- Path and Simulation Module Imports ---
-# This points from `backend/src/server` up two levels to the project root
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-# Import the machine and model classes directly
+from sqlalchemy import Table, Column, Integer, Float, String, MetaData, insert, inspect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import asyncio
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.MixingMachine import MixingMachine
 
-# --- WebSocket and Message Queue Setup ---
 MAX_MESSAGES = 100
 message_queue = deque(maxlen=MAX_MESSAGES)
 message_lock = threading.Lock()
@@ -33,7 +23,13 @@ main_loop = None
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
- 
+
+    async def _send_message(self, websocket: WebSocket, message: str):
+        try:
+            await websocket.send_text(message)
+        except Exception:
+            self.disconnect(websocket)
+
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
@@ -42,13 +38,12 @@ class ConnectionManager:
                 await websocket.send_text(msg)
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
 
     def broadcast(self, message: str):
         for connection in self.active_connections:
-            try:
-                asyncio.ensure_future(connection.send_text(message))
-            except Exception: pass
+            asyncio.create_task(self._send_message(connection, message))
 
 manager = ConnectionManager()
 
@@ -56,26 +51,11 @@ def thread_broadcast(message: str):
     global main_loop
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     formatted_message = f"[{timestamp}] {message}"
-    
     with message_lock:
         message_queue.append(formatted_message)
-    
     if main_loop and main_loop.is_running():
         main_loop.call_soon_threadsafe(manager.broadcast, formatted_message)
 
-# --- FastAPI Application Setup ---
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-RESULTS_PATH = Path("results")
-RESULTS_PATH.mkdir(parents=True, exist_ok=True)
-
-# --- Pydantic Models for API Input ---
 class SlurryInput(BaseModel):
     PVDF: float
     CA: float
@@ -86,10 +66,34 @@ class SimulationInput(BaseModel):
     anode: SlurryInput
     cathode: SlurryInput
 
-# --- Corrected Simulation Logic ---
+
+
+def run_machine(process: str, slurry_input: SlurryInput):
+    thread_broadcast(f"--- Starting {process} ---")
+    model = MixingModel(process)
+    params = MixingParameters(
+        PVDF=slurry_input.PVDF,
+        CA=slurry_input.CA,
+        AM=slurry_input.AM,
+        solvent=slurry_input.Solvent
+    )
+    machine = MixingMachine(model, params)
+    all_results = machine.run()
+
+    if all_results is None or not isinstance(all_results, list):
+        thread_broadcast(f"{process} machine returned no result!")
+        return
+
+    for result in all_results:
+        result["process"] = process
+
+    # Use the imported function from db.py
+    insert_flattened_data(engine, all_results)
+    thread_broadcast(f"--- {process} Finished ---")
+
 def run_simulation(payload: SimulationInput):
     if not simulation_lock.acquire(blocking=False):
-        thread_broadcast("ERROR: A simulation is already in progress.")
+        thread_broadcast("Simulation already in progress.")
         return
 
     try:
@@ -124,7 +128,16 @@ def run_simulation(payload: SimulationInput):
     finally:
         simulation_lock.release()
 
-# --- API Endpoints ---
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.on_event("startup")
 async def startup_event():
     global main_loop
@@ -132,9 +145,12 @@ async def startup_event():
 
 @app.post("/start-simulation")
 def start_simulation(payload: SimulationInput):
-    simulation_thread = threading.Thread(target=run_simulation, args=(payload,))
-    simulation_thread.start()
-    return {"message": "Simulation started. See progress via WebSocket."}
+    global message_queue
+    with message_lock:
+        message_queue.clear()  # Clear previous logs
+    threading.Thread(target=run_simulation, args=(payload,)).start()
+    return {"message": "Simulation started. See WebSocket for progress."}
+
 
 @app.websocket("/ws/status")
 async def websocket_endpoint(websocket: WebSocket):

@@ -10,18 +10,18 @@ class MixingModel(BaseModel):
         Update the temperature to simulate fluctuation (random between 24 and 26°C)
         """
         self.temperature = random.uniform(24, 26)
-    """
-    A class representing a battery slurry mixture containing active material (AM),
-    conductive additive (CA), PVDF binder, and solvent (H2O or NMP).
+        """
+        A class representing a battery slurry mixture containing active material (AM),
+        conductive additive (CA), PVDF binder, and solvent (H2O or NMP).
 
-    Attributes:
-        total_volume (float): The target total volume of the slurry
-        AM (float): Amount of active material in the slurry
-        CA (float): Amount of conductive additive in the slurry
-        PVDF (float): Amount of PVDF binder in the slurry
-        H2O (float): Amount of solvent for anode slurry
-        NMP (float): Amount of solvent for cathode slurry
-    """
+        Attributes:
+            total_volume (float): The target total volume of the slurry
+            AM (float): Amount of active material in the slurry
+            CA (float): Amount of conductive additive in the slurry
+            PVDF (float): Amount of PVDF binder in the slurry
+            H2O (float): Amount of solvent for anode slurry
+            NMP (float): Amount of solvent for cathode slurry
+        """
 
     def __init__(self, electrode_type):
         """
@@ -146,8 +146,8 @@ class MixingModel(BaseModel):
             "CA_volume": self.CA,
             "PVDF_volume": self.PVDF,
             f"{self.solvent_type}_volume": self.solvent,
-            "viscosity": round(self.viscosity* np.exp (-self.k_vis * (25 - self.temperature)), 4),
-            "density": round(self.density, 4) * (1 + self.alpha * (self.temperature - 25)),
+            "viscosity": round(self.viscosity * np.exp(-self.k_vis * (25 - self.temperature)), 4),
+            "density": round(self.density * (1 + self.alpha * (self.temperature - 25)), 4),
             "yield_stress": round(self.yield_stress* np.exp (-self.k_yield * (25 - self.temperature)), 4),
             "total_volume": sum([self.AM, self.CA, self.PVDF, self.solvent]) * (1 + self.alpha * (self.temperature - 25))
         }

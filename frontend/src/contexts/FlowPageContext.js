@@ -2,7 +2,6 @@ import React, { createContext, useState, useMemo, useContext } from "react";
 
 export const FlowPageContext = createContext(null);
 
-// Custom hook
 export const useFlowPage = () => useContext(FlowPageContext);
 
 const MACHINE_FLOW_DATA = [
@@ -28,7 +27,7 @@ const MACHINE_FLOW_DATA = [
   { id: "Formation Cycling", label: "Formation Cycling" },
   { id: "Aging", label: "Aging" },
 ];
-
+//TODO: Replace with API call to fetch real data
 export const FlowPageProvider = ({ children }) => {
   const [selectedId, setSelectedId] = useState(null);
 

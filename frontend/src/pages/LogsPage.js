@@ -1,10 +1,9 @@
 import React, { useContext } from "react";
-import { WebSocketContext } from "../contexts/WebSocketContext";
+import { WebSocketContext, useLogs } from "../contexts/WebSocketContext";
 import WebSocketControls from "../components/ResetButton";
 
 function LogsPage() {
-  const { stageLog } = useContext(WebSocketContext);
-
+  const { stageLog } = useLogs();
   return (
     <div className="container">
       <WebSocketControls />

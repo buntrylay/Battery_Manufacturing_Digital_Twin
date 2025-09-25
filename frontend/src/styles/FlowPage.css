@@ -31,15 +31,39 @@ body {
 
 /* With side panel visible */
 .flow-layout.with-panel {
-  grid-template-columns: 1fr minmax(250px, 350px); /* ✅ flexible */
+  grid-template-columns: 1fr minmax(250px, 350px);
 }
-
 
 /* Without side panel */
 .flow-layout.full {
   grid-template-columns: 1fr;
 }
+.flow-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
 
+/* This new wrapper will manage the vertical layout of the button and the canvas */
+.main-content {
+  display: flex;
+  flex-direction: column; /* Stack children vertically */
+  flex-grow: 1;
+  height: 100%;
+}
+
+.controls {
+  padding: 10px;
+  background-color: #f4f4f7;
+  border-bottom: 1px solid #ddd;
+}
+
+/* This is the most important part:
+   Make the canvas grow to fill all remaining vertical space */
+.flow-canvas {
+  flex-grow: 1;
+  width: 100%;
+}
 /* Main flow area */
 .flow-canvas {
   display: flex;
