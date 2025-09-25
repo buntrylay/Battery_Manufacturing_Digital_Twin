@@ -11,8 +11,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
 
-# Import database functions from db.py
-from server.db import engine, insert_flattened_data
+# Import database engine & session
+from backend.src.server.db.db import engine, SessionLocal
+from backend.src.server.db.model_table import AnodeMixing, CathodeMixing
 
 # Import the machine and model classes directly
 from simulation.battery_model.MixingModel import MixingModel
@@ -145,8 +146,9 @@ def run_mixing(electrode_name: str, slurry: SlurryInput):
     except Exception:
         # If older class without attributes, ignore silently
         pass
-    results = machine.run()
-    insert_flattened_data(engine, _add_process(results, f"{electrode_name}_Mixing"))
+    results = []
+    db = SessionLocal()
+    results.run(machine.run)
     thread_broadcast(f"--- {electrode_name} Mixing Finished ---")
 
 def run_simulation(payload: SimulationInput):
@@ -168,6 +170,8 @@ def run_simulation(payload: SimulationInput):
     finally:
         simulation_lock.release()
 
+from backend.src.server.db.model_table import create_tables
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -181,6 +185,13 @@ app.add_middleware(
 async def startup_event():
     global main_loop
     main_loop = asyncio.get_running_loop()
+    # Ensure tables exist
+    try:
+        create_tables()
+        thread_broadcast("Database tables ensured.")
+    except Exception as e:
+        # Log via status channel
+        thread_broadcast(f"Table creation failed: {e}")
 
 @app.post("/start-simulation")
 def start_simulation(payload: SimulationInput):
@@ -214,5 +225,14 @@ def root():
         with engine.connect() as conn:
             conn.execute(sqlalchemy.text("SELECT 1"))
         return {"status": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/db/tables")
+def list_tables():
+    try:
+        inspector = sqlalchemy.inspect(engine)
+        tables = inspector.get_table_names()
+        return {"tables": tables}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
