@@ -325,8 +325,7 @@ This simulation is designed to be scalable. To add a new manufacturing stage (e.
 ### Frontend 
 - **5000:5000**: using the Ports in Docker to open Web interface
 ### Database
-- **docker exec -it postgres_db bash**: execute to open docker 
-### postgresql
+- **docker exec -it postgres_db bash**: execute to open docker postgresql
 - **psql -U postgres**: query into the database
 - **\dt**: query to show all tables in the database
 - **\d "table_name"**: check the table attributes and description
