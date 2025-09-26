@@ -122,3 +122,4 @@ def test_get_plant_state():
 
 if __name__ == "__main__":
     test_get_plant_state()
+    test_run_simulation()
