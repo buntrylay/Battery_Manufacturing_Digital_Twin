@@ -32,16 +32,21 @@ class BaseMachineParameters(ABC):
 # Parameter Implementations
 @dataclass
 class MixingParameters(BaseMachineParameters):
-    AM: float
-    CA: float
-    PVDF: float
-    solvent: float
+    AM_ratio: float
+    CA_ratio: float
+    PVDF_ratio: float
+    solvent_ratio: float
 
     def validate_parameters(self):
-        if self.AM < 0 or self.CA < 0 or self.PVDF < 0 or self.solvent < 0:
+        if (
+            self.AM_ratio < 0
+            or self.CA_ratio < 0
+            or self.PVDF_ratio < 0
+            or self.solvent_ratio < 0
+        ):
             raise ValueError("Material ratios cannot be negative.")
 
-        ratio_sum = self.AM + self.CA + self.PVDF + self.solvent
+        ratio_sum = self.AM_ratio + self.CA_ratio + self.PVDF_ratio + self.solvent_ratio
         if not math.isclose(ratio_sum, 1.0):
             raise ValueError(
                 f"The sum of material ratios must be 1, but it was {ratio_sum}"

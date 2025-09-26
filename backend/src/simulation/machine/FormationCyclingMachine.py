@@ -1,8 +1,8 @@
 from simulation.machine.BaseMachine import BaseMachine
-from dataclasses import dataclass
 from simulation.process_parameters.Parameters import FormationCyclingParameters
 from simulation.battery_model.FormationCyclingModel import FormationCyclingModel
 from simulation.battery_model.ElectrolyteFillingModel import ElectrolyteFillingModel
+
 
 class FormationCyclingMachine(BaseMachine):
     def __init__(
@@ -10,7 +10,7 @@ class FormationCyclingMachine(BaseMachine):
         process_name: str,
         formation_cycling_parameters: FormationCyclingParameters,
         formation_model: FormationCyclingModel = None,
-        connection_string=None
+        connection_string=None,
     ):
         super().__init__(
             process_name,
@@ -18,8 +18,11 @@ class FormationCyclingMachine(BaseMachine):
             formation_cycling_parameters,
         )
 
-    def input_model(self, previous_model: ElectrolyteFillingModel):
+    def receive_model_from_previous_process(
+        self, previous_model: ElectrolyteFillingModel
+    ):
         self.battery_model = FormationCyclingModel(previous_model)
+
     def run(self):
         self.turn_on()
         all_results = []
@@ -38,3 +41,6 @@ class FormationCyclingMachine(BaseMachine):
 
         self.save_all_results(all_results)
         self.turn_off()
+
+    def validate_parameters(self, parameters: dict):
+        return FormationCyclingParameters(**parameters).validate_parameters()

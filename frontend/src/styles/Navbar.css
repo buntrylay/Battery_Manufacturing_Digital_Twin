@@ -1,23 +1,20 @@
 /* Icons */
 nav {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 0 20px;
-  background-color: #94c6eb;
   height: 100px;
-  box-shadow: 0 0 50px rgba(209, 217, 229, 0.51);
 }
 
 .nav-links {
   position: absolute;
-  right: 0;
-  padding-block: 20px;
+  padding-block: 10px;
   z-index: 100;
   list-style: none;
-  width: 100%;
+  width: 50%;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   place-items: center;
 }
 
@@ -35,6 +32,10 @@ nav {
   font-weight: 300;
   text-decoration: none !important;
   color: #243435;
+  border-radius: 20px;
+  padding: 10px 20px;
+  box-shadow: 0 4px 12px rgba(209, 217, 229, 0.51);
+  min-width: 100%;
 }
 .nav-links a:active {
   font-size: x-large;
@@ -42,11 +43,26 @@ nav {
   text-decoration: none !important;
   color: #3b5355;
 }
-.nav-links a:hover {
-  padding: 10px;
-  background-color: #e6fdff;
-  border-radius: 4px;
+
+.nav-links a:hover,
+.nav-links a:focus {
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+  color: rgba(0, 0, 0, 0.65);
 }
+
+.nav-links a:hover {
+  transform: translateY(-1px);
+}
+
+.nav-links a:active {
+  background-color: #f0f0f1;
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: rgba(0, 0, 0, 0.06) 0 2px 4px;
+  color: rgba(0, 0, 0, 0.65);
+  transform: translateY(0);
+}
+
 .navbar-logo {
   max-height: 100px;
   display: flex;

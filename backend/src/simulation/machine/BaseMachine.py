@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
+import time
 from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
@@ -41,14 +42,12 @@ class BaseMachine(ABC):
         self.state = False
         self.start_datetime = None
         self.total_time = 0
-        self.calculator = None
-        # self.kwargs = kwargs
         # Helpers
         self.local_saver = LocalDataSaver(process_name)
         self.iot_sender = IoTHubSender(connection_string)
 
     @abstractmethod
-    def input_model(self, previous_model: BaseModel):
+    def receive_model_from_previous_process(self, previous_model: BaseModel):
         pass
 
     def empty_battery_model(self):
@@ -144,8 +143,12 @@ class BaseMachine(ABC):
                 "state": "On",
                 "duration": round(self.total_time, 2),
                 "process": self.process_name,
-                "temperature_C": round(self.battery_model.temperature, 2) if hasattr(self.battery_model, 'temperature') else None,
-            "battery_model": self.battery_model.get_properties(),
+                "temperature_C": (
+                    round(self.battery_model.temperature, 2)
+                    if hasattr(self.battery_model, "temperature")
+                    else None
+                ),
+                "battery_model": self.battery_model.get_properties(),
                 "machine_parameters": asdict(self.machine_parameters),
                 "process_specifics": process_specifics,
             }
@@ -169,6 +172,28 @@ class BaseMachine(ABC):
         """Abstract method that must be implemented by concrete machine classes."""
         pass
 
+    # TODO: This is a future feature to run the simulation in a standardised way
+    def run_simulation(self, total_steps=100, pause_between_steps=0.1, verbose=True):
+        """Run the simulation."""
+        self.turn_on()
+        if verbose:
+            print(f"Machine {self.process_name} is running for {total_steps} steps")
+        for t in range(1, total_steps):
+            self.total_time = t
+            self.battery_model.update_properties(self.machine_parameters)
+            if verbose:
+                print(self.get_current_state())
+            time.sleep(pause_between_steps)
+        self.turn_off()
+
+    def clean_up(self):
+        """Clean up the machine."""
+        self.turn_off()
+        self.battery_model = None
+        self.state = False
+        self.total_time = 0
+        self.start_datetime = None
+
     # idea to standardise the step logic with decorator @abstractmethod
     #  @abstractmethod
     # def step_logic(self):
@@ -177,3 +202,8 @@ class BaseMachine(ABC):
     #     This method is called at each step of the simulation.
     #     """
     #     pass
+
+    @abstractmethod
+    def validate_parameters(self, parameters: dict):
+        """Validate the parameters."""
+        pass

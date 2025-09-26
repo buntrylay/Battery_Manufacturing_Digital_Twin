@@ -13,8 +13,7 @@ import asyncio
 
 # Import database engine & session
 from backend.src.server.db.db import engine, SessionLocal
-from backend.src.server.db.model_table import AnodeMixing, CathodeMixing
-
+from backend.src.server.db.model_table import *
 # Import the machine and model classes directly
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.MixingMachine import MixingMachine

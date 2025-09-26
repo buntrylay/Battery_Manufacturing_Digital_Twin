@@ -14,10 +14,8 @@ body {
 
 .App-main {
   flex: 1;
-  min-height: calc(100vh - 80px); /* ✅ fill screen minus footer height */
+  min-height: calc(100vh - 80px);
 }
-
-
 
 /* optional: center main container */
 .container {

@@ -18,12 +18,12 @@ def test_mixing_parameters():
     print("Testing MixingParameters...")
     
     # Anode mixing parameters
-    anode_params = MixingParameters(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41)
+    anode_params = MixingParameters(AM_ratio=0.495, CA_ratio=0.045, PVDF_ratio=0.05, solvent_ratio=0.41)
     anode_params.validate_parameters()
     print("✓ Anode mixing parameters valid")
     
     # Cathode mixing parameters (note: NMP vs solvent)
-    cathode_params = MixingParameters(AM=0.598, CA=0.039, PVDF=0.013, solvent=0.35)
+    cathode_params = MixingParameters(AM_ratio=0.598, CA_ratio=0.039, PVDF_ratio=0.013, solvent_ratio=0.35)
     cathode_params.validate_parameters()
     print("✓ Cathode mixing parameters valid")
     
@@ -170,7 +170,7 @@ def test_invalid_parameters():
     
     # Test invalid mixing parameters (ratios don't sum to 1)
     try:
-        invalid_mixing = MixingParameters(AM=0.5, CA=0.1, PVDF=0.1, solvent=0.1)
+        invalid_mixing = MixingParameters(AM_ratio=0.5, CA_ratio=0.1, PVDF_ratio=0.1, solvent_ratio=0.1)
         invalid_mixing.validate_parameters()
         print("✗ Invalid mixing parameters should have failed")
     except ValueError as e:

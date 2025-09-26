@@ -102,12 +102,12 @@ class CoatingModel(BaseModel):
 
     def get_properties(self):
         return {
-            "temperature": round(self.temperature, 2),
+            # "temperature": round(self.temperature, 2), # not implemented!
             "solid_content": self.solid_content,
             "viscosity": round(self.viscosity, 4),
             "wet_thickness": round(self.wet_thickness, 4),
             "dry_thickness": round(self.dry_thickness, 4),
-            "shear_rate": round(self.shear_rate, 4),
-            "uniformity": round(self.uniformity, 4),
+            # "shear_rate": round(self.shear_rate, 4), # process specific
+            # "uniformity": round(self.uniformity, 4), # process specific
             "defect_risk": self.defect_risk,
         }

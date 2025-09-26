@@ -71,8 +71,8 @@ class CoatingMachine(BaseMachine):
             coating_parameters,
             connection_string,
         )
-        
-    def input_model(self, previous_model: MixingModel):
+
+    def receive_model_from_previous_process(self, previous_model: MixingModel):
         self.battery_model = CoatingModel(previous_model)
 
     def __simulate(self, duration_sec=100, results_list=None):
@@ -96,7 +96,7 @@ class CoatingMachine(BaseMachine):
             self.battery_model.update_properties(self.machine_parameters)
             self.battery_model.shear_rate = self.shear_rate
             self.battery_model.uniformity = 1 - self.uniformity_std
-            self.battery_model.temperature = 25.0  
+            self.battery_model.temperature = 25.0
             result = self.get_current_state(
                 process_specifics={
                     "shear_rate": self.shear_rate,
@@ -124,3 +124,6 @@ class CoatingMachine(BaseMachine):
         self.__simulate(results_list=all_results)
         self.save_all_results(all_results)
         self.turn_off()
+
+    def validate_parameters(self, parameters: dict):
+        return CoatingParameters(**parameters).validate_parameters()

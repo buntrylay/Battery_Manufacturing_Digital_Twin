@@ -2,12 +2,13 @@ from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.ElectrodeInspectionModel import ElectrodeInspectionModel
 import numpy as np
 
+
 class RewindingModel(BaseModel):
     def __init__(
-        self, 
-        electrode_inspection_model_anode: ElectrodeInspectionModel, 
-        electrode_inspection_model_cathode: ElectrodeInspectionModel
-        ):        
+        self,
+        electrode_inspection_model_anode: ElectrodeInspectionModel,
+        electrode_inspection_model_cathode: ElectrodeInspectionModel,
+    ):
         # state
         self.L_wound = 0
         self.D_roll = 0
@@ -21,22 +22,23 @@ class RewindingModel(BaseModel):
         self.delta_sl = (
             electrode_inspection_model_anode.final_thickness
             + electrode_inspection_model_cathode.final_thickness
-            + self.separator_thickness)
+            + self.separator_thickness
+        )
 
         self.porosity = (
             electrode_inspection_model_anode.porosity
             + electrode_inspection_model_cathode.porosity
-            )/2
+        ) / 2
 
         self.final_width = (
             electrode_inspection_model_anode.final_width
             + electrode_inspection_model_cathode.final_width
-            )/ 2
+        ) / 2
         # alignment error between the two electrodes
         self.epsilon_width = abs(
             electrode_inspection_model_anode.final_width
             - electrode_inspection_model_cathode.final_width
-            )
+        )
 
     def D_roll_calc(self, L_wound, delta_sl, D_core):
         return np.sqrt(D_core**2 + (4 * L_wound * delta_sl) / np.pi)
@@ -50,7 +52,9 @@ class RewindingModel(BaseModel):
     def update_properties(self, params, interval=1):
         self.L_wound += params.rewinding_speed * interval
         self.D_roll = self.D_roll_calc(self.L_wound, self.delta_sl, self.D_core)
-        self.tau_rewind = self.tau_rewind_calc(self.D_roll, params.initial_tension, params.tapering_steps, self.D_core)
+        self.tau_rewind = self.tau_rewind_calc(
+            self.D_roll, params.initial_tension, params.tapering_steps, self.D_core
+        )
         self.H_roll = self.H_roll_calc(self.delta_sl, self.tau_rewind)
 
     def get_properties(self):
@@ -62,5 +66,5 @@ class RewindingModel(BaseModel):
             "wound_length": float(self.L_wound),
             "roll_diameter": float(self.D_roll),
             "web_tension": float(self.tau_rewind),
-            "roll_hardness": float(self.H_roll)
+            "roll_hardness": float(self.H_roll),
         }

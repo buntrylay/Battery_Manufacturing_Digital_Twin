@@ -37,7 +37,14 @@ export default function App() {
               />
               <Route path="/" element={<SimulationPage />} />
               <Route path="/logs" element={<LogsPage />} />
-              <Route path="/realtime" element={<RealTimeDataPage />} />
+              <Route
+                path="/realtime"
+                element={
+                  <FlowPageProvider>
+                    <RealTimeDataPage />{" "}
+                  </FlowPageProvider>
+                }
+              />
               <Route path="/404" element={<h1>PAGE NOT FOUND</h1>} />
               <Route path="*" element={<h1>PAGE NOT FOUND</h1>} />
             </Routes>
