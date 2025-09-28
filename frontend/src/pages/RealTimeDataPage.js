@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "../styles/RealTimeDataPage.css";
 //TODO: Replace with Websocket updates
 import { useFlowPage } from "../contexts/FlowPageContext";
-
+import { GrafanaMachineDisplay } from "../components/GrafanaMachineDisplay";
 function RealTimeDataPage() {
   const { MACHINE_FLOW } = useFlowPage();
   let machineIds = MACHINE_FLOW.map((stage) => stage.id);
@@ -33,379 +33,124 @@ function RealTimeDataPage() {
       <div>
         <h3>Live Data Visualization for {selectedMachine}</h3>
         {selectedMachine === "Cathode Mixing" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder">
-                <iframe
-                  title="Cathode Mixing Live Data"
-                  width="100%"
-                  height="300"
-                  src="http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
-                ></iframe>
-              </div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Cathode Coating" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Cathode Drying" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Cathode Calendaring" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
-        )}
-        {selectedMachine === "Cathode Slitting" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Cathode Inspection" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Mixing" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Coating" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Drying" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Calendaring" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Slitting" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Inspection" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Rewinding" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Electrolyte Filling" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Formation Cycling" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Aging" && (
-          <div className="data-grid">
-            <div className="data-card">
-              <h3>Machine Status</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Current Batch</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-
-            <div className="data-card">
-              <h3>Sensor Information</h3>
-              <div className="placeholder"></div>
-            </div>
-          </div>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
       </div>
     </div>
