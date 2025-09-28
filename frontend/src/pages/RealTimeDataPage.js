@@ -30,77 +30,382 @@ function RealTimeDataPage() {
           ))}
         </select>
       </div>
-
-      <div className="data-grid">
-        <div className="data-card">
-          <h3>Machine Status</h3>
-          <div className="placeholder"></div>
-        </div>
-
-        <div className="data-card">
-          <h3>Current Batch</h3>
-          <div className="placeholder"></div>
-        </div>
-
-        <div className="data-card">
-          <h3>Sensor Information</h3>
-          <div className="placeholder"></div>
-        </div>
-
-        <div className="data-card">
-          <h3>Sensor Information</h3>
-          <div className="placeholder"></div>
-        </div>
-      </div>
       <div>
         <h3>Live Data Visualization for {selectedMachine}</h3>
         {selectedMachine === "Cathode Mixing" && (
-          <p>Displaying real-time data for Cathode Mixing machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder">
+                <iframe
+                  title="Cathode Mixing Live Data"
+                  width="100%"
+                  height="300"
+                  src="http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+                ></iframe>
+              </div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Cathode Coating" && (
-          <p>Displaying real-time data for Cathode Coating machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Cathode Drying" && (
-          <p>Displaying real-time data for Cathode Drying machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Cathode Calendaring" && (
-          <p>Displaying real-time data for Cathode Calendaring machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Cathode Slitting" && (
-          <p>Displaying real-time data for Cathode Slitting machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Cathode Inspection" && (
-          <p>Displaying real-time data for Cathode Inspection machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Anode Mixing" && (
-          <p>Displaying real-time data for Anode Mixing machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Anode Coating" && (
-          <p>Displaying real-time data for Anode Coating machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Anode Drying" && (
-          <p>Displaying real-time data for Anode Drying machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Anode Calendaring" && (
-          <p>Displaying real-time data for Anode Calendaring machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Anode Slitting" && (
-          <p>Displaying real-time data for Anode Slitting machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Anode Inspection" && (
-          <p>Displaying real-time data for Anode Inspection machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Rewinding" && (
-          <p>Displaying real-time data for Rewinding machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Electrolyte Filling" && (
-          <p>Displaying real-time data for Electro lyte Filling machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Formation Cycling" && (
-          <p>Displaying real-time data for Formation Cycling machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
         {selectedMachine === "Aging" && (
-          <p>Displaying real-time data for Aging machine.</p>
+          <div className="data-grid">
+            <div className="data-card">
+              <h3>Machine Status</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Current Batch</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+
+            <div className="data-card">
+              <h3>Sensor Information</h3>
+              <div className="placeholder"></div>
+            </div>
+          </div>
         )}
       </div>
     </div>
