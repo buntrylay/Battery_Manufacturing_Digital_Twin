@@ -14,6 +14,8 @@ import asyncio
 # Import database engine & session
 from backend.src.server.db.db import engine, SessionLocal
 from backend.src.server.db.model_table import *
+from backend.src.server.db.db_helper import DBHelper
+
 # Import the machine and model classes directly
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.MixingMachine import MixingMachine
@@ -30,140 +32,7 @@ simulation_lock = threading.Lock()
 main_loop = None
 
 ### Db writing
-MAX_DB_QUEUE_SIZE = 1000
-db_queue = deque(maxlen=MAX_DB_QUEUE_SIZE)
-db_lock = threading.Lock()
-db_worker_thread = None
-db_worker_running = False
-
-def thread_queue_db_data(payload: Dict[str, Any]):
-    """Thread-safe database queue - adds data to be persisted"""
-    with db_lock:
-        # Add timestamp if not present
-        if 'timestamp' not in payload:
-            payload['timestamp'] = datetime.now().isoformat()
-        db_queue.append(payload)
-
-def db_worker():
-    """Background worker that processes database queue every 5 seconds"""
-    global db_worker_running
-    db_worker_running = True
-    
-    while db_worker_running:
-        time.sleep(5)  # Process every 5 seconds
-        
-        if not db_queue:
-            continue
-            
-        # Batch process all queued data
-        batch_data = []
-        with db_lock:
-            while db_queue and len(batch_data) < 50:  # Process up to 50 records at once
-                batch_data.append(db_queue.popleft())
-        
-        if batch_data:
-            try:
-                db = SessionLocal()
-                saved_count = 0
-                for data in batch_data:
-                    record = create_db_record(data)
-                    if record:
-                        db.add(record)
-                        saved_count += 1
-                
-                db.commit()
-                thread_broadcast(f"✓ Saved {saved_count} records to database")
-                
-            except Exception as e:
-                thread_broadcast(f"✗ Database error: {str(e)}")
-                # Could log failed data to file for debugging
-                with open("failed_db_writes.log", "a") as f:
-                    f.write(f"[{datetime.now()}] Failed to save {len(batch_data)} records: {e}\n")
-            finally:
-                db.close()
-
-def create_db_record(simulation_data: Dict[str, Any]):
-    """Map simulation data to appropriate database table"""
-
-    def safe_float(val, default=0.0):
-                try:
-                    return float(val)
-                except Exception:
-                    return default
-                
-    try:
-        process_type = simulation_data.get('process', 'unknown')
-        
-        if process_type == 'Anode_Mixer':
-            battery_model = simulation_data.get('battery_model', {})
-            machine_params = simulation_data.get('machine_parameters', {})
-
-            return AnodeMixing(
-                batch=simulation_data.get('batch_id', 1),
-                state=simulation_data.get('state', 'Unknown'),
-                timestamp=datetime.fromisoformat(simulation_data['timestamp']),
-                duration=safe_float(simulation_data.get('duration', 0.0)),
-                process=simulation_data.get('process', 'mixing_anode'),
-                temperature_C=safe_float(simulation_data.get('temperature_C', 0.0)),
-                am_volume_L=safe_float(battery_model.get('AM_volume', 0.0)),
-                ca_volume_L=safe_float(battery_model.get('CA_volume', 0.0)),
-                pvdf_volume_L=safe_float(battery_model.get('PVDF_volume', 0.0)),
-                solvent_volume_L=safe_float(battery_model.get('H2O_volume', 0.0)),
-                viscosity_Pa_s=safe_float(battery_model.get('viscosity', 0.0)),
-                density_kg_m3=safe_float(battery_model.get('density', 0.0)),
-                yield_stress_Pa=safe_float(battery_model.get('yield_stress', 0.0)),
-                total_volume_L=safe_float(battery_model.get('total_volume', 0.0)),
-                am=safe_float(machine_params.get('AM_ratio', 0.0)),
-                ca=safe_float(machine_params.get('CA_ratio', 0.0)),
-                pvdf=safe_float(machine_params.get('PVDF_ratio', 0.0)),
-                solvent=safe_float(machine_params.get('solvent_ratio', 0.0))
-            )
-        
-        elif process_type == 'Cathode_Mixer':
-            battery_model = simulation_data.get('battery_model', {})
-            machine_params = simulation_data.get('machine_parameters', {})
-
-            return CathodeMixing(
-                batch=simulation_data.get('batch_id', 1),
-                state=simulation_data.get('state', 'Unknown'),
-                timestamp=datetime.fromisoformat(simulation_data['timestamp']),
-                duration=safe_float(simulation_data.get('duration', 0.0)),
-                process=simulation_data.get('process', 'mixing_anode'),
-                temperature_C=safe_float(simulation_data.get('temperature_C', 0.0)),
-                am_volume_L=safe_float(battery_model.get('AM_volume', 0.0)),
-                ca_volume_L=safe_float(battery_model.get('CA_volume', 0.0)),
-                pvdf_volume_L=safe_float(battery_model.get('PVDF_volume', 0.0)),
-                solvent_volume_L=safe_float(battery_model.get('H2O_volume', 0.0)),
-                viscosity_Pa_s=safe_float(battery_model.get('viscosity', 0.0)),
-                density_kg_m3=safe_float(battery_model.get('density', 0.0)),
-                yield_stress_Pa=safe_float(battery_model.get('yield_stress', 0.0)),
-                total_volume_L=safe_float(battery_model.get('total_volume', 0.0)),
-                am=safe_float(machine_params.get('AM_ratio', 0.0)),
-                ca=safe_float(machine_params.get('CA_ratio', 0.0)),
-                pvdf=safe_float(machine_params.get('PVDF_ratio', 0.0)),
-                solvent=safe_float(machine_params.get('solvent_ratio', 0.0))
-            )
-        
-        # Future: Add other process types
-        # elif process_type == 'coating_anode':
-        #     return AnodeCoating(...)
-        
-        else:
-            thread_broadcast(f"⚠ Unknown process type: {process_type}")
-            return None
-            
-    except Exception as e:
-        thread_broadcast(f"✗ Error creating DB record: {str(e)}")
-        # Log the problematic data for debugging
-        thread_broadcast(f"Problematic data: {simulation_data}")
-        return None
-
-def stop_db_worker():
-    """Gracefully stop the database worker"""
-    global db_worker_running
-    db_worker_running = False
-    if db_worker_thread:
-        db_worker_thread.join(timeout=10)
+db_helper = DBHelper()
 
 class ConnectionManager:
     def __init__(self):
@@ -284,7 +153,7 @@ def run_mixing(electrode_name: str, slurry: SlurryInput):
     try:
         machine.batch_id = batch_id
         machine.data_broadcast_interval_sec = 0.1
-        machine.data_broadcast_fn = thread_queue_db_data
+        machine.data_broadcast_fn = db_helper.queue_data
     except Exception:
         # If older class without attributes, ignore silently
         pass
@@ -340,8 +209,7 @@ async def startup_event():
 
     # Start database worker thread
     try:
-        db_worker_thread = threading.Thread(target=db_worker, daemon=True)
-        db_worker_thread.start()
+        db_helper.start_worker(thread_broadcast)
         thread_broadcast("✓ Database worker started.")
     except Exception as e:
         thread_broadcast(f"✗ Database worker failed to start: {e}")
