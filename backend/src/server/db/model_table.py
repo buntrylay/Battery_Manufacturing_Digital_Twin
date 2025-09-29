@@ -6,7 +6,7 @@ class CathodeMixing(Base):
     __tablename__ = "mixing_cathode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -32,7 +32,7 @@ class CathodeMixing(Base):
 class AnodeMixing(Base):
     __tablename__ = "mixing_anode"
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -60,7 +60,7 @@ class CathodeCoating(Base):
     __tablename__ = "coating_cathode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
