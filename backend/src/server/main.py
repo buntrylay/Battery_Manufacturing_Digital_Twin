@@ -21,11 +21,103 @@ from simulation.battery_model.CoatingModel import CoatingModel
 from simulation.machine.CoatingMachine import CoatingMachine
 from simulation.process_parameters.Parameters import MixingParameters, CoatingParameters
 
+import uuid
+
 MAX_MESSAGES = 100
 message_queue = deque(maxlen=MAX_MESSAGES)
 message_lock = threading.Lock()
 simulation_lock = threading.Lock()
 main_loop = None
+
+### Db writing
+MAX_DB_QUEUE_SIZE = 1000
+db_queue = deque(maxlen=MAX_DB_QUEUE_SIZE)
+db_lock = threading.Lock()
+db_worker_thread = None
+db_worker_running = False
+
+def thread_queue_db_data(payload: Dict[str, Any]):
+    """Thread-safe database queue - adds data to be persisted"""
+    with db_lock:
+        # Add timestamp if not present
+        if 'timestamp' not in payload:
+            payload['timestamp'] = datetime.now().isoformat()
+        db_queue.append(payload)
+
+def db_worker():
+    """Background worker that processes database queue every 5 seconds"""
+    global db_worker_running
+    db_worker_running = True
+    
+    while db_worker_running:
+        time.sleep(5)  # Process every 5 seconds
+        
+        if not db_queue:
+            continue
+            
+        # Batch process all queued data
+        batch_data = []
+        with db_lock:
+            while db_queue and len(batch_data) < 50:  # Process up to 50 records at once
+                batch_data.append(db_queue.popleft())
+        
+        if batch_data:
+            try:
+                db = SessionLocal()
+                saved_count = 0
+                for data in batch_data:
+                    record = create_db_record(data)
+                    if record:
+                        db.add(record)
+                        saved_count += 1
+                
+                db.commit()
+                thread_broadcast(f"✓ Saved {saved_count} records to database")
+                
+            except Exception as e:
+                thread_broadcast(f"✗ Database error: {str(e)}")
+                # Could log failed data to file for debugging
+                with open("failed_db_writes.log", "a") as f:
+                    f.write(f"[{datetime.now()}] Failed to save {len(batch_data)} records: {e}\n")
+            finally:
+                db.close()
+
+def create_db_record(simulation_data: Dict[str, Any]):
+    """Map simulation data to appropriate database table"""
+    try:
+        process_type = simulation_data.get('process', 'unknown')
+        
+        if process_type == 'mixing_anode':
+            # Map to MixingData table (adjust field names based on your table schema)
+            return AnodeMixing(
+                batch_id=simulation_data.get('batch_id', str(uuid.uuid4())),
+                electrode_type=simulation_data.get('electrode_type', 'unknown'),
+                timestamp=datetime.fromisoformat(simulation_data['timestamp']),
+                temperature=simulation_data.get('temperature'),
+                viscosity=simulation_data.get('viscosity'),
+                mixing_speed=simulation_data.get('mixing_speed'),
+                particle_size=simulation_data.get('particle_size'),
+                raw_data=str(simulation_data)  # Store full JSON as backup
+            )
+        
+        # Future: Add other process types
+        # elif process_type == 'coating':
+        #     return CoatingData(...)
+        
+        else:
+            thread_broadcast(f"⚠ Unknown process type: {process_type}")
+            return None
+            
+    except Exception as e:
+        thread_broadcast(f"✗ Error creating DB record: {str(e)}")
+        return None
+
+def stop_db_worker():
+    """Gracefully stop the database worker"""
+    global db_worker_running
+    db_worker_running = False
+    if db_worker_thread:
+        db_worker_thread.join(timeout=10)
 
 class ConnectionManager:
     def __init__(self):
@@ -130,14 +222,18 @@ COATING_DEFAULTS = dict(
 
 def run_mixing(electrode_name: str, slurry: SlurryInput):
     thread_broadcast(f"--- Starting {electrode_name} Mixing ---")
+    # Generate unique batch ID for this run
+    batch_id = str(uuid.uuid4())
+    
     params = MixingParameters(
-        AM=slurry.AM,
-        CA=slurry.CA,
-        PVDF=slurry.PVDF,
-        solvent=slurry.Solvent,
+        AM_ratio=slurry.AM,
+        CA_ratio=slurry.CA,
+        PVDF_ratio=slurry.PVDF,
+        solvent_ratio=slurry.Solvent,
     )
     model = MixingModel(electrode_name)
     machine = MixingMachine(f"{electrode_name}_Mixer", model, params)
+
     # Real-time data every 5 seconds
     try:
         machine.data_broadcast_interval_sec = 5.0
@@ -145,10 +241,16 @@ def run_mixing(electrode_name: str, slurry: SlurryInput):
     except Exception:
         # If older class without attributes, ignore silently
         pass
-    results = []
-    db = SessionLocal()
-    results.run(machine.run)
-    thread_broadcast(f"--- {electrode_name} Mixing Finished ---")
+
+    try:
+        results = machine.run()
+        thread_broadcast(f"--- {electrode_name} Mixing Finished ---")
+
+        if results:
+            thread_queue_db_data(results)
+
+    except Exception as e:
+        thread_broadcast(f"✗ {electrode_name} mixing failed: {str(e)}")
 
 def run_simulation(payload: SimulationInput):
     if not simulation_lock.acquire(blocking=False):
@@ -184,13 +286,21 @@ app.add_middleware(
 async def startup_event():
     global main_loop
     main_loop = asyncio.get_running_loop()
-    # Ensure tables exist
+
+     # Ensure tables exist
     try:
         create_tables()
-        thread_broadcast("Database tables ensured.")
+        thread_broadcast("✓ Database tables ensured.")
     except Exception as e:
-        # Log via status channel
-        thread_broadcast(f"Table creation failed: {e}")
+        thread_broadcast(f"✗ Table creation failed: {e}")
+
+    # Start database worker thread
+    try:
+        db_worker_thread = threading.Thread(target=db_worker, daemon=True)
+        db_worker_thread.start()
+        thread_broadcast("✓ Database worker started.")
+    except Exception as e:
+        thread_broadcast(f"✗ Database worker failed to start: {e}")
 
 @app.post("/start-simulation")
 def start_simulation(payload: SimulationInput):
