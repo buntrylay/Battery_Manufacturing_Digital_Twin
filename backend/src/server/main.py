@@ -149,21 +149,6 @@ def run_mixing(electrode_name: str, slurry: SlurryInput):
     db = SessionLocal()
     try:
         results = machine.run()
-        # Persist a final snapshot (machine results list contains many states; pick last)
-        if results:
-            last = results[-1]
-            # Defensive extraction
-            bm = (last.get("battery_model") or {}) if isinstance(last, dict) else {}
-            try:
-                db.add(Mixing(
-                    parameter1=bm.get("viscosity"),
-                    parameter2=bm.get("density"),
-                    status=electrode_name + "_Mixer"
-                ))
-                db.commit()
-            except Exception as e:
-                db.rollback()
-                thread_broadcast(f"DB save failed: {e}")
     finally:
         db.close()
     thread_broadcast(f"--- {electrode_name} Mixing Finished ---")
