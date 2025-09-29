@@ -24,6 +24,8 @@ class BaseMachine(ABC):
         battery_model: BaseModel = None,
         machine_parameters: BaseMachineParameters = None,
         connection_string=None,
+        data_broadcast_fn=None,
+        data_broadcast_interval_sec=5,
         **kwargs,
     ):
         """
@@ -45,6 +47,12 @@ class BaseMachine(ABC):
         # Helpers
         self.local_saver = LocalDataSaver(process_name)
         self.iot_sender = IoTHubSender(connection_string)
+        self.data_broadcast_fn = data_broadcast_fn
+        self.data_broadcast_interval_sec = data_broadcast_interval_sec
+        self._last_broadcast_monotonic = None
+
+        #temporary fix
+        self.batch_id = None
 
     @abstractmethod
     def receive_model_from_previous_process(self, previous_model: BaseModel):
@@ -100,11 +108,12 @@ class BaseMachine(ABC):
             if self._last_broadcast_monotonic is None or (
                 now - self._last_broadcast_monotonic >= self.data_broadcast_interval_sec
             ):
+                print(f"Machine broadcasting data")
                 self.data_broadcast_fn(payload)
                 self._last_broadcast_monotonic = now
-        except Exception:
+        except Exception as e:
             # Never let broadcasting break simulation loop
-            pass
+            print(f"Failed to broadcast data via callback function: {e}")
 
     # delegate to a different class
     def save_all_results(self, results):
@@ -137,29 +146,25 @@ class BaseMachine(ABC):
 
     def get_current_state(self, process_specifics=None):
         """Get the current properties of the machine."""
-        if self.state:
-            return {
-                "timestamp": datetime.now().isoformat(),
-                "state": "On",
-                "duration": round(self.total_time, 2),
-                "process": self.process_name,
-                "temperature_C": (
-                    round(self.battery_model.temperature, 2)
-                    if hasattr(self.battery_model, "temperature")
-                    else None
-                ),
-                "battery_model": self.battery_model.get_properties(),
-                "machine_parameters": asdict(self.machine_parameters),
-                "process_specifics": process_specifics,
-            }
-        else:
-            return {
-                "timestamp": datetime.now().isoformat(),
-                "process": self.process_name,
-                "state": "Off",
-                "machine_parameters": asdict(self.machine_parameters),
-                "process_specifics": process_specifics,
-            }
+        state = {
+        "timestamp": datetime.now().isoformat(),
+        "state": "On" if self.state else "Off",
+        "duration": round(self.total_time, 2),
+        "process": self.process_name,
+        "temperature_C": (
+            round(self.battery_model.temperature, 2)
+            if self.state and hasattr(self.battery_model, "temperature")
+            else None
+        ),
+        "battery_model": self.battery_model.get_properties() if self.battery_model else {},
+        "machine_parameters": asdict(self.machine_parameters) if self.machine_parameters else {},
+        "process_specifics": process_specifics,
+        }
+        # Add context if available
+        if hasattr(self, "batch_id"):
+            state["batch_id"] = self.batch_id
+
+        return state
 
     def append_process_specifics(self, process_specifics):
         """Append the process state to the current properties."""
