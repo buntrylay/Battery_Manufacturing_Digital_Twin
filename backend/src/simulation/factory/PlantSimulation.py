@@ -60,10 +60,10 @@ class PlantSimulation:
     def __initialise_default_factory_structure(self):
         # initialise default parameters
         default_mixing_parameters_anode = MixingParameters(
-            AM_ratio=1.495, CA_ratio=0.045, PVDF_ratio=0.05, solvent_ratio=0.41
+            AM_ratio=0.495, CA_ratio=0.045, PVDF_ratio=0.05, solvent_ratio=0.41
         )
         default_mixing_parameters_cathode = MixingParameters(
-            AM_ratio=0.013, CA_ratio=0.039, PVDF_ratio=0.598, solvent_ratio=0.35
+            AM_ratio=0.598, CA_ratio=0.039, PVDF_ratio=0.013, solvent_ratio=0.35
         )
         default_coating_parameters = CoatingParameters(
             coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5

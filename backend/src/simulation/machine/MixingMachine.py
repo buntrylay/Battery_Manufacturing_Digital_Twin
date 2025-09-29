@@ -97,4 +97,39 @@ class MixingMachine(BaseMachine):
             self.turn_off()
 
     def validate_parameters(self, parameters: dict):
-        return MixingParameters(**parameters).validate_parameters()
+        # Convert API format (AM, CA, PVDF, solvent) to internal format (AM_ratio, CA_ratio, etc.)
+        converted_params = {}
+        if "AM" in parameters:
+            converted_params["AM_ratio"] = parameters["AM"]
+        if "CA" in parameters:
+            converted_params["CA_ratio"] = parameters["CA"]
+        if "PVDF" in parameters:
+            converted_params["PVDF_ratio"] = parameters["PVDF"]
+        if "solvent" in parameters:
+            converted_params["solvent_ratio"] = parameters["solvent"]
+        
+        # Use the converted parameters or fall back to the original if already in correct format
+        params_to_use = converted_params if converted_params else parameters
+        return MixingParameters(**params_to_use).validate_parameters()
+
+    def update_machine_parameters(self, parameters):
+        """Update machine parameters, handling both dict and MixingParameters objects."""
+        if isinstance(parameters, dict):
+            # Convert API format (AM, CA, PVDF, solvent) to internal format (AM_ratio, CA_ratio, etc.)
+            converted_params = {}
+            if "AM" in parameters:
+                converted_params["AM_ratio"] = parameters["AM"]
+            if "CA" in parameters:
+                converted_params["CA_ratio"] = parameters["CA"]
+            if "PVDF" in parameters:
+                converted_params["PVDF_ratio"] = parameters["PVDF"]
+            if "solvent" in parameters:
+                converted_params["solvent_ratio"] = parameters["solvent"]
+            
+            # Use the converted parameters or fall back to the original if already in correct format
+            params_to_use = converted_params if converted_params else parameters
+            mixing_params = MixingParameters(**params_to_use)
+            super().update_machine_parameters(mixing_params)
+        else:
+            # Already a MixingParameters object
+            super().update_machine_parameters(parameters)

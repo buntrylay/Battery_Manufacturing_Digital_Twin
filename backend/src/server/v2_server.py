@@ -16,6 +16,7 @@ import uuid
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the core simulation class
+from backend.src.server.db.model_table import create_tables
 from simulation.factory.Batch import Batch
 from simulation.factory.PlantSimulation import PlantSimulation
 
@@ -82,6 +83,7 @@ def add_batch():
     batch = Batch(batch_id=str(uuid.uuid4()))
     try:
         battery_plant_simulation.add_batch(batch)
+        create_tables()
     except ValueError as e:
         # over limit of batches
         raise HTTPException(status_code=400, detail=str(e))

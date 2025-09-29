@@ -131,10 +131,10 @@ COATING_DEFAULTS = dict(
 def run_mixing(electrode_name: str, slurry: SlurryInput):
     thread_broadcast(f"--- Starting {electrode_name} Mixing ---")
     params = MixingParameters(
-        AM=slurry.AM,
-        CA=slurry.CA,
-        PVDF=slurry.PVDF,
-        solvent=slurry.Solvent,
+        AM_ratio=slurry.AM,
+        CA_ratio=slurry.CA,
+        PVDF_ratio=slurry.PVDF,
+        solvent_ratio=slurry.Solvent,
     )
     model = MixingModel(electrode_name)
     machine = MixingMachine(f"{electrode_name}_Mixer", model, params)
@@ -147,7 +147,25 @@ def run_mixing(electrode_name: str, slurry: SlurryInput):
         pass
     results = []
     db = SessionLocal()
-    results.run(machine.run)
+    try:
+        results = machine.run()
+        # Persist a final snapshot (machine results list contains many states; pick last)
+        if results:
+            last = results[-1]
+            # Defensive extraction
+            bm = (last.get("battery_model") or {}) if isinstance(last, dict) else {}
+            try:
+                db.add(Mixing(
+                    parameter1=bm.get("viscosity"),
+                    parameter2=bm.get("density"),
+                    status=electrode_name + "_Mixer"
+                ))
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                thread_broadcast(f"DB save failed: {e}")
+    finally:
+        db.close()
     thread_broadcast(f"--- {electrode_name} Mixing Finished ---")
 
 def run_simulation(payload: SimulationInput):
@@ -168,8 +186,6 @@ def run_simulation(payload: SimulationInput):
         thread_broadcast(f"SIMULATION FAILED: {str(e)}")
     finally:
         simulation_lock.release()
-
-from backend.src.server.db.model_table import create_tables
 
 app = FastAPI()
 app.add_middleware(
