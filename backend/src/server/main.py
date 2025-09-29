@@ -84,25 +84,69 @@ def db_worker():
 
 def create_db_record(simulation_data: Dict[str, Any]):
     """Map simulation data to appropriate database table"""
+
+    def safe_float(val, default=0.0):
+                try:
+                    return float(val)
+                except Exception:
+                    return default
+                
     try:
         process_type = simulation_data.get('process', 'unknown')
         
-        if process_type == 'mixing_anode':
-            # Map to MixingData table (adjust field names based on your table schema)
+        if process_type == 'Anode_Mixer':
+            battery_model = simulation_data.get('battery_model', {})
+            machine_params = simulation_data.get('machine_parameters', {})
+
             return AnodeMixing(
-                batch_id=simulation_data.get('batch_id', str(uuid.uuid4())),
-                electrode_type=simulation_data.get('electrode_type', 'unknown'),
+                batch=simulation_data.get('batch_id', 1),
+                state=simulation_data.get('state', 'Unknown'),
                 timestamp=datetime.fromisoformat(simulation_data['timestamp']),
-                temperature=simulation_data.get('temperature'),
-                viscosity=simulation_data.get('viscosity'),
-                mixing_speed=simulation_data.get('mixing_speed'),
-                particle_size=simulation_data.get('particle_size'),
-                raw_data=str(simulation_data)  # Store full JSON as backup
+                duration=safe_float(simulation_data.get('duration', 0.0)),
+                process=simulation_data.get('process', 'mixing_anode'),
+                temperature_C=safe_float(simulation_data.get('temperature_C', 0.0)),
+                am_volume_L=safe_float(battery_model.get('AM_volume', 0.0)),
+                ca_volume_L=safe_float(battery_model.get('CA_volume', 0.0)),
+                pvdf_volume_L=safe_float(battery_model.get('PVDF_volume', 0.0)),
+                solvent_volume_L=safe_float(battery_model.get('H2O_volume', 0.0)),
+                viscosity_Pa_s=safe_float(battery_model.get('viscosity', 0.0)),
+                density_kg_m3=safe_float(battery_model.get('density', 0.0)),
+                yield_stress_Pa=safe_float(battery_model.get('yield_stress', 0.0)),
+                total_volume_L=safe_float(battery_model.get('total_volume', 0.0)),
+                am=safe_float(machine_params.get('AM_ratio', 0.0)),
+                ca=safe_float(machine_params.get('CA_ratio', 0.0)),
+                pvdf=safe_float(machine_params.get('PVDF_ratio', 0.0)),
+                solvent=safe_float(machine_params.get('solvent_ratio', 0.0))
+            )
+        
+        elif process_type == 'Cathode_Mixer':
+            battery_model = simulation_data.get('battery_model', {})
+            machine_params = simulation_data.get('machine_parameters', {})
+
+            return CathodeMixing(
+                batch=simulation_data.get('batch_id', 1),
+                state=simulation_data.get('state', 'Unknown'),
+                timestamp=datetime.fromisoformat(simulation_data['timestamp']),
+                duration=safe_float(simulation_data.get('duration', 0.0)),
+                process=simulation_data.get('process', 'mixing_anode'),
+                temperature_C=safe_float(simulation_data.get('temperature_C', 0.0)),
+                am_volume_L=safe_float(battery_model.get('AM_volume', 0.0)),
+                ca_volume_L=safe_float(battery_model.get('CA_volume', 0.0)),
+                pvdf_volume_L=safe_float(battery_model.get('PVDF_volume', 0.0)),
+                solvent_volume_L=safe_float(battery_model.get('H2O_volume', 0.0)),
+                viscosity_Pa_s=safe_float(battery_model.get('viscosity', 0.0)),
+                density_kg_m3=safe_float(battery_model.get('density', 0.0)),
+                yield_stress_Pa=safe_float(battery_model.get('yield_stress', 0.0)),
+                total_volume_L=safe_float(battery_model.get('total_volume', 0.0)),
+                am=safe_float(machine_params.get('AM_ratio', 0.0)),
+                ca=safe_float(machine_params.get('CA_ratio', 0.0)),
+                pvdf=safe_float(machine_params.get('PVDF_ratio', 0.0)),
+                solvent=safe_float(machine_params.get('solvent_ratio', 0.0))
             )
         
         # Future: Add other process types
-        # elif process_type == 'coating':
-        #     return CoatingData(...)
+        # elif process_type == 'coating_anode':
+        #     return AnodeCoating(...)
         
         else:
             thread_broadcast(f"⚠ Unknown process type: {process_type}")
@@ -110,6 +154,8 @@ def create_db_record(simulation_data: Dict[str, Any]):
             
     except Exception as e:
         thread_broadcast(f"✗ Error creating DB record: {str(e)}")
+        # Log the problematic data for debugging
+        thread_broadcast(f"Problematic data: {simulation_data}")
         return None
 
 def stop_db_worker():
@@ -236,18 +282,16 @@ def run_mixing(electrode_name: str, slurry: SlurryInput):
 
     # Real-time data every 5 seconds
     try:
-        machine.data_broadcast_interval_sec = 5.0
-        machine.data_broadcast_fn = thread_broadcast_data
+        machine.batch_id = batch_id
+        machine.data_broadcast_interval_sec = 0.1
+        machine.data_broadcast_fn = thread_queue_db_data
     except Exception:
         # If older class without attributes, ignore silently
         pass
 
     try:
-        results = machine.run()
+        machine.run()
         thread_broadcast(f"--- {electrode_name} Mixing Finished ---")
-
-        if results:
-            thread_queue_db_data(results)
 
     except Exception as e:
         thread_broadcast(f"✗ {electrode_name} mixing failed: {str(e)}")
