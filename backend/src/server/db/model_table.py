@@ -87,7 +87,7 @@ class AnodeCoating(Base):
     __tablename__ = "coating_anode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -116,7 +116,7 @@ class CathodeDrying(Base):
     __tablename__ = "drying_cathode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -138,7 +138,7 @@ class AnodeDrying(Base):
     __tablename__ = "drying_anode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -163,7 +163,7 @@ class CathodeCalendaring(Base):
     __tablename__ = "calendaring_cathode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -187,7 +187,7 @@ class AnodeCalendaring(Base):
     __tablename__ = "calendaring_anode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -213,7 +213,7 @@ class CathodeSlitting(Base):
     __tablename__ = "slitting_cathode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -237,7 +237,7 @@ class AnodeSlitting(Base):
     __tablename__ = "slitting_anode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -263,7 +263,7 @@ class Inspection(Base):
     __tablename__ = "inspection"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -296,7 +296,7 @@ class Rewinding(Base):
     __tablename__ = "rewinding"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -325,7 +325,7 @@ class ElectrolyteFilling(Base):
     __tablename__ = "electrolyte_filling"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -356,7 +356,7 @@ class FormationCycling(Base):
     __tablename__ = "formation_cycling"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -382,7 +382,7 @@ class Aging(Base):
     __tablename__ = "aging"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
