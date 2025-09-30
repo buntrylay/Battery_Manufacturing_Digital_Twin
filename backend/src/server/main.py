@@ -14,6 +14,8 @@ import asyncio
 # Import database engine & session
 from backend.src.server.db.db import engine, SessionLocal
 from backend.src.server.db.model_table import *
+from backend.src.server.db.db_helper import DBHelper
+
 # Import the machine and model classes directly
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.MixingMachine import MixingMachine
@@ -21,11 +23,16 @@ from simulation.battery_model.CoatingModel import CoatingModel
 from simulation.machine.CoatingMachine import CoatingMachine
 from simulation.process_parameters.Parameters import MixingParameters, CoatingParameters
 
+import uuid
+
 MAX_MESSAGES = 100
 message_queue = deque(maxlen=MAX_MESSAGES)
 message_lock = threading.Lock()
 simulation_lock = threading.Lock()
 main_loop = None
+
+### Db writing
+db_helper = DBHelper()
 
 class ConnectionManager:
     def __init__(self):
@@ -130,6 +137,9 @@ COATING_DEFAULTS = dict(
 
 def run_mixing(electrode_name: str, slurry: SlurryInput):
     thread_broadcast(f"--- Starting {electrode_name} Mixing ---")
+    # Generate unique batch ID for this run
+    batch_id = str(uuid.uuid4())
+    
     params = MixingParameters(
         AM_ratio=slurry.AM,
         CA_ratio=slurry.CA,
@@ -138,20 +148,22 @@ def run_mixing(electrode_name: str, slurry: SlurryInput):
     )
     model = MixingModel(electrode_name)
     machine = MixingMachine(f"{electrode_name}_Mixer", model, params)
+
     # Real-time data every 5 seconds
     try:
-        machine.data_broadcast_interval_sec = 5.0
-        machine.data_broadcast_fn = thread_broadcast_data
+        machine.batch_id = batch_id
+        machine.data_broadcast_interval_sec = 0.1
+        machine.data_broadcast_fn = db_helper.queue_data
     except Exception:
         # If older class without attributes, ignore silently
         pass
-    results = []
-    db = SessionLocal()
+
     try:
-        results = machine.run()
-    finally:
-        db.close()
-    thread_broadcast(f"--- {electrode_name} Mixing Finished ---")
+        machine.run()
+        thread_broadcast(f"--- {electrode_name} Mixing Finished ---")
+
+    except Exception as e:
+        thread_broadcast(f"✗ {electrode_name} mixing failed: {str(e)}")
 
 def run_simulation(payload: SimulationInput):
     if not simulation_lock.acquire(blocking=False):
@@ -185,13 +197,20 @@ app.add_middleware(
 async def startup_event():
     global main_loop
     main_loop = asyncio.get_running_loop()
-    # Ensure tables exist
+
+     # Ensure tables exist
     try:
         create_tables()
-        thread_broadcast("Database tables ensured.")
+        thread_broadcast("✓ Database tables ensured.")
     except Exception as e:
-        # Log via status channel
-        thread_broadcast(f"Table creation failed: {e}")
+        thread_broadcast(f"✗ Table creation failed: {e}")
+
+    # Start database worker thread
+    try:
+        db_helper.start_worker(thread_broadcast)
+        thread_broadcast("✓ Database worker started.")
+    except Exception as e:
+        thread_broadcast(f"✗ Database worker failed to start: {e}")
 
 @app.post("/start-simulation")
 def start_simulation(payload: SimulationInput):
