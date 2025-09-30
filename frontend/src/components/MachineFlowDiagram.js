@@ -5,6 +5,8 @@ import {
   useNodesState,
   useEdgesState,
   Background,
+  MiniMap,
+  Controls,
 } from "@xyflow/react";
 
 import "@xyflow/react/dist/style.css";
@@ -207,7 +209,9 @@ const MachineFlowDiagram = () => {
       fitView
       nodeTypes={nodeTypes}
     >
-      <Background />
+      <MiniMap/>
+      <Controls />
+      <Background color="#e6e3e3ff"  />
     </ReactFlow>
   );
 };
