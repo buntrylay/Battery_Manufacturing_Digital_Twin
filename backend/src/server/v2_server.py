@@ -1,12 +1,15 @@
 import os
 import sys
+import asyncio
 
 # for simulation & concurrency
 import threading
 
 # for API
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
 import uvicorn
+import json
 
 # for generation of unique batch ID
 import uuid
@@ -19,15 +22,66 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from simulation.factory.Batch import Batch
 from simulation.factory.PlantSimulation import PlantSimulation
 
+# Import notification queue
+from notification_queue import notification_queue
+
 app = FastAPI()
 battery_plant_simulation = PlantSimulation()
 factory_run_thread = None
 out_of_batch_event = threading.Event()
 
+# WebSocket connection management
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        try:
+            await websocket.send_text(message)
+        except:
+            # Remove disconnected websocket
+            self.disconnect(websocket)
+
+    async def broadcast(self, message: str):
+        disconnected = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(message)
+            except:
+                disconnected.append(connection)
+        
+        # Remove disconnected connections
+        for connection in disconnected:
+            self.disconnect(connection)
+
+manager = ConnectionManager()
+
 
 @app.get("/")
 def root():
     return {"message": "This is the V2 API for the battery manufacturing digital twin!"}
+
+
+@app.websocket("/ws/status")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time machine status updates."""
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Keep the connection alive and handle any incoming messages
+            data = await websocket.receive_text()
+            # Echo back any received messages (optional)
+            await manager.send_personal_message(f"Echo: {data}", websocket)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 
 
 @app.get("/api/simulation/state")
@@ -116,6 +170,30 @@ def reset_plant():
         out_of_batch_event.clear()
     return {"message": "Plant reset successfully"}
 
+
+# Background task to process notifications and broadcast to WebSocket clients
+async def process_notifications():
+    """Background task to process machine notifications and broadcast to WebSocket clients."""
+    while True:
+        try:
+            # Get notification from queue
+            notification = await notification_queue.get_notification()
+            
+            # Convert to JSON and broadcast to all connected clients
+            message = json.dumps(notification.to_dict())
+            await manager.broadcast(message)
+            
+        except Exception as e:
+            print(f"Error processing notification: {e}")
+            # Small delay to prevent busy waiting
+            await asyncio.sleep(0.1)
+
+
+# Startup event to start the notification processor
+@app.on_event("startup")
+async def startup_event():
+    """Start the background task for processing notifications."""
+    asyncio.create_task(process_notifications())
 
 
 if __name__ == "__main__":

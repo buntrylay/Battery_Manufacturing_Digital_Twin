@@ -4,6 +4,12 @@ from simulation.process_parameters.Parameters import MixingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import asdict
+import sys
+import os
+
+# Add the server path to import notification functions
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'server'))
+from notification_queue import notify_machine_status
 
 
 class MixingMachine(BaseMachine):
@@ -79,17 +85,98 @@ class MixingMachine(BaseMachine):
 
     def run(self):
         if self.pre_run_check():
+            # Notify that mixing process is starting
+            notify_machine_status(
+                machine_id="mixing",
+                line_type=self.process_name.split('_')[1],  # Extract anode/cathode from process_name
+                process_name=self.process_name,
+                status="running",
+                data={"stage": "starting", "message": "Mixing process started"}
+            )
+            
             self.turn_on()
             self.battery_model.add(
                 "solvent",
                 self.mixing_tank_volume * self.machine_parameters.solvent_ratio,
             )
+            
+            # Notify that solvent has been added
+            notify_machine_status(
+                machine_id="mixing",
+                line_type=self.process_name.split('_')[1],
+                process_name=self.process_name,
+                status="running",
+                data={"stage": "solvent_added", "message": "Solvent added to mixing tank"}
+            )
+            
             all_results = []
+            
+            # Mix PVDF with notifications
+            notify_machine_status(
+                machine_id="mixing",
+                line_type=self.process_name.split('_')[1],
+                process_name=self.process_name,
+                status="running",
+                data={"stage": "mixing_pvdf", "message": "Mixing PVDF binder"}
+            )
             self.__mix_component("PVDF", duration_sec=8, results_list=all_results)
+            
+            # Mix CA with notifications
+            notify_machine_status(
+                machine_id="mixing",
+                line_type=self.process_name.split('_')[1],
+                process_name=self.process_name,
+                status="running",
+                data={"stage": "mixing_ca", "message": "Mixing conductive additive (CA)"}
+            )
             self.__mix_component("CA", duration_sec=8, results_list=all_results)
+            
+            # Mix AM with notifications
+            notify_machine_status(
+                machine_id="mixing",
+                line_type=self.process_name.split('_')[1],
+                process_name=self.process_name,
+                status="running",
+                data={"stage": "mixing_am", "message": "Mixing active material (AM)"}
+            )
             self.__mix_component("AM", duration_sec=10, results_list=all_results)
+            
             self.save_all_results(all_results)
+            
+            # Notify that mixing process is completed
+            notify_machine_status(
+                machine_id="mixing",
+                line_type=self.process_name.split('_')[1],
+                process_name=self.process_name,
+                status="completed",
+                data={"stage": "completed", "message": "Mixing process completed successfully"}
+            )
+            
             self.turn_off()
+
+    def turn_on(self):
+        """Turn on the machine with notification."""
+        super().turn_on()
+        # Notify machine is turned on
+        notify_machine_status(
+            machine_id="mixing",
+            line_type=self.process_name.split('_')[1],
+            process_name=self.process_name,
+            status="idle",
+            data={"stage": "turned_on", "message": "Mixing machine turned on"}
+        )
+
+    def turn_off(self):
+        """Turn off the machine with notification."""
+        super().turn_off()
+        # Notify machine is turned off
+        notify_machine_status(
+            machine_id="mixing",
+            line_type=self.process_name.split('_')[1],
+            process_name=self.process_name,
+            status="idle",
+            data={"stage": "turned_off", "message": "Mixing machine turned off"}
+        )
 
     def validate_parameters(self, parameters: dict):
         return MixingParameters(**parameters).validate_parameters()
