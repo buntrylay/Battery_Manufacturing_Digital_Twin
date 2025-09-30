@@ -238,7 +238,7 @@ class PlantSimulation:
             return self.factory_structure[line_type][machine_id]
 
     def add_batch(self, batch: Batch):
-        if len(self.batch_requests) >= 10:
+        if len(self.batch_requests) >= 3:
             raise ValueError("Maximum number of batches reached")
         else:
             self.batch_requests.append(batch)
