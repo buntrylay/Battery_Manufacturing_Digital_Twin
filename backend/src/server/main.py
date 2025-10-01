@@ -1,182 +1,333 @@
-import time
 import os
-import threading
-from collections import deque
-from datetime import datetime
-from typing import List
-
-import sqlalchemy
-from sqlalchemy import Table, Column, Integer, Float, String, MetaData, insert, inspect
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+import sys
 import asyncio
-from simulation.battery_model.MixingModel import MixingModel
-from simulation.machine.MixingMachine import MixingMachine
 
-MAX_MESSAGES = 100
-message_queue = deque(maxlen=MAX_MESSAGES)
-message_lock = threading.Lock()
-simulation_lock = threading.Lock()
-main_loop = None
+# for simulation & concurrency
+import threading
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
+# for API
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+import json
 
-    async def _send_message(self, websocket: WebSocket, message: str):
-        try:
-            await websocket.send_text(message)
-        except Exception:
-            self.disconnect(websocket)
+# for generation of unique batch ID
+import uuid
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-        with message_lock:
-            for msg in message_queue:
-                await websocket.send_text(msg)
+# --- Path and Simulation Module Imports ---
+# This points from `backend/src/server` up one level to `backend/src` so that `simulation` can be imported
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
+# Import the core simulation class
+from simulation.factory.Batch import Batch
+from simulation.factory.PlantSimulation import PlantSimulation
 
-    def broadcast(self, message: str):
-        for connection in self.active_connections:
-            asyncio.create_task(self._send_message(connection, message))
-
-manager = ConnectionManager()
-
-def thread_broadcast(message: str):
-    global main_loop
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    formatted_message = f"[{timestamp}] {message}"
-    with message_lock:
-        message_queue.append(formatted_message)
-    if main_loop and main_loop.is_running():
-        main_loop.call_soon_threadsafe(manager.broadcast, formatted_message)
-
-class SlurryInput(BaseModel):
-    PVDF: float
-    CA: float
-    AM: float
-    Solvent: float
-
-class SimulationInput(BaseModel):
-    anode: SlurryInput
-    cathode: SlurryInput
-
-
-
-def run_machine(process: str, slurry_input: SlurryInput):
-    thread_broadcast(f"--- Starting {process} ---")
-    model = MixingModel(process)
-    params = MixingParameters(
-        PVDF=slurry_input.PVDF,
-        CA=slurry_input.CA,
-        AM=slurry_input.AM,
-        solvent=slurry_input.Solvent
-    )
-    machine = MixingMachine(model, params)
-    all_results = machine.run()
-
-    if all_results is None or not isinstance(all_results, list):
-        thread_broadcast(f"{process} machine returned no result!")
-        return
-
-    for result in all_results:
-        result["process"] = process
-
-    # Use the imported function from db.py
-    insert_flattened_data(engine, all_results)
-    thread_broadcast(f"--- {process} Finished ---")
-
-def run_simulation(payload: SimulationInput):
-    if not simulation_lock.acquire(blocking=False):
-        thread_broadcast("Simulation already in progress.")
-        return
-
-    try:
-        thread_broadcast("New simulation started.")
-        
-        # --- ANODE PRODUCTION ---
-        thread_broadcast("--- Starting Anode Mixing Process ---")
-        anode_payload = payload.anode
-        
-        anode_mixing_model = MixingModel("Anode")
-        anode_mixing_machine = MixingMachine("Anode_Mixer",
-                anode_mixing_model,
-                MixingParameters(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41))
-        anode_mixing_machine.run()
-        thread_broadcast("--- Anode Mixing Process Finished ---")
-
-        # --- CATHODE PRODUCTION ---
-        thread_broadcast("--- Starting Cathode Mixing Process ---")
-        cathode_payload = payload.cathode
-        
-        cathode_mixing_model = MixingModel("Cathode")
-        cathode_mixing_machine = MixingMachine("Cathode_Mixer",
-            cathode_mixing_model,
-            MixingParameters(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41))
-        cathode_mixing_machine.run()
-        thread_broadcast("--- Cathode Mixing Process Finished ---")
-
-        thread_broadcast("All simulation stages complete.")
-
-    except Exception as e:
-        thread_broadcast(f"SIMULATION FAILED: {str(e)}")
-    finally:
-        simulation_lock.release()
-
+# Import notification queue
+from notification_queue import notification_queue, notify_machine_status
 
 app = FastAPI()
+
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-async def startup_event():
-    global main_loop
-    main_loop = asyncio.get_running_loop()
+battery_plant_simulation = PlantSimulation()
+factory_run_thread = None
+out_of_batch_event = threading.Event()
 
-@app.post("/start-simulation")
-def start_simulation(payload: SimulationInput):
-    global message_queue
-    with message_lock:
-        message_queue.clear()  # Clear previous logs
-    threading.Thread(target=run_simulation, args=(payload,)).start()
-    return {"message": "Simulation started. See WebSocket for progress."}
+# WebSocket connection management
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        try:
+            await websocket.send_text(message)
+        except:
+            # Remove disconnected websocket
+            self.disconnect(websocket)
+
+    async def broadcast(self, message: str):
+        disconnected = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(message)
+            except:
+                disconnected.append(connection)
+        
+        # Remove disconnected connections
+        for connection in disconnected:
+            self.disconnect(connection)
+
+manager = ConnectionManager()
+
+
+@app.get("/")
+def root():
+    return {"message": "This is the V2 API for the battery manufacturing digital twin!"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "timestamp": "2025-10-01T16:00:00Z"}
 
 
 @app.websocket("/ws/status")
 async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time machine status updates."""
     await manager.connect(websocket)
     try:
         while True:
-            await websocket.receive_text()
+            # Keep the connection alive and handle any incoming messages
+            data = await websocket.receive_text()
+            # Echo back any received messages (optional)
+            await manager.send_personal_message(f"Echo: {data}", websocket)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        
-POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
-POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST", "db")
-POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 
-DATABASE_URL = "postgresql://postgres:password@localhost/postgres"
-engine = sqlalchemy.create_engine(DATABASE_URL)
 
-@app.get("/")
-def root():
+@app.get("/api/simulation/state")
+def get_plant_state():
+    """Get the current state of the plant. Returns a dictionary with the current state of the plant."""
+    # quite done, just some validation I think depending on my teammate's implementation of get_current_plant_state()
+    global battery_plant_simulation
+    return battery_plant_simulation.get_current_plant_state()
+
+
+@app.get("/api/machine/{line_type}/{machine_id}/status")
+def get_machine_status(line_type: str, machine_id: str):
+    """Get the status of a machine. Returns a dictionary with the status of the machine."""
+    # quite done, just some validation I think depending on my teammate's implementation of get_machine_status()
+    global battery_plant_simulation
     try:
-        with engine.connect() as conn:
-            conn.execute(sqlalchemy.text("SELECT 1"))
-            print("Database connection successful.")
-        return {"status": "ok"}
+        return battery_plant_simulation.get_machine_status(line_type, machine_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-        print(f"Database connection failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.patch("/api/machine/{line_type}/{machine_id}/parameters")
+def update_machine_params(line_type: str, machine_id: str, parameters: dict):
+    """Update machine parameters with validation."""
+    global battery_plant_simulation
+    try:
+        # Delegate validation to PlantSimulation / Machine classes
+        if battery_plant_simulation.update_machine_parameters(
+            line_type, machine_id, parameters
+        ):
+            return {
+                "message": f"Machine {machine_id} parameters updated successfully",
+                "line_type": line_type,
+                "machine_id": machine_id,
+            }
+    except TypeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.post("/api/simulation/start")
+def add_batch():
+    """Add a batch to the plant."""
+    global battery_plant_simulation
+    global factory_run_thread
+    global out_of_batch_event
+    batch = Batch(batch_id=str(uuid.uuid4()))
+    try:
+        battery_plant_simulation.add_batch(batch)
+    except ValueError as e:
+        # over limit of batches
+        raise HTTPException(status_code=400, detail=str(e))
+    if factory_run_thread is None:
+        factory_run_thread = threading.Thread(
+            target=battery_plant_simulation.run, args=(out_of_batch_event,)
+        )
+        factory_run_thread.start()
+    elif out_of_batch_event.is_set():
+        factory_run_thread = None
+        out_of_batch_event.clear()
+        factory_run_thread = threading.Thread(
+            target=battery_plant_simulation.run, args=(out_of_batch_event,)
+        )
+        factory_run_thread.start()
+
+
+@app.post("/api/simulation/mixing/start")
+def start_mixing_simulation(mixing_data: dict):
+    """Start real mixing simulation using actual MixingMachine class."""
+    try:
+        electrode_type = mixing_data.get("electrode_type")
+        if not electrode_type or electrode_type not in ["Anode", "Cathode"]:
+            raise HTTPException(status_code=400, detail="Invalid electrode_type. Must be 'Anode' or 'Cathode'")
+        
+        # Validate input ratios
+        required_fields = ["PVDF", "CA", "AM", "Solvent"]
+        for field in required_fields:
+            if field not in mixing_data:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        # Check if ratios sum to 1.0
+        total = sum(mixing_data[field] for field in required_fields)
+        if abs(total - 1.0) > 0.0001:
+            raise HTTPException(status_code=400, detail=f"Ratios must sum to 1.0, got {total}")
+        
+        # Start real mixing simulation in a separate thread
+        def run_real_mixing_simulation():
+            try:
+                from simulation.machine.MixingMachine import MixingMachine
+                from simulation.battery_model.MixingModel import MixingModel
+                from simulation.process_parameters.MixingParameters import MixingParameters, MaterialRatios
+                
+                machine_id = f"{electrode_type.lower()}_mixing_01"
+                process_name = f"{electrode_type}_Mixing"
+                
+                print(f" STARTING REAL {electrode_type} MIXING SIMULATION")
+                print(f" Machine ID: {machine_id}")
+                print(f" Parameters: {mixing_data}")
+                
+                # Notify simulation start
+                notify_machine_status(
+                    machine_id=machine_id,
+                    line_type="mixing",
+                    process_name=process_name,
+                    status="running",
+                    data={
+                        "message": f"Starting {electrode_type} mixing simulation",
+                        "parameters": mixing_data
+                    }
+                )
+                
+                # Create the real simulation objects
+                mixing_model = MixingModel(electrode_type)
+                
+                # Create MaterialRatios from input data
+                material_ratios = MaterialRatios(
+                    AM=mixing_data["AM"],
+                    CA=mixing_data["CA"],
+                    PVDF=mixing_data["PVDF"],
+                    solvent=mixing_data["Solvent"]
+                )
+                
+                mixing_parameters = MixingParameters(material_ratios=material_ratios)
+                
+                # Create and configure the mixing machine
+                mixing_machine = MixingMachine(
+                    process_name=process_name,
+                    mixing_model=mixing_model,
+                    mixing_parameters=mixing_parameters
+                )
+                
+                # Set the battery model
+                mixing_machine.receive_model_from_previous_process(mixing_model)
+                
+                print(f"  Running {electrode_type} mixing simulation...")
+                
+                # Run the actual simulation
+                mixing_machine.run()
+                
+                print(f" {electrode_type} MIXING SIMULATION COMPLETED")
+                
+                # Get final results from the simulation
+                final_state = mixing_machine.get_current_state()
+                
+                # Notify completion with real results
+                notify_machine_status(
+                    machine_id=machine_id,
+                    line_type="mixing",
+                    process_name=process_name,
+                    status="completed",
+                    data={
+                        "message": f"{electrode_type} mixing simulation completed successfully",
+                        "results": final_state
+                    }
+                )
+                
+            except Exception as e:
+                print(f"❌ ERROR in {electrode_type} mixing simulation: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                # Notify error
+                notify_machine_status(
+                    machine_id=machine_id,
+                    line_type="mixing", 
+                    process_name=process_name,
+                    status="error",
+                    data={"message": f"Mixing simulation failed: {str(e)}"}
+                )
+        
+        # Start real simulation in background thread
+        simulation_thread = threading.Thread(target=run_real_mixing_simulation)
+        simulation_thread.daemon = True
+        simulation_thread.start()
+        
+        return {
+            "message": f"{electrode_type} mixing simulation started successfully",
+            "electrode_type": electrode_type,
+            "parameters": mixing_data
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.post("/api/simulation/reset")
+def reset_plant():
+    """Reset the plant."""
+    global battery_plant_simulation
+    global factory_run_thread
+    global out_of_batch_event
+    # reset the factory run thread
+    if factory_run_thread:
+        factory_run_thread.join()
+        factory_run_thread = None
+    # reset the plant simulation object
+    battery_plant_simulation.reset_plant()
+    # reset the event
+    if out_of_batch_event.is_set():
+        out_of_batch_event.clear()
+    return {"message": "Plant reset successfully"}
+
+
+# Background task to process notifications and broadcast to WebSocket clients
+async def process_notifications():
+    """Background task to process machine notifications and broadcast to WebSocket clients."""
+    while True:
+        try:
+            # Get notification from queue
+            notification = await notification_queue.get_notification()
+            
+            # Convert to JSON and broadcast to all connected clients
+            message = json.dumps(notification.to_dict())
+            await manager.broadcast(message)
+            
+        except Exception as e:
+            print(f"Error processing notification: {e}")
+            # Small delay to prevent busy waiting
+            await asyncio.sleep(0.1)
+
+
+# Startup event to start the notification processor
+@app.on_event("startup")
+async def startup_event():
+    """Start the background task for processing notifications."""
+    asyncio.create_task(process_notifications())
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

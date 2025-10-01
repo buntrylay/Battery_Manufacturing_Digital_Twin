@@ -35,3 +35,20 @@ class MixingParameters(BaseMachineParameters):
 
     def get_parameters_dict(self):
         return self.material_ratios.get_dict()
+    
+    # Properties to match MixingMachine expectations
+    @property
+    def AM_ratio(self):
+        return self.material_ratios.AM
+    
+    @property
+    def CA_ratio(self):
+        return self.material_ratios.CA
+    
+    @property
+    def PVDF_ratio(self):
+        return self.material_ratios.PVDF
+    
+    @property
+    def solvent_ratio(self):
+        return self.material_ratios.solvent

@@ -2,11 +2,19 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
 import time
-from backend.src.server.notification_queue import notify_machine_status
 from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
 from simulation.helper.IoTHubSender import IoTHubSender
+
+# Optional import to avoid circular dependency - define fallback if import fails
+try:
+    from backend.src.server.notification_queue import notify_machine_status
+except ImportError:
+    # Define a no-op function if import fails to avoid NameError
+    def notify_machine_status(*args, **kwargs):
+        print(f"Notification: {args}, {kwargs}")  # Debug output instead of websocket
+        pass
 
 
 class BaseMachine(ABC):

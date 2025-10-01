@@ -56,6 +56,57 @@ body {
   padding: 10px;
   background-color: #f4f4f7;
   border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.clear-logs-button {
+  padding: 8px 16px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.clear-logs-button:hover {
+  background: #c82333;
+}
+
+.start-full-simulation-btn {
+  padding: 8px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.start-full-simulation-btn:hover:not(:disabled) {
+  background: #218838;
+}
+
+.start-full-simulation-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.instructions {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.instructions p {
+  margin: 2px 0;
+}
+
+.simulation-status {
+  color: #007bff;
+  font-weight: 500;
 }
 
 /* This is the most important part:
@@ -256,4 +307,52 @@ body {
 .side-field input[type="number"]:focus {
   border-color: var(--ring);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+}
+
+/* Mixing controls */
+.mixing-controls {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.ratio-sum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.error-text {
+  color: #dc3545;
+  font-size: 12px;
+}
+
+.save-inputs-btn {
+  width: 100%;
+  padding: 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-inputs-btn:hover {
+  background: #0056b3;
+}
+
+.status-message {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #495057;
 }

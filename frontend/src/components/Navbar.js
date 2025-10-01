@@ -5,13 +5,10 @@ const Navbar = () => (
   <nav className="nav-container">
     <ul className="nav-links">
       <li>
-        <Link to="/">Home</Link>
+        <Link to="/">Flow Page</Link>
       </li>
       <li>
         <Link to="/logs">Live Logs</Link>
-      </li>
-      <li>
-        <Link to="/flow">Flow Page</Link>
       </li>
       <li>
         <Link to="/realtime">Real-Time Data</Link>
