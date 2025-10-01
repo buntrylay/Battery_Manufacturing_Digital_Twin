@@ -73,8 +73,6 @@ class CathodeCoating(Base):
     viscosity_Pa_s = Column(Float)
     wet_thickness_um = Column(Float)
     dry_thickness_um = Column(Float)
-    shear_rate = Column(Float)
-    uniformity = Column(Float)
     defect_risk = Column(Float)
 
     # machine_parameters
@@ -100,8 +98,6 @@ class AnodeCoating(Base):
     viscosity_Pa_s = Column(Float)
     wet_thickness_um = Column(Float)
     dry_thickness_um = Column(Float)
-    shear_rate = Column(Float)
-    uniformity = Column(Float)
     defect_risk = Column(Float)
 
     # machine_parameters
@@ -259,8 +255,39 @@ class AnodeSlitting(Base):
 
 
 # --- Inspection ---
-class Inspection(Base):
-    __tablename__ = "inspection"
+class AnodeInspection(Base):
+    __tablename__ = "inspection_anode"
+
+    id = Column(Integer, primary_key=True, index=True)
+    batch = Column(String, nullable=False)
+    state = Column(String, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    duration = Column(Float, nullable=False)
+    process = Column(String, nullable=False)
+    temperature_C = Column(Float)
+
+    # battery_model
+    final_width_mm = Column(Float)
+    final_thickness_um = Column(Float)
+    epsilon_width = Column(Float)
+    burr_factor = Column(Float)
+    porosity = Column(Float)
+    epsilon_thickness = Column(Float)
+    d_detected = Column(Float)
+    pass_width_mm = Column(Float)
+    pass_thickness_um = Column(Float)
+    pass_burr = Column(Float)
+    pass_surface = Column(Float)
+    overall = Column(Float)
+
+    # machine_parameters
+    epsilon_width_max = Column(Float)
+    epsilon_thickness_max = Column(Float)
+    b_max = Column(Float)
+    d_surface_max = Column(Float)
+
+class CathodeInspection(Base):
+    __tablename__ = "inspection_cathode"
 
     id = Column(Integer, primary_key=True, index=True)
     batch = Column(String, nullable=False)
