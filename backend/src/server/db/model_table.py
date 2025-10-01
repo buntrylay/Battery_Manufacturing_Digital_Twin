@@ -403,4 +403,9 @@ class Aging(Base):
     
     
 def create_tables():
+    """Create all database tables and setup user permissions."""
     Base.metadata.create_all(bind=engine)
+    
+    # Setup read-only user for Grafana
+    from backend.src.server.db.db import user_connection
+    user_connection()
