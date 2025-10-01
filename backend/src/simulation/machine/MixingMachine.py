@@ -36,8 +36,8 @@ class MixingMachine(BaseMachine):
         )
         self.mixing_tank_volume = 200
 
-    def add_model(self, mixing_model: MixingModel):
-        self.battery_model = mixing_model
+    def receive_model_from_previous_process(self, initial_mixing_model: MixingModel):
+        self.battery_model = initial_mixing_model
 
     def __mix_component(
         self,
@@ -47,9 +47,8 @@ class MixingMachine(BaseMachine):
         duration_sec=10,
         results_list=None,
     ):
-        total_volume_of_material_to_add = (
-            self.mixing_tank_volume
-            * getattr(self.machine_parameters, material_type)
+        total_volume_of_material_to_add = self.mixing_tank_volume * getattr(
+            self.machine_parameters, f"{material_type}_ratio"
         )
         volume_added_in_each_step = step_percent * total_volume_of_material_to_add
         added_volume = 0.0
@@ -68,6 +67,11 @@ class MixingMachine(BaseMachine):
             self.battery_model.update_properties()
             result = self.get_current_state()
             results_list.append(result)
+            # Attempt real-time broadcast (throttled by BaseMachine)
+            try:
+                self._maybe_broadcast_data(result)
+            except Exception:
+                pass
             now = time.time()
             if (
                 now - last_saved_time >= 0.1 and result != last_saved_result
@@ -83,8 +87,7 @@ class MixingMachine(BaseMachine):
             self.turn_on()
             self.battery_model.add(
                 "solvent",
-                self.mixing_tank_volume
-                * self.machine_parameters.solvent
+                self.mixing_tank_volume * self.machine_parameters.solvent_ratio,
             )
             all_results = []
             self.__mix_component("PVDF", duration_sec=8, results_list=all_results)
@@ -92,3 +95,41 @@ class MixingMachine(BaseMachine):
             self.__mix_component("AM", duration_sec=10, results_list=all_results)
             self.save_all_results(all_results)
             self.turn_off()
+
+    def validate_parameters(self, parameters: dict):
+        # Convert API format (AM, CA, PVDF, solvent) to internal format (AM_ratio, CA_ratio, etc.)
+        converted_params = {}
+        if "AM" in parameters:
+            converted_params["AM_ratio"] = parameters["AM"]
+        if "CA" in parameters:
+            converted_params["CA_ratio"] = parameters["CA"]
+        if "PVDF" in parameters:
+            converted_params["PVDF_ratio"] = parameters["PVDF"]
+        if "solvent" in parameters:
+            converted_params["solvent_ratio"] = parameters["solvent"]
+        
+        # Use the converted parameters or fall back to the original if already in correct format
+        params_to_use = converted_params if converted_params else parameters
+        return MixingParameters(**params_to_use).validate_parameters()
+
+    def update_machine_parameters(self, parameters):
+        """Update machine parameters, handling both dict and MixingParameters objects."""
+        if isinstance(parameters, dict):
+            # Convert API format (AM, CA, PVDF, solvent) to internal format (AM_ratio, CA_ratio, etc.)
+            converted_params = {}
+            if "AM" in parameters:
+                converted_params["AM_ratio"] = parameters["AM"]
+            if "CA" in parameters:
+                converted_params["CA_ratio"] = parameters["CA"]
+            if "PVDF" in parameters:
+                converted_params["PVDF_ratio"] = parameters["PVDF"]
+            if "solvent" in parameters:
+                converted_params["solvent_ratio"] = parameters["solvent"]
+            
+            # Use the converted parameters or fall back to the original if already in correct format
+            params_to_use = converted_params if converted_params else parameters
+            mixing_params = MixingParameters(**params_to_use)
+            super().update_machine_parameters(mixing_params)
+        else:
+            # Already a MixingParameters object
+            super().update_machine_parameters(parameters)

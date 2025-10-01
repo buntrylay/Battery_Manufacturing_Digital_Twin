@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
-from functools import partialmethod
-import os
-import json
+import time
 from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
@@ -26,6 +24,8 @@ class BaseMachine(ABC):
         battery_model: BaseModel = None,
         machine_parameters: BaseMachineParameters = None,
         connection_string=None,
+        data_broadcast_fn=None,
+        data_broadcast_interval_sec=5,
         **kwargs,
     ):
         """
@@ -44,15 +44,19 @@ class BaseMachine(ABC):
         self.state = False
         self.start_datetime = None
         self.total_time = 0
-        self.calculator = None
-        # self.kwargs = kwargs
         # Helpers
         self.local_saver = LocalDataSaver(process_name)
         self.iot_sender = IoTHubSender(connection_string)
-    
-    def add_model(self, model: BaseModel):
-        """Add a model to the machine."""
-        self.battery_model = model
+        self.data_broadcast_fn = data_broadcast_fn
+        self.data_broadcast_interval_sec = data_broadcast_interval_sec
+        self._last_broadcast_monotonic = None
+
+        #temporary fix
+        self.batch_id = None
+
+    @abstractmethod
+    def receive_model_from_previous_process(self, previous_model: BaseModel):
+        pass
 
     def empty_battery_model(self):
         """Empty the model."""
@@ -84,10 +88,32 @@ class BaseMachine(ABC):
         try:
             current_properties = self.get_current_state()
             print(current_properties)
-            path = self.local_saver.save_current_state(current_properties, self.total_time)
+            path = self.local_saver.save_current_state(
+                current_properties, self.total_time
+            )
             print(f"Data saved to {path}")
         except Exception as e:
             print(f"Failed to save data to local folder: {e}")
+
+    def _maybe_broadcast_data(self, payload):
+        """
+        If data broadcasting is configured, send JSON payload no more frequently than
+        data_broadcast_interval_sec. Uses a monotonic clock to avoid wall-clock drift.
+        """
+        try:
+            if not self.data_broadcast_fn or not self.data_broadcast_interval_sec:
+                return
+            import time as _t
+            now = _t.monotonic()
+            if self._last_broadcast_monotonic is None or (
+                now - self._last_broadcast_monotonic >= self.data_broadcast_interval_sec
+            ):
+                print(f"Machine broadcasting data")
+                self.data_broadcast_fn(payload)
+                self._last_broadcast_monotonic = now
+        except Exception as e:
+            # Never let broadcasting break simulation loop
+            print(f"Failed to broadcast data via callback function: {e}")
 
     # delegate to a different class
     def save_all_results(self, results):
@@ -120,21 +146,58 @@ class BaseMachine(ABC):
 
     def get_current_state(self, process_specifics=None):
         """Get the current properties of the machine."""
-        return {
-            "timestamp": datetime.now().isoformat(),
-            "duration": round(self.total_time, 2),
-            "process": self.process_name,
-            "temperature_C": round(self.battery_model.temperature, 2) if hasattr(self.battery_model, 'temperature') else None,
-            "battery_model": self.battery_model.get_properties(),
-            "machine_parameters": asdict(self.machine_parameters),
-            "process_specifics": process_specifics,
+        state = {
+        "timestamp": datetime.now().isoformat(),
+        "state": "On" if self.state else "Off",
+        "duration": round(self.total_time, 2),
+        "process": self.process_name,
+        "temperature_C": (
+            round(self.battery_model.temperature, 2)
+            if self.state and hasattr(self.battery_model, "temperature")
+            else None
+        ),
+        "battery_model": self.battery_model.get_properties() if self.battery_model else {},
+        "machine_parameters": asdict(self.machine_parameters) if self.machine_parameters else {},
+        "process_specifics": process_specifics,
         }
+        # Add context if available
+        if hasattr(self, "batch_id"):
+            state["batch_id"] = self.batch_id
+
+        return state
 
     def append_process_specifics(self, process_specifics):
         """Append the process state to the current properties."""
         return {
             "process_specifics": process_specifics,
         }
+
+    @abstractmethod
+    def run(self):
+        """Abstract method that must be implemented by concrete machine classes."""
+        pass
+
+    # TODO: This is a future feature to run the simulation in a standardised way
+    def run_simulation(self, total_steps=100, pause_between_steps=0.1, verbose=True):
+        """Run the simulation."""
+        self.turn_on()
+        if verbose:
+            print(f"Machine {self.process_name} is running for {total_steps} steps")
+        for t in range(1, total_steps):
+            self.total_time = t
+            self.battery_model.update_properties(self.machine_parameters)
+            if verbose:
+                print(self.get_current_state())
+            time.sleep(pause_between_steps)
+        self.turn_off()
+
+    def clean_up(self):
+        """Clean up the machine."""
+        self.turn_off()
+        self.battery_model = None
+        self.state = False
+        self.total_time = 0
+        self.start_datetime = None
 
     # idea to standardise the step logic with decorator @abstractmethod
     #  @abstractmethod
@@ -146,6 +209,6 @@ class BaseMachine(ABC):
     #     pass
 
     @abstractmethod
-    def run(self):
-        """Abstract method that must be implemented by concrete machine classes."""
+    def validate_parameters(self, parameters: dict):
+        """Validate the parameters."""
         pass

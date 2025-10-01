@@ -36,6 +36,7 @@ class ElectrodeInspectionModel(BaseModel):
             "final_thickness": self.final_thickness,
             "epsilon_width": self.epsilon_width,
             "burr_factor": self.burr_factor,
+            "porosity": self.porosity,
             "epsilon_thickness": self.epsilon_thickness,
             "D_detected": self.D_detected,
             "Pass_width": self.pass_width,
