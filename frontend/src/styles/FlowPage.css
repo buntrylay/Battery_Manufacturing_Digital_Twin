@@ -257,3 +257,15 @@ body {
   border-color: var(--ring);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
 }
+
+/* ===================== */
+/* React Flow Styling   */
+/* ===================== */
+/* These styles are necessary for React Flow to display correctly */
+.react-flow {
+    /* Custom Variables */
+    --xy-theme-selected: #F57DBD;
+    --xy-theme-hover: #C5C5C5;
+    --xy-theme-edge-hover: black;
+    --xy-theme-color-focus: #E8E8E8;
+}

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "../styles/RealTimeDataPage.css";
 //TODO: Replace with Websocket updates
 import { useFlowPage } from "../contexts/FlowPageContext";
-
+import { GrafanaMachineDisplay } from "../components/GrafanaMachineDisplay";
 function RealTimeDataPage() {
   const { MACHINE_FLOW } = useFlowPage();
   let machineIds = MACHINE_FLOW.map((stage) => stage.id);
@@ -30,77 +30,127 @@ function RealTimeDataPage() {
           ))}
         </select>
       </div>
-
-      <div className="data-grid">
-        <div className="data-card">
-          <h3>Machine Status</h3>
-          <div className="placeholder"></div>
-        </div>
-
-        <div className="data-card">
-          <h3>Current Batch</h3>
-          <div className="placeholder"></div>
-        </div>
-
-        <div className="data-card">
-          <h3>Sensor Information</h3>
-          <div className="placeholder"></div>
-        </div>
-
-        <div className="data-card">
-          <h3>Sensor Information</h3>
-          <div className="placeholder"></div>
-        </div>
-      </div>
       <div>
         <h3>Live Data Visualization for {selectedMachine}</h3>
         {selectedMachine === "Cathode Mixing" && (
-          <p>Displaying real-time data for Cathode Mixing machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Cathode Coating" && (
-          <p>Displaying real-time data for Cathode Coating machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Cathode Drying" && (
-          <p>Displaying real-time data for Cathode Drying machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Cathode Calendaring" && (
-          <p>Displaying real-time data for Cathode Calendaring machine.</p>
-        )}
-        {selectedMachine === "Cathode Slitting" && (
-          <p>Displaying real-time data for Cathode Slitting machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Cathode Inspection" && (
-          <p>Displaying real-time data for Cathode Inspection machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Mixing" && (
-          <p>Displaying real-time data for Anode Mixing machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Coating" && (
-          <p>Displaying real-time data for Anode Coating machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Drying" && (
-          <p>Displaying real-time data for Anode Drying machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Calendaring" && (
-          <p>Displaying real-time data for Anode Calendaring machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Slitting" && (
-          <p>Displaying real-time data for Anode Slitting machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Anode Inspection" && (
-          <p>Displaying real-time data for Anode Inspection machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Rewinding" && (
-          <p>Displaying real-time data for Rewinding machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Electrolyte Filling" && (
-          <p>Displaying real-time data for Electro lyte Filling machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Formation Cycling" && (
-          <p>Displaying real-time data for Formation Cycling machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
         {selectedMachine === "Aging" && (
-          <p>Displaying real-time data for Aging machine.</p>
+          <GrafanaMachineDisplay
+            url={
+              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+            }
+            name="Cathode Mixing"
+          />
         )}
       </div>
     </div>

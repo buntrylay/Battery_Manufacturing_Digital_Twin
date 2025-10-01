@@ -16,10 +16,9 @@ const ImageNode = ({ data }) => {
   };
 
   return (
-    // The main style is now dynamic based on data.status
     <div
       style={{
-        border: getBorderColor(data.status), // Dynamic border
+        border: getBorderColor(data.status), 
         borderRadius: "8px",
         padding: "10px",
         backgroundColor: "#fff",
