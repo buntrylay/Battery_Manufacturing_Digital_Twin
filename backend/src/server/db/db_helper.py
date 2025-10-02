@@ -145,7 +145,7 @@ class DBHelper:
                     temperature_C=safe_float(simulation_data.get('temperature_C', 0.0)),
                     # battery_model fields
                     solid_content=safe_float(battery_model.get('solid_content', 0.0)),
-                    viscosity=safe_float(battery_model.get('viscosity', 0.0)),
+                    viscosity_Pa_s=safe_float(battery_model.get('viscosity', 0.0)),
                     wet_thickness_um=safe_float(battery_model.get('wet_thickness', 0.0)),
                     dry_thickness_um=safe_float(battery_model.get('dry_thickness', 0.0)),
                     defect_risk=bool(battery_model.get('defect_risk', False)),
