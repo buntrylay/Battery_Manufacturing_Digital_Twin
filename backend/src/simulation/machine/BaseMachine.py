@@ -182,19 +182,29 @@ class BaseMachine(ABC):
                 "process_specifics": process_specifics,
             }
 
+    def clean_up(self):
+        """Clean up the machine."""
+        self.turn_off()
+        self.battery_model = None
+        self.state = False
+        self.total_time = 0
+        self.start_datetime = None
+
     def append_process_specifics(self, process_specifics):
         """Append the process state to the current properties."""
         return {
             "process_specifics": process_specifics,
         }
 
-    @abstractmethod
     def run(self, verbose=True):
         """Run the simulation."""
         self.turn_on()
         if verbose:
-            print(f"Machine {self.process_name} is running for {self.total_ticks} steps")
+            print(
+                f"Machine {self.process_name} is running for {self.total_ticks} steps"
+            )
         for t in range(1, self.total_ticks):
+            self.total_time = t # update the duration
             self.step_logic(t)
             self.battery_model.update_properties(self.machine_parameters)
             if verbose:
@@ -206,14 +216,6 @@ class BaseMachine(ABC):
     def step_logic(self, tick):
         """Abstract method that must be implemented by concrete machine classes."""
         pass
-
-    def clean_up(self):
-        """Clean up the machine."""
-        self.turn_off()
-        self.battery_model = None
-        self.state = False
-        self.total_time = 0
-        self.start_datetime = None
 
     @abstractmethod
     def validate_parameters(self, parameters: dict):

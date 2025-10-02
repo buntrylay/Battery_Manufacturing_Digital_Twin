@@ -25,7 +25,7 @@ from simulation.process_parameters import (
     AgingParameters,
 )
 from simulation.factory.Batch import Batch
-from simulation.events import event_bus, MachineEventType, MachineEvent
+from simulation.data_bus.events import event_bus, MachineEventType, MachineEvent
 
 
 class PlantSimulation:
@@ -65,7 +65,7 @@ class PlantSimulation:
         import sys
         import os
         sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'server'))
-        from notification_queue import notify_machine_status
+        from notification_queue import notify_machine_status  # pyright: ignore[reportMissingImports]
         
         def handle_machine_event(event: MachineEvent):
             """Convert machine events to notifications."""
