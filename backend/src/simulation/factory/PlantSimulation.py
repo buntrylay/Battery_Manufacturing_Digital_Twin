@@ -192,6 +192,8 @@ class PlantSimulation:
             
             # (3) input into the machine (could be from the previous stage or from the initial mixing machine)
             running_machine.receive_model_from_previous_process(model)
+
+            running_machine.batch_id = batch.batch_id
             # (4) run the machine (start the simulation)
             running_machine.run()
             # (5) update the batch model (local)

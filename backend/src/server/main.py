@@ -27,6 +27,12 @@ from simulation.factory.PlantSimulation import PlantSimulation
 from .notification_queue import notification_queue, notify_machine_status
 from .WebSockerManager import manager
 
+# Import database engine & session
+from backend.src.server.db.db import engine, SessionLocal
+from backend.src.server.db.model_table import *
+from backend.src.server.db.db_helper import DBHelper
+import sqlalchemy
+
 app = FastAPI()
 
 # Add CORS middleware
@@ -45,9 +51,15 @@ out_of_batch_event = threading.Event()
 
 # WebSocket connection management
 
+db_helper = DBHelper()
 
 @app.get("/")
 def root():
+    try:
+        with engine.connect() as conn:
+            conn.execute(sqlalchemy.text("SELECT 1"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     return {"message": "This is the V2 API for the battery manufacturing digital twin!"}
 
 
@@ -130,14 +142,34 @@ def reset_plant():
         out_of_batch_event.clear()
     return {"message": "Plant reset successfully"}
 
+def convert_numpy_types(obj):
+    import numpy as np
+    
+    if isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(v) for v in obj]
+    elif isinstance(obj, np.generic):
+        return obj.item()
+    else:
+        return obj
 
 # Background task to process notifications and broadcast to WebSocket clients
 async def process_notifications():
+    
     """Background task to process machine notifications and broadcast to WebSocket clients."""
     while True:
         try:
             # Get notification from queue
             notification = await notification_queue.get_notification()
+            
+            # If this is a data notification, queue for DB writing
+            if notification.status == "data_generated":
+                # Merge notification fields with data
+                db_helper.queue_data(notification.data)
+                print("Generated data pushed to db helper queue!")
+                continue
+
 
             # Convert to JSON and broadcast to all connected clients
             message = json.dumps(notification.to_dict())
@@ -154,6 +186,19 @@ async def process_notifications():
 async def startup_event():
     """Start the background task for processing notifications."""
     asyncio.create_task(process_notifications())
+
+    try:
+        create_tables()
+        print(f"Successfully populated tables!")
+    except Exception as e:
+            print(f"Error populating tables: {e}")
+    
+    try:
+        db_helper.start_worker(lambda msg: print(msg))
+        print(f"Successfully created db helper!")
+    except Exception as e:
+            print(f"Error creating db helper: {e}")
+    
 
 
 if __name__ == "__main__":
