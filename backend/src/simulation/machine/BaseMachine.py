@@ -7,6 +7,19 @@ from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
 from simulation.helper.IoTHubSender import IoTHubSender
 
+# Optional import to avoid circular dependency - define fallback if import fails
+try:
+    # Try multiple import paths to handle different environments
+    try:
+        from server.notification_queue import notify_machine_status
+    except ImportError:
+        from backend.src.server.notification_queue import notify_machine_status
+except ImportError:
+    # Define a no-op function if import fails to avoid NameError
+    def notify_machine_status(*args, **kwargs):
+        print(f"Notification: {args}, {kwargs}")  # Debug output instead of websocket
+        pass
+
 
 class BaseMachine(ABC):
     """
@@ -24,6 +37,8 @@ class BaseMachine(ABC):
         battery_model: BaseModel = None,
         machine_parameters: BaseMachineParameters = None,
         connection_string=None,
+        data_broadcast_fn=None,
+        data_broadcast_interval_sec=5,
         **kwargs,
     ):
         """
@@ -45,6 +60,12 @@ class BaseMachine(ABC):
         # Helpers
         self.local_saver = LocalDataSaver(process_name)
         self.iot_sender = IoTHubSender(connection_string)
+        self.data_broadcast_fn = data_broadcast_fn
+        self.data_broadcast_interval_sec = data_broadcast_interval_sec
+        self._last_broadcast_monotonic = None
+
+        #temporary fix
+        self.batch_id = None
 
     @abstractmethod
     def receive_model_from_previous_process(self, previous_model: BaseModel):
@@ -87,6 +108,26 @@ class BaseMachine(ABC):
         except Exception as e:
             print(f"Failed to save data to local folder: {e}")
 
+    def _maybe_broadcast_data(self, payload):
+        """
+        If data broadcasting is configured, send JSON payload no more frequently than
+        data_broadcast_interval_sec. Uses a monotonic clock to avoid wall-clock drift.
+        """
+        try:
+            if not self.data_broadcast_fn or not self.data_broadcast_interval_sec:
+                return
+            import time as _t
+            now = _t.monotonic()
+            if self._last_broadcast_monotonic is None or (
+                now - self._last_broadcast_monotonic >= self.data_broadcast_interval_sec
+            ):
+                print(f"Machine broadcasting data")
+                self.data_broadcast_fn(payload)
+                self._last_broadcast_monotonic = now
+        except Exception as e:
+            # Never let broadcasting break simulation loop
+            print(f"Failed to broadcast data via callback function: {e}")
+
     # delegate to a different class
     def save_all_results(self, results):
         """
@@ -102,11 +143,25 @@ class BaseMachine(ABC):
         """Turn on the machine."""
         self.state = True
         self.start_datetime = datetime.now()
+        notify_machine_status(
+            machine_id=self.process_name,
+            line_type=self.process_name.split('_')[-1],  # Get the last part after splitting
+            process_name=self.process_name,
+            status="running",
+            data={"stage": "turned_on", "message": f"{self.process_name} turned on"}
+        )
 
     def turn_off(self):
         """Turn off the machine."""
         self.state = False
         self.total_time = 0
+        notify_machine_status(
+            machine_id=self.process_name,
+            line_type=self.process_name.split('_')[-1],  # Get the last part after splitting
+            process_name=self.process_name,
+            status="idle",
+            data={"stage": "turned_off", "message": f"{self.process_name} turned off"}
+        )
 
     def pre_run_check(self):
         """Pre-run check for the machine."""
@@ -118,29 +173,25 @@ class BaseMachine(ABC):
 
     def get_current_state(self, process_specifics=None):
         """Get the current properties of the machine."""
-        if self.state:
-            return {
-                "timestamp": datetime.now().isoformat(),
-                "state": "On",
-                "duration": round(self.total_time, 2),
-                "process": self.process_name,
-                "temperature_C": (
-                    round(self.battery_model.temperature, 2)
-                    if hasattr(self.battery_model, "temperature")
-                    else None
-                ),
-                "battery_model": self.battery_model.get_properties(),
-                "machine_parameters": asdict(self.machine_parameters),
-                "process_specifics": process_specifics,
-            }
-        else:
-            return {
-                "timestamp": datetime.now().isoformat(),
-                "process": self.process_name,
-                "state": "Off",
-                "machine_parameters": asdict(self.machine_parameters),
-                "process_specifics": process_specifics,
-            }
+        state = {
+        "timestamp": datetime.now().isoformat(),
+        "state": "On" if self.state else "Off",
+        "duration": round(self.total_time, 2),
+        "process": self.process_name,
+        "temperature_C": (
+            round(self.battery_model.temperature, 2)
+            if self.state and hasattr(self.battery_model, "temperature")
+            else None
+        ),
+        "battery_model": self.battery_model.get_properties() if self.battery_model else {},
+        "machine_parameters": asdict(self.machine_parameters) if self.machine_parameters else {},
+        "process_specifics": process_specifics,
+        }
+        # Add context if available
+        if hasattr(self, "batch_id"):
+            state["batch_id"] = self.batch_id
+
+        return state
 
     def append_process_specifics(self, process_specifics):
         """Append the process state to the current properties."""
@@ -159,12 +210,50 @@ class BaseMachine(ABC):
         self.turn_on()
         if verbose:
             print(f"Machine {self.process_name} is running for {total_steps} steps")
+        
+        # Send starting notification
+        notify_machine_status(
+            machine_id=self.process_name,
+            line_type=self.process_name.split('_')[-1],
+            process_name=self.process_name,
+            status="simulation_started",
+            data={"message": f"Started simulation with {total_steps} steps", "total_steps": total_steps}
+        )
+        
         for t in range(1, total_steps):
             self.total_time = t
             self.battery_model.update_properties(self.machine_parameters)
+            
+            # Send progress updates every 10 steps
+            if t % 10 == 0:
+                progress = (t / total_steps) * 100
+                notify_machine_status(
+                    machine_id=self.process_name,
+                    line_type=self.process_name.split('_')[-1],
+                    process_name=self.process_name,
+                    status="simulation_progress",
+                    data={
+                        "message": f"Simulation progress: {progress:.1f}%",
+                        "step": t,
+                        "total_steps": total_steps,
+                        "progress_percent": progress,
+                        "current_state": self.get_current_state()
+                    }
+                )
+            
             if verbose:
                 print(self.get_current_state())
             time.sleep(pause_between_steps)
+            
+        # Send completion notification
+        notify_machine_status(
+            machine_id=self.process_name,
+            line_type=self.process_name.split('_')[-1],
+            process_name=self.process_name,
+            status="simulation_completed",
+            data={"message": f"Simulation completed successfully", "final_state": self.get_current_state()}
+        )
+        
         self.turn_off()
 
     def clean_up(self):

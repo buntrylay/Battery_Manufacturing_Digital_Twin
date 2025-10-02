@@ -5,17 +5,15 @@ nav {
   align-items: center;
   padding: 0 20px;
   height: 100px;
+
 }
 
 .nav-links {
-  position: absolute;
-  padding-block: 10px;
-  z-index: 100;
+  display: flex; /* instead of absolute + grid */
+  gap: 40px;     /* spacing between items */
   list-style: none;
-  width: 50%;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  place-items: center;
+  margin: 0;
+  padding: 0;
 }
 
 /* Navbar Titles  */
@@ -28,27 +26,24 @@ nav {
 }
 
 .nav-links a {
-  font-size: x-large;
-  font-weight: 300;
+  font-size: 1.2rem;
+  font-weight: 500;
   text-decoration: none !important;
   color: #243435;
   border-radius: 20px;
   padding: 10px 20px;
-  box-shadow: 0 4px 12px rgba(209, 217, 229, 0.51);
-  min-width: 100%;
+  transition: all 0.2s ease-in-out;
 }
+
 .nav-links a:active {
-  font-size: x-large;
-  font-weight: 300;
-  text-decoration: none !important;
-  color: #3b5355;
+  background-color: #f0f0f1;
+  transform: translateY(0);
 }
 
 .nav-links a:hover,
 .nav-links a:focus {
-  border-color: rgba(0, 0, 0, 0.15);
-  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
-  color: rgba(0, 0, 0, 0.65);
+  background-color: rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
 }
 
 .nav-links a:hover {

@@ -13,7 +13,6 @@ import "./styles/SimulationPage.css";
 import "./styles/LogsPage.css";
 
 // Pages
-import SimulationPage from "./pages/SimulationPage";
 import LogsPage from "./pages/LogsPage";
 import FlowPage from "./pages/FlowPage";
 import { FlowPageProvider } from "./contexts/FlowPageContext";
@@ -28,6 +27,14 @@ export default function App() {
           <main className="App-main">
             <Routes>
               <Route
+                path="/"
+                element={
+                  <FlowPageProvider>
+                    <FlowPage />
+                  </FlowPageProvider>
+                }
+              />
+              <Route
                 path="/flow"
                 element={
                   <FlowPageProvider>
@@ -35,7 +42,6 @@ export default function App() {
                   </FlowPageProvider>
                 }
               />
-              <Route path="/" element={<SimulationPage />} />
               <Route path="/logs" element={<LogsPage />} />
               <Route
                 path="/realtime"

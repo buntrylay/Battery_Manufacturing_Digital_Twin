@@ -1,18 +1,23 @@
 // services/api.js
 import axios from "axios";
 
-// For development, this is fine. For production, use environment variables.
-// For example: const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
-const API_URL = "http://localhost:8000";
+// Use environment variable or default to localhost
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 export default API_URL;
 // --- Corrected API Functions ---
 
 /**
- * Starts the simulation on the backend.
- * NOTE: The endpoint has been corrected from /start-both to /start-simulation.
+ * Starts the full simulation on the backend with anode and cathode parameters.
+ * Updated to use the new /api/simulation/start endpoint.
  */
 export const startSimulation = (data) =>
-  axios.post(`${API_URL}/start-simulation`, data);
+  axios.post(`${API_URL}/api/simulation/start`, data);
+
+/**
+ * Starts mixing simulation for a specific electrode type from flow page.
+ */
+export const startMixingSimulation = (data) =>
+  axios.post(`${API_URL}/api/simulation/mixing/start`, data);
 
 /**
  * Resets the simulation data on the backend.
