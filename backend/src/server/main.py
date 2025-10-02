@@ -81,6 +81,7 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+db_helper = DBHelper()
 
 @app.get("/")
 def root():
@@ -375,15 +376,34 @@ def reset_plant():
         out_of_batch_event.clear()
     return {"message": "Plant reset successfully"}
 
+def convert_numpy_types(obj):
+    import numpy as np
+    
+    if isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(v) for v in obj]
+    elif isinstance(obj, np.generic):
+        return obj.item()
+    else:
+        return obj
 
 # Background task to process notifications and broadcast to WebSocket clients
 async def process_notifications():
+    
     """Background task to process machine notifications and broadcast to WebSocket clients."""
     while True:
         try:
             # Get notification from queue
             notification = await notification_queue.get_notification()
             
+            # If this is a data notification, queue for DB writing
+            if notification.status == "data_generated":
+                # Merge notification fields with data
+                db_helper.queue_data(notification.data)
+                print("Generated data pushed to db helper queue!")
+                continue
+
             # Convert to JSON and broadcast to all connected clients
             message = json.dumps(notification.to_dict())
             await manager.broadcast(message)
@@ -402,8 +422,16 @@ async def startup_event():
 
     try:
         create_tables()
+        print(f"Successfully populated tables!")
     except Exception as e:
-            print(f"Error processing notification: {e}")
+            print(f"Error populating tables: {e}")
+    
+    try:
+        db_helper.start_worker(lambda msg: print(msg))
+        print(f"Successfully created db helper!")
+    except Exception as e:
+            print(f"Error creating db helper: {e}")
+    
 
 
 if __name__ == "__main__":
