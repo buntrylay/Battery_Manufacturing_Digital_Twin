@@ -6,19 +6,7 @@ from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
 from simulation.helper.IoTHubSender import IoTHubSender
-
-# Optional import to avoid circular dependency - define fallback if import fails
-try:
-    # Try multiple import paths to handle different environments
-    try:
-        from server.notification_queue import notify_machine_status
-    except ImportError:
-        from backend.src.server.notification_queue import notify_machine_status
-except ImportError:
-    # Define a no-op function if import fails to avoid NameError
-    def notify_machine_status(*args, **kwargs):
-        print(f"Notification: {args}, {kwargs}")  # Debug output instead of websocket
-        pass
+from server.notification_queue import notify_machine_status
 
 
 class BaseMachine(ABC):
@@ -114,16 +102,14 @@ class BaseMachine(ABC):
         data_broadcast_interval_sec. Uses a monotonic clock to avoid wall-clock drift.
         """
         try:
-            if not self.data_broadcast_fn or not self.data_broadcast_interval_sec:
-                return
-            import time as _t
-            now = _t.monotonic()
-            if self._last_broadcast_monotonic is None or (
-                now - self._last_broadcast_monotonic >= self.data_broadcast_interval_sec
-            ):
-                print(f"Machine broadcasting data")
-                self.data_broadcast_fn(payload)
-                self._last_broadcast_monotonic = now
+            notify_machine_status(
+                machine_id=self.process_name,
+                line_type=self.process_name.split('_')[-1],
+                process_name=self.process_name,
+                status="data_generated",
+                data=payload
+            )
+            print("Generated data pushed to notification queue!")
         except Exception as e:
             # Never let broadcasting break simulation loop
             print(f"Failed to broadcast data via callback function: {e}")
