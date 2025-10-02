@@ -17,6 +17,15 @@ backend/
 ├── requirements.txt         # Python dependencies
 └── setup.py                # Package configuration
 ```
+```txt
+backend/
+├─ src/
+│  ├─ server/
+│  │  ├─ __init__.py
+│  │  ├─ main.py                 # FastAPI app & routes
+│  │  ├─ db.py                   # DB engine & table setup
+
+
 
 ## Installation
 

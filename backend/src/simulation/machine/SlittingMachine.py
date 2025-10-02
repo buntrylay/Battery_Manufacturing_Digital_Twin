@@ -1,19 +1,24 @@
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import dataclass
 from simulation.process_parameters.Parameters import SlittingParameters
+from simulation.battery_model import CalendaringModel
+from simulation.battery_model.SlittingModel import SlittingModel
 
 
 class SlittingMachine(BaseMachine):
-    def __init__(self, 
-        slitting_model, 
-        machine_parameters: SlittingParameters,
-        connection_string=None
+    def __init__(
+        self,
+        process_name: str,
+        slitting_parameters: SlittingParameters,
+        slitting_model: SlittingModel = None,
+        connection_string=None,
     ):
-        super().__init__("Slitting", 
-            slitting_model, 
-            machine_parameters, 
-            connection_string
+        super().__init__(
+            process_name, slitting_model, slitting_parameters, connection_string
         )
+
+    def receive_model_from_previous_process(self, previous_model: CalendaringModel):
+        self.battery_model = SlittingModel(previous_model)
 
     def run(self):
         self.turn_on()
@@ -22,9 +27,11 @@ class SlittingMachine(BaseMachine):
         for t in range(30):
             self.total_time = t
             self.battery_model.update_properties(self.machine_parameters)
-            proc = self.battery_model.get_properties()                     
-            result = self.get_current_properties(process_specifics=proc)   
+            result = self.get_current_state()
             all_results.append(result)
             self.save_data_to_local_folder()
         self.save_all_results(all_results)
         self.turn_off()
+
+    def validate_parameters(self, parameters: dict):
+        return SlittingParameters(**parameters).validate_parameters()

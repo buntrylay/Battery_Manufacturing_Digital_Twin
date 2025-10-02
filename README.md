@@ -318,6 +318,19 @@ This simulation is designed to be scalable. To add a new manufacturing stage (e.
 4. Push to the branch
 5. Create a Pull Request
 
+
+## !!!CLI command to use this System, Docker, Database!!!
+- **Open Docker Desktop**: Open connection from the docker end
+- **Docker compose up --build**: Request Connection to the Docker
+### Frontend 
+- **5000:5000**: using the Ports in Docker to open Web interface
+### Database
+- **docker exec -it postgres_db bash**: execute to open docker postgresql
+- **psql -U postgres**: query into the database
+- **\dt**: query to show all tables in the database
+- **\d "table_name"**: check the table attributes and description
+### Grafana
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.

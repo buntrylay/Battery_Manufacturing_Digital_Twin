@@ -5,7 +5,7 @@ networks:
     driver: bridge
 
 services:
-  # React Frontend Service
+  ## Frontend service
   frontend:
     build:
       context: ./frontend
@@ -14,12 +14,14 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/app
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
     networks:
       - app-net
     depends_on:
       - fastapi
 
-  # FastAPI Backend Service
+  ##` Backend service
   fastapi:
     build:
       context: ./backend
@@ -29,25 +31,27 @@ services:
     volumes:
       - .:/workspaces/app
     working_dir: /workspaces/app
+    depends_on:
+      - db
     networks:
       - app-net
 
-  #PostgreSQL database
+  ## Database service - using postgresql
   db:
     image: postgres:15
     container_name: postgres_db
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: postgres
-      POSTGRES_HOST: db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-  # Grafana Service
+    networks:
+      - app-net
+  ## Grafana service
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -56,20 +60,14 @@ services:
       - "3001:3000"
     volumes:
       - grafana-storage:/var/lib/grafana
+      - ./provisioning:/etc/grafana/provisioning
     networks:
       - app-net
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: testing@gmail.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-    ports:
-      - "5050:80"
-    depends_on:
-      - db
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=password
+      - GF_PLUGINS_ALLOW_UNSIGNED=true
 
 volumes:
   postgres_data:

@@ -56,6 +56,6 @@
 
 .placeholder {
   background: #e5e7eb;
-  height: 120px;
+  height: auto;
   border-radius: 8px;
 }

@@ -4,7 +4,7 @@ import React, {
   useEffect,
   useRef,
   useContext,
-  useCallback, // Import useCallback
+  useCallback,
 } from "react";
 
 // Create a context for sharing WebSocket data
@@ -40,11 +40,24 @@ export const WebSocketProvider = ({ children }) => {
 
     // Handle incoming messages and update stageLog
     socket.onmessage = (event) => {
-      setStageLog((prev) => {
-        const updated = [...prev, event.data];
-        localStorage.setItem("stageLog", JSON.stringify(updated));
-        return updated;
-      });
+      try {
+        // Try to parse as JSON for machine notifications
+        const data = JSON.parse(event.data);
+        const formattedMessage = `[${data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString()}] ${data.process_name || data.machine_id}: ${data.status} - ${data.data?.message || 'Status update'}`;
+        
+        setStageLog((prev) => {
+          const updated = [...prev, formattedMessage];
+          localStorage.setItem("stageLog", JSON.stringify(updated));
+          return updated;
+        });
+      } catch (error) {
+        // If not JSON, treat as plain text message
+        setStageLog((prev) => {
+          const updated = [...prev, event.data];
+          localStorage.setItem("stageLog", JSON.stringify(updated));
+          return updated;
+        });
+      }
     };
 
     // Attempt to reconnect after disconnect

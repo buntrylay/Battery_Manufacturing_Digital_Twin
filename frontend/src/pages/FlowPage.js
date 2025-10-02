@@ -1,81 +1,93 @@
-import React from "react";
+import React, { useState } from "react";
 import { useFlowPage } from "../contexts/FlowPageContext";
 import SidePanel from "../components/SidePanel";
+import MachineFlowDiagram from "../components/MachineFlowDiagram";
 import "../styles/FlowPage.css";
-import { stageDescriptions } from "../components/constants";
-
-// Import machine images
-import mixingImg from "../assets/mixing.PNG";
-import coatingImg from "../assets/coating.PNG";
-import dryingImg from "../assets/drying.PNG";
-import calendaringImg from "../assets/calendaring.PNG";
-import slittingImg from "../assets/slitting.PNG";
-import inspectionImg from "../assets/inspection.PNG";
-import electrolyteImg from "../assets/electrolyte.PNG";
-import rewindingImg from "../assets/rewinding.PNG";
-import formationImg from "../assets/formation.PNG";
-import agingImg from "../assets/aging.PNG";
+import { useLogs } from "../contexts/WebSocketContext";
+import { startSimulation } from "../services/api";
 
 const FlowPage = () => {
-  const flowPageData = useFlowPage();
-  if (!flowPageData) return <div>Loading...</div>;
+  const { setSelectedId, selectedStage } = useFlowPage();
+  const { clearLogs } = useLogs();
+  const [simulationStatus, setSimulationStatus] = useState("");
+  const [isRunning, setIsRunning] = useState(false);
 
-  const { setSelectedId, selectedStage } = flowPageData;
+  const handleClearLogs = () => {
+    clearLogs();
+  };
 
-  const cathodeStages = [
-    { id: "Cathode Mixing", name: "Mixing", img: mixingImg },
-    { id: "Cathode Coating", name: "Coating", img: coatingImg },
-    { id: "Cathode Drying", name: "Drying", img: dryingImg },
-    { id: "Cathode Calendaring", name: "Calendaring", img: calendaringImg },
-    { id: "Cathode Slitting", name: "Slitting", img: slittingImg },
-    { id: "Cathode Inspection", name: "Inspection", img: inspectionImg },
-  ];
+  const handleStartFullSimulation = async () => {
+    setIsRunning(true);
+    setSimulationStatus("Starting full simulation...");
+    clearLogs();
 
-  const anodeStages = [
-    { id: "Anode Mixing", name: "Mixing", img: mixingImg },
-    { id: "Anode Coating", name: "Coating", img: coatingImg },
-    { id: "Anode Drying", name: "Drying", img: dryingImg },
-    { id: "Anode Calendaring", name: "Calendaring", img: calendaringImg },
-    { id: "Anode Slitting", name: "Slitting", img: slittingImg },
-    { id: "Anode Inspection", name: "Inspection", img: inspectionImg },
-  ];
+    try {
+      // Get saved inputs from localStorage
+      const anodeInputs = localStorage.getItem('mixingInputs_Anode Mixing');
+      const cathodeInputs = localStorage.getItem('mixingInputs_Cathode Mixing');
 
-  const postInspection = [
-    { id: "Rewinding", name: "Rewinding", img: rewindingImg },
-    { id: "Electrolyte Filling", name: "Electrolyte Filling", img: electrolyteImg },
-    { id: "Formation Cycling", name: "Formation Cycling", img: formationImg },
-    { id: "Aging", name: "Aging", img: agingImg },
-  ];
+      if (!anodeInputs || !cathodeInputs) {
+        setSimulationStatus("Error: Please configure both Anode and Cathode mixing inputs first");
+        setIsRunning(false);
+        return;
+      }
 
-  const renderRowWithTitle = (title, stages) => (
-    <div className="flow-group">
-      <h3 className="flow-group-title">{title}</h3>
-      <div className="flow-row">
-        {stages.map((s) => (
-          <div
-            key={s.id}
-            className="machine-node"
-            onClick={() => setSelectedId(s.id)} // ✅ pass string ID
-          >
-            <img src={s.img} alt={s.name} />
-            <p>{s.name}</p>
+      const anodeData = JSON.parse(anodeInputs);
+      const cathodeData = JSON.parse(cathodeInputs);
 
-            <div className="machine-tooltip">
-              {stageDescriptions[s.id] || "No description available"}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+      // Prepare simulation data with both anode and cathode parameters
+      const simulationData = {
+        anode_params: {
+          AM: anodeData.AM,
+          CA: anodeData.CA,
+          PVDF: anodeData.PVDF,
+          Solvent: anodeData.Solvent
+        },
+        cathode_params: {  
+          AM: cathodeData.AM,
+          CA: cathodeData.CA,
+          PVDF: cathodeData.PVDF,
+          Solvent: cathodeData.Solvent
+        }
+      };
+
+      setSimulationStatus("Starting complete battery manufacturing simulation...");
+      const response = await startSimulation(simulationData);
+      
+      setSimulationStatus(`Full simulation started successfully! Batch ID: ${response.data.batch_id}`);
+    } catch (error) {
+      setSimulationStatus("Error: " + (error.response?.data?.detail || error.message));
+    } finally {
+      setIsRunning(false);
+    }
+  };
 
   return (
     <div className={`flow-layout ${selectedStage ? "with-panel" : "full"}`}>
-      <div className="flow-canvas">
-        {renderRowWithTitle("Cathode", cathodeStages)}
-        {renderRowWithTitle("Anode", anodeStages)}
-        {renderRowWithTitle("Cell Assembly & Aging", postInspection)}
+      <div className="main-content">
+        <div className="controls">
+          <button onClick={handleClearLogs} className="clear-logs-button">
+            Clear Logs
+          </button>
+          <button 
+            onClick={handleStartFullSimulation} 
+            className="start-full-simulation-btn"
+            disabled={isRunning}
+          >
+            {isRunning ? "Running..." : "Start Full Simulation"}
+          </button>
+          <div className="instructions">
+            <p>1. Configure mixing inputs by clicking on Anode/Cathode Mixing machines</p>
+            <p>2. Save inputs in each machine's side panel</p>
+            <p>3. Click "Start Full Simulation" to run the complete manufacturing process from mixing to aging</p>
+            {simulationStatus && <p className="simulation-status">{simulationStatus}</p>}
+          </div>
+        </div>
+        <div className="flow-canvas">
+          <MachineFlowDiagram />
+        </div>
       </div>
+
       {selectedStage && (
         <SidePanel
           selectedStage={selectedStage}

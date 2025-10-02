@@ -1,22 +1,3 @@
-export const stageIcons = {
-  "Anode Mixing": "🧪",
-  "Cathode Mixing": "🧪",
-  "Anode Coating": "🎨",
-  "Cathode Coating": "🎨",
-  "Anode Drying": "🌬️",
-  "Cathode Drying": "🌬️",
-  "Anode Calendaring": "⚙️",
-  "Cathode Calendaring": "⚙️",
-  "Anode Slitting": "✂️",
-  "Cathode Slitting": "✂️",
-  "Anode Inspection": "🔍",
-  "Cathode Inspection": "🔍",
-  Rewinding: "♻️",
-  "Electrolyte Filling": "💧",
-  "Formation Cycling": "🔋",
-  Aging: "⏳",
-};
-
 export const stageDescriptions = {
   "Anode Mixing": "Mixes anode active material, binder, and solvent.",
   "Cathode Mixing": "Mixes cathode active material, binder, and solvent.",
@@ -37,13 +18,26 @@ export const stageDescriptions = {
 };
 
 export const inputsByStage = {
-  // Different inputs for Mixing
   "Anode Mixing": ["Anode PVDF", "Anode CA", "Anode AM", "Anode Solvent"],
-  "Cathode Mixing": ["Cathode PVDF", "Cathode CA", "Cathode AM", "Cathode Solvent"],
+  "Cathode Mixing": [
+    "Cathode PVDF",
+    "Cathode CA",
+    "Cathode AM",
+    "Cathode Solvent",
+  ],
 
-  // Shared inputs duplicated for anode/cathode machines
-  "Anode Coating": ["Coating Speed", "Gap Height", "Flow Rate", "Coating Width"],
-  "Cathode Coating": ["Coating Speed", "Gap Height", "Flow Rate", "Coating Width"],
+  "Anode Coating": [
+    "Coating Speed",
+    "Gap Height",
+    "Flow Rate",
+    "Coating Width",
+  ],
+  "Cathode Coating": [
+    "Coating Speed",
+    "Gap Height",
+    "Flow Rate",
+    "Coating Width",
+  ],
 
   "Anode Drying": ["Web Speed", "Drying Temp", "Drying Time"],
   "Cathode Drying": ["Web Speed", "Drying Temp", "Drying Time"],
@@ -54,10 +48,17 @@ export const inputsByStage = {
   "Anode Slitting": ["Blade Sharpness", "Slitting Speed", "Target Width"],
   "Cathode Slitting": ["Blade Sharpness", "Slitting Speed", "Target Width"],
 
-  "Anode Inspection": ["Width Tolerance", "Thickness Tolerance", "Defects Allowed"],
-  "Cathode Inspection": ["Width Tolerance", "Thickness Tolerance", "Defects Allowed"],
+  "Anode Inspection": [
+    "Width Tolerance",
+    "Thickness Tolerance",
+    "Defects Allowed",
+  ],
+  "Cathode Inspection": [
+    "Width Tolerance",
+    "Thickness Tolerance",
+    "Defects Allowed",
+  ],
 
-  // Shared post-inspection machines
   Rewinding: ["Rewinding Speed", "Initial Tension"],
   "Electrolyte Filling": ["Vacuum Level", "Vacuum Filling", "Soaking Time"],
   "Formation Cycling": ["Charge Current", "Voltage"],
