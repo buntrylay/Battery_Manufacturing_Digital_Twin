@@ -24,7 +24,7 @@ from simulation.factory.Batch import Batch
 from simulation.factory.PlantSimulation import PlantSimulation
 
 # Import notification queue
-from notification_queue import notification_queue, notify_machine_status
+from .notification_queue import notification_queue, notify_machine_status
 
 app = FastAPI()
 
@@ -143,29 +143,90 @@ def update_machine_params(line_type: str, machine_id: str, parameters: dict):
 
 
 @app.post("/api/simulation/start")
-def add_batch():
-    """Add a batch to the plant."""
+def start_full_simulation(simulation_data: dict):
+    """Start full simulation with anode and cathode mixing parameters."""
     global battery_plant_simulation
     global factory_run_thread
     global out_of_batch_event
-    batch = Batch(batch_id=str(uuid.uuid4()))
+    
     try:
+        # Extract anode and cathode parameters from the input
+        anode_params = simulation_data.get("anode_params")
+        cathode_params = simulation_data.get("cathode_params")
+        
+        if not anode_params or not cathode_params:
+            raise HTTPException(
+                status_code=400, 
+                detail="Both anode_params and cathode_params are required"
+            )
+        
+        # Validate required fields for both electrode types
+        required_fields = ["PVDF", "CA", "AM", "Solvent"]
+        
+        for field in required_fields:
+            if field not in anode_params:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Missing required anode field: {field}"
+                )
+            if field not in cathode_params:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Missing required cathode field: {field}"
+                )
+        
+        # Check if ratios sum to 1.0 for anode
+        anode_total = sum(anode_params[field] for field in required_fields)
+        if abs(anode_total - 1.0) > 0.0001:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Anode ratios must sum to 1.0, got {anode_total}"
+            )
+        
+        # Check if ratios sum to 1.0 for cathode
+        cathode_total = sum(cathode_params[field] for field in required_fields)
+        if abs(cathode_total - 1.0) > 0.0001:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cathode ratios must sum to 1.0, got {cathode_total}"
+            )
+        
+        # Create batch with the provided parameters
+        batch = Batch(
+            batch_id=str(uuid.uuid4()),
+            anode_mixing_params=anode_params,
+            cathode_mixing_params=cathode_params
+        )
+        
+        # Add batch to simulation
         battery_plant_simulation.add_batch(batch)
+        
+        # Start or restart factory simulation thread
+        if factory_run_thread is None:
+            factory_run_thread = threading.Thread(
+                target=battery_plant_simulation.run, args=(out_of_batch_event,)
+            )
+            factory_run_thread.start()
+        elif out_of_batch_event.is_set():
+            factory_run_thread = None
+            out_of_batch_event.clear()
+            factory_run_thread = threading.Thread(
+                target=battery_plant_simulation.run, args=(out_of_batch_event,)
+            )
+            factory_run_thread.start()
+        
+        return {
+            "message": "Full simulation started successfully",
+            "batch_id": batch.batch_id,
+            "anode_params": anode_params,
+            "cathode_params": cathode_params
+        }
+        
     except ValueError as e:
-        # over limit of batches
+        # over limit of batches or other validation errors
         raise HTTPException(status_code=400, detail=str(e))
-    if factory_run_thread is None:
-        factory_run_thread = threading.Thread(
-            target=battery_plant_simulation.run, args=(out_of_batch_event,)
-        )
-        factory_run_thread.start()
-    elif out_of_batch_event.is_set():
-        factory_run_thread = None
-        out_of_batch_event.clear()
-        factory_run_thread = threading.Thread(
-            target=battery_plant_simulation.run, args=(out_of_batch_event,)
-        )
-        factory_run_thread.start()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @app.post("/api/simulation/mixing/start")

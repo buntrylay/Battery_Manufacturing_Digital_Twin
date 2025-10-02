@@ -4,7 +4,7 @@ import SidePanel from "../components/SidePanel";
 import MachineFlowDiagram from "../components/MachineFlowDiagram";
 import "../styles/FlowPage.css";
 import { useLogs } from "../contexts/WebSocketContext";
-import { startMixingSimulation } from "../services/api";
+import { startSimulation } from "../services/api";
 
 const FlowPage = () => {
   const { setSelectedId, selectedStage } = useFlowPage();
@@ -35,18 +35,26 @@ const FlowPage = () => {
       const anodeData = JSON.parse(anodeInputs);
       const cathodeData = JSON.parse(cathodeInputs);
 
-      // Start anode mixing simulation
-      setSimulationStatus("Starting Anode mixing simulation...");
-      await startMixingSimulation(anodeData);
-      
-      // Wait a moment between simulations
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Start cathode mixing simulation
-      setSimulationStatus("Starting Cathode mixing simulation...");
-      await startMixingSimulation(cathodeData);
+      // Prepare simulation data with both anode and cathode parameters
+      const simulationData = {
+        anode_params: {
+          AM: anodeData.AM,
+          CA: anodeData.CA,
+          PVDF: anodeData.PVDF,
+          Solvent: anodeData.Solvent
+        },
+        cathode_params: {  
+          AM: cathodeData.AM,
+          CA: cathodeData.CA,
+          PVDF: cathodeData.PVDF,
+          Solvent: cathodeData.Solvent
+        }
+      };
 
-      setSimulationStatus("Full simulation completed successfully!");
+      setSimulationStatus("Starting complete battery manufacturing simulation...");
+      const response = await startSimulation(simulationData);
+      
+      setSimulationStatus(`Full simulation started successfully! Batch ID: ${response.data.batch_id}`);
     } catch (error) {
       setSimulationStatus("Error: " + (error.response?.data?.detail || error.message));
     } finally {
@@ -71,7 +79,7 @@ const FlowPage = () => {
           <div className="instructions">
             <p>1. Configure mixing inputs by clicking on Anode/Cathode Mixing machines</p>
             <p>2. Save inputs in each machine's side panel</p>
-            <p>3. Click "Start Full Simulation" to run the complete process</p>
+            <p>3. Click "Start Full Simulation" to run the complete manufacturing process from mixing to aging</p>
             {simulationStatus && <p className="simulation-status">{simulationStatus}</p>}
           </div>
         </div>

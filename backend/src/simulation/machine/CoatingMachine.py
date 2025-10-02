@@ -3,6 +3,19 @@ from simulation.machine.BaseMachine import BaseMachine
 from simulation.process_parameters.Parameters import CoatingParameters
 import time
 
+# Import notification functions
+try:
+    # Try multiple import paths to handle different environments
+    try:
+        from server.notification_queue import notify_machine_status
+    except ImportError:
+        from backend.src.server.notification_queue import notify_machine_status
+except ImportError:
+    # Fallback if import fails
+    def notify_machine_status(*args, **kwargs):
+        print(f"CoatingMachine Notification: {args}")
+        pass
+
 
 def calculate_shear_rate(coating_speed, gap_height):
     """
@@ -120,9 +133,41 @@ class CoatingMachine(BaseMachine):
         Run the coating process with detailed step simulation.
         """
         self.turn_on()
+        
+        # Notify start of coating process
+        notify_machine_status(
+            machine_id=self.process_name,
+            line_type=self.process_name.split('_')[-1],
+            process_name=self.process_name,
+            status="coating_started",
+            data={
+                "message": f"Starting {self.process_name} coating process",
+                "coating_speed": self.machine_parameters.coating_speed,
+                "gap_height": self.machine_parameters.gap_height,
+                "flow_rate": self.machine_parameters.flow_rate,
+                "coating_width": self.machine_parameters.coating_width
+            }
+        )
+        
         all_results = []
         self.__simulate(results_list=all_results)
         self.save_all_results(all_results)
+        
+        # Notify completion
+        notify_machine_status(
+            machine_id=self.process_name,
+            line_type=self.process_name.split('_')[-1],
+            process_name=self.process_name,
+            status="coating_completed",
+            data={
+                "message": f"{self.process_name} coating completed successfully",
+                "total_results": len(all_results),
+                "final_shear_rate": getattr(self, 'shear_rate', 0),
+                "final_uniformity_std": getattr(self, 'uniformity_std', 0),
+                "final_state": self.get_current_state()
+            }
+        )
+        
         self.turn_off()
 
     def validate_parameters(self, parameters: dict):

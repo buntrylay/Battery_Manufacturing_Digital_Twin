@@ -7,11 +7,11 @@ export default API_URL;
 // --- Corrected API Functions ---
 
 /**
- * Starts the simulation on the backend.
- * NOTE: The endpoint has been corrected from /start-both to /start-simulation.
+ * Starts the full simulation on the backend with anode and cathode parameters.
+ * Updated to use the new /api/simulation/start endpoint.
  */
 export const startSimulation = (data) =>
-  axios.post(`${API_URL}/start-simulation`, data);
+  axios.post(`${API_URL}/api/simulation/start`, data);
 
 /**
  * Starts mixing simulation for a specific electrode type from flow page.
