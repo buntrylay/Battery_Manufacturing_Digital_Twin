@@ -25,6 +25,7 @@ from simulation.process_parameters import (
     AgingParameters,
 )
 from simulation.factory.Batch import Batch
+from simulation.events import event_bus, MachineEventType, MachineEvent
 
 
 class PlantSimulation:
@@ -56,6 +57,40 @@ class PlantSimulation:
             },
         }
         self.__initialise_default_factory_structure()
+        self._setup_event_listeners()
+
+    def _setup_event_listeners(self):
+        """Set up event listeners to handle machine events and convert them to notifications."""
+        # Import notification functions here to avoid circular imports
+        import sys
+        import os
+        sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'server'))
+        from notification_queue import notify_machine_status
+        
+        def handle_machine_event(event: MachineEvent):
+            """Convert machine events to notifications."""
+            # Map event types to notification statuses
+            status_mapping = {
+                MachineEventType.TURNED_ON: "running",
+                MachineEventType.TURNED_OFF: "idle", 
+                MachineEventType.PROCESS_STARTED: "running",
+                MachineEventType.PROCESS_COMPLETED: "completed",
+                MachineEventType.PROCESS_ERROR: "error",
+                MachineEventType.STATUS_UPDATE: "running"
+            }
+            
+            status = status_mapping.get(event.event_type, "unknown")
+            notify_machine_status(
+                machine_id=event.machine_id,
+                line_type=event.line_type,
+                process_name=event.process_name,
+                status=status,
+                data=event.data
+            )
+        
+        # Subscribe to all machine event types
+        for event_type in MachineEventType:
+            event_bus.subscribe(event_type, handle_machine_event)
 
     def __initialise_default_factory_structure(self):
         # initialise default parameters
@@ -251,12 +286,10 @@ class PlantSimulation:
             cathode_mixing_machine = self.factory_structure["cathode"]["mixing"].state
             if not anode_mixing_machine and not cathode_mixing_machine:
                 batch = self.batch_requests.pop(0)
-                run_batch_thread = Thread(
-                    target=self.__run_pipeline_on_batch, args=(batch,)
-                )
-                run_batch_thread.start()
+                self.__run_pipeline_on_batch(batch)
+                # add the batch to the running batches
                 self.running_batches.append(batch)
-                run_batch_thread.join()
+                # remove the batch from the running batches
                 self.running_batches.remove(batch)
         if out_of_batch_event:
             out_of_batch_event.set()

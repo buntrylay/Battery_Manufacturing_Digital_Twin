@@ -4,12 +4,6 @@ from simulation.process_parameters.Parameters import MixingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import asdict
-import sys
-import os
-
-# Add the server path to import notification functions
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'server'))
-from notification_queue import notify_machine_status
 
 
 class MixingMachine(BaseMachine):

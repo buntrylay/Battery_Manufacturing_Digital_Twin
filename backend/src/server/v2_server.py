@@ -7,7 +7,6 @@ import threading
 
 # for API
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
 import uvicorn
 import json
 
@@ -27,6 +26,8 @@ from notification_queue import notification_queue
 
 app = FastAPI()
 battery_plant_simulation = PlantSimulation()
+
+
 factory_run_thread = None
 out_of_batch_event = threading.Event()
 batch_requests = []

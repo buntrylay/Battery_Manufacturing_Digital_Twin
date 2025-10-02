@@ -34,6 +34,7 @@ class CalendaringMachine(BaseMachine):
 
         self.save_all_results(all_results)
         self.turn_off()
+        
 
     def validate_parameters(self, parameters: dict):
         return CalendaringParameters(**parameters).validate_parameters()
