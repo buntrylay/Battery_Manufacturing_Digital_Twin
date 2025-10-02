@@ -29,6 +29,8 @@ app = FastAPI()
 battery_plant_simulation = PlantSimulation()
 factory_run_thread = None
 out_of_batch_event = threading.Event()
+batch_requests = []
+
 
 # WebSocket connection management
 class ConnectionManager:
@@ -57,10 +59,11 @@ class ConnectionManager:
                 await connection.send_text(message)
             except:
                 disconnected.append(connection)
-        
+
         # Remove disconnected connections
         for connection in disconnected:
             self.disconnect(connection)
+
 
 manager = ConnectionManager()
 
@@ -84,7 +87,7 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-@app.get("/api/simulation/state")
+@app.get("/api/plant/state")
 def get_plant_state():
     """Get the current state of the plant. Returns a dictionary with the current state of the plant."""
     # quite done, just some validation I think depending on my teammate's implementation of get_current_plant_state()
@@ -151,6 +154,7 @@ def add_batch():
             target=battery_plant_simulation.run, args=(out_of_batch_event,)
         )
         factory_run_thread.start()
+        return {"message": "Plant started successfully"}
 
 
 @app.post("/api/simulation/reset")
@@ -178,11 +182,11 @@ async def process_notifications():
         try:
             # Get notification from queue
             notification = await notification_queue.get_notification()
-            
-            # Convert to JSON and broadcast to all connected clients
+            # Convert to JSON and broadcast to all connected clients (websockets/frontend)
             message = json.dumps(notification.to_dict())
             await manager.broadcast(message)
-            
+            # save the notification to the database.
+            # save_notification_to_database(notification)
         except Exception as e:
             print(f"Error processing notification: {e}")
             # Small delay to prevent busy waiting
