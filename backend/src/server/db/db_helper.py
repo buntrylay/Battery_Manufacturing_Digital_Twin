@@ -73,7 +73,7 @@ class DBHelper:
             process_type = simulation_data.get('process', 'unknown')
             battery_model = simulation_data.get('battery_model', {})
             machine_params = simulation_data.get('machine_parameters', {})
-            if process_type == 'mixing_anode':
+            if process_type == 'Anode_Mixer':
                 return AnodeMixing(
                     batch=simulation_data.get('batch_id', 1),
                     state=simulation_data.get('state', 'Unknown'),
@@ -94,7 +94,7 @@ class DBHelper:
                     pvdf=safe_float(machine_params.get('PVDF_ratio', 0.0)),
                     solvent=safe_float(machine_params.get('solvent_ratio', 0.0))
                 )
-            elif process_type == 'mixing_cathode':
+            elif process_type == 'Cathode_Mixer':
                 return CathodeMixing(
                     batch=simulation_data.get('batch_id', 1),
                     state=simulation_data.get('state', 'Unknown'),
