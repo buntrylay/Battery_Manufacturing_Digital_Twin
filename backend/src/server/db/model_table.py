@@ -1,5 +1,5 @@
 from backend.src.server.db.db import engine, Base
-from sqlalchemy import Column, Integer, Float, String, DateTime
+from sqlalchemy import Column, Integer, Float, String, DateTime, Boolean
 from datetime import datetime
 
 class CathodeMixing(Base):
@@ -73,7 +73,7 @@ class CathodeCoating(Base):
     viscosity_Pa_s = Column(Float)
     wet_thickness_um = Column(Float)
     dry_thickness_um = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     coating_speed = Column(Float)
@@ -98,7 +98,7 @@ class AnodeCoating(Base):
     viscosity_Pa_s = Column(Float)
     wet_thickness_um = Column(Float)
     dry_thickness_um = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     coating_speed = Column(Float)
@@ -123,7 +123,7 @@ class CathodeDrying(Base):
     wet_thickness_um = Column(Float)
     dry_thickness_um = Column(Float)
     m_solvent = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
     solid_content = Column(Float)
     temperature = Column(Float)
 
@@ -145,7 +145,7 @@ class AnodeDrying(Base):
     wet_thickness_um = Column(Float)
     dry_thickness_um = Column(Float)
     m_solvent = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
     solid_content = Column(Float)
     temperature = Column(Float)
 
@@ -169,7 +169,7 @@ class CathodeCalendaring(Base):
     # battery_model
     final_thickness_um = Column(Float)
     porosity = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     roll_gap_um = Column(Float)
@@ -193,7 +193,7 @@ class AnodeCalendaring(Base):
     # battery_model
     final_thickness_um = Column(Float)
     porosity = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     roll_gap_um = Column(Float)
@@ -221,7 +221,7 @@ class CathodeSlitting(Base):
     width_final_mm = Column(Float)
     epsilon_width = Column(Float)
     burr_factor = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     blade_sharpness = Column(Float)
@@ -245,7 +245,7 @@ class AnodeSlitting(Base):
     width_final_mm = Column(Float)
     epsilon_width = Column(Float)
     burr_factor = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     blade_sharpness = Column(Float)
@@ -278,7 +278,7 @@ class AnodeInspection(Base):
     pass_thickness_um = Column(Float)
     pass_burr = Column(Float)
     pass_surface = Column(Float)
-    overall = Column(Float)
+    overall = Column(Boolean)
 
     # machine_parameters
     epsilon_width_max = Column(Float)
@@ -309,7 +309,7 @@ class CathodeInspection(Base):
     pass_thickness_um = Column(Float)
     pass_burr = Column(Float)
     pass_surface = Column(Float)
-    overall = Column(Float)
+    overall = Column(Boolean)
 
     # machine_parameters
     epsilon_width_max = Column(Float)
@@ -370,7 +370,7 @@ class ElectrolyteFilling(Base):
     v_max = Column(Float)
     eta_wetting = Column(Float)
     v_elec_filling = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     vacuum_level = Column(Float)
@@ -421,7 +421,7 @@ class Aging(Base):
     initial_soc = Column(Float)
     final_ocv_v = Column(Float)
     leakage_current_A = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     k_leak = Column(Float)
