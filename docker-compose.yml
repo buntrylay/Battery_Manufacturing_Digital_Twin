@@ -5,6 +5,7 @@ networks:
     driver: bridge
 
 services:
+  ## Frontend service
   frontend:
     build:
       context: ./frontend
@@ -18,6 +19,7 @@ services:
     depends_on:
       - fastapi
 
+  ##` Backend service
   fastapi:
     build:
       context: ./backend
@@ -32,6 +34,7 @@ services:
     networks:
       - app-net
 
+  ## Database service - using postgresql
   db:
     image: postgres:15
     container_name: postgres_db
@@ -46,7 +49,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-net
-
+  ## Grafana service
   grafana:
     image: grafana/grafana
     container_name: grafana

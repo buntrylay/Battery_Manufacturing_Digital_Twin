@@ -4,12 +4,11 @@ datasources:
   - name: Postgres
     type: postgres
     access: proxy
-    # Use the service name from docker-compose, not localhost
     url: postgres_db:5432
-    user: postgres # Use the correct user
+    user: postgres
     database: postgres
     secureJsonData:
       password: "password"
     jsonData:
-      sslmode: "disable" # SSL mode should be a string
+      sslmode: "disable"
       timescaledb: false
