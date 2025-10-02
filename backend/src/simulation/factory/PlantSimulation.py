@@ -25,10 +25,16 @@ from simulation.process_parameters import (
     AgingParameters,
 )
 from simulation.factory.Batch import Batch
-
-
+import queue 
 class PlantSimulation:
     def __init__(self):
+        # adding queue for cathode and anode input
+        self.anode_input_queue = queue.Queue()
+        self.cathode_input_queue = queue.Queue()
+        self.anode_output_queue = queue.Queue()
+        self.cathode_output_queue = queue.Queue()
+        self.rewinding_output_queue = queue.Queue()
+
         self.batch_requests: list[any] = []
         self.running_batches: list[any] = []
         self.factory_structure = {
@@ -159,75 +165,101 @@ class PlantSimulation:
         )
 
     def __run_electrode_line(
-        self, electrode_type: Union["anode", "cathode"], batch: Batch  # type: ignore
+        self, electrode_type: str, input_queue,output_queue
     ):
         """this function is to run the electrode line for a specific batch (part of __run_pipeline_on_batch)
         Needs further work to improve the efficiency of the simulation
         """
-        model = getattr(batch, f"{electrode_type}_line_model")
+        while True:
+            if not input_queue.empty():
+                batch = input_queue.get()
+                model = getattr(batch, f"{electrode_type}_line_model")
 
-        for stage in [
-            "mixing",
-            "coating",
-            "drying",
-            "calendaring",
-            "slitting",
-            "inspection",
-        ]:
-            # (1) get the machine in order in the electrode line
-            running_machine = self.factory_structure[electrode_type][stage]
-            # (2) input into the machine (could be from the previous stage or from the initial mixing machine)
-            running_machine.receive_model_from_previous_process(model)
-            # (3) run the machine (start the simulation)
-            running_machine.run()
-            # (4) update the batch model (local)
-            model = running_machine.battery_model
-            # (5) clean up the machine (turn off the machine and empty the battery model (possibly for the next batch))
-            running_machine.clean_up()
-            # (6) update the batch model (global)
-            setattr(batch, f"{electrode_type}_line_model", model)
+                for stage in [
+                    "mixing",
+                    "coating",
+                    "drying",
+                    "calendaring",
+                    "slitting",
+                    "inspection",
+                ]:
+                    # (1) get the machine in order in the electrode line
+                    running_machine = self.factory_structure[electrode_type][stage]
+                    # (2) input into the machine (could be from the previous stage or from the initial mixing machine)
+                    running_machine.receive_model_from_previous_process(model)
+                    # (3) run the machine (start the simulation)
+                    running_machine.run()
+                    # (4) update the batch model (local)
+                    model = running_machine.battery_model
+                    # (5) clean up the machine (turn off the machine and empty the battery model (possibly for the next batch))
+                    running_machine.clean_up()
+                    # (6) update the batch model (global)
+                    setattr(batch, f"{electrode_type}_line_model", model)
 
-    def __run_assembled_cell_line(
-        self,
-        batch: Batch,
-    ):
-        """this function is to run the assembled cell line for a specific batch (part of __run_pipeline_on_batch)
-        Needs further work to improve the efficiency of the simulation
-        """
-        model = batch.cell_line_model
-        for stage in ["rewinding", "electrolyte_filling", "formation_cycling", "aging"]:
-            # (1) get the machine in order in the cell line (which could be from the previous stage or from the initial rewinding machine)
-            running_machine = self.factory_structure["cell"][stage]
-            # (2) input into the machine (could be from the previous stage or from the initial rewinding machine)
-            running_machine.receive_model_from_previous_process(model)
-            # (3) run the machine (start the simulation)
-            running_machine.run()
-            # (4) update the batch model (local)
-            model = running_machine.battery_model
-            # (5) clean up the machine (turn off the machine and empty the battery model (possibly for the next batch))
-            running_machine.clean_up()
-            # (6) update the batch model (global)
-            setattr(batch, f"cell_line_model", model)
+            else:
+                time.sleep(0.01)
 
-    def __run_pipeline_on_batch(self, batch: Batch):
-        # to simulate anode and cathode lines in parallel
-        run_anode_thread = Thread(
-            target=self.__run_electrode_line, args=("anode", batch)
-        )
-        run_cathode_thread = Thread(
-            target=self.__run_electrode_line, args=("cathode", batch)
-        )
-        # start electrode lines' simulation in parallel
-        run_anode_thread.start()
-        run_cathode_thread.start()
-        # wait for the electrode lines' simulation to finish in parallel
-        run_anode_thread.join()
-        run_cathode_thread.join()
-        # assemble the cell line model
-        batch.assemble_cell_line_model()
-        # run the assembled cell line
-        self.__run_assembled_cell_line(batch)
-        return True
+    def run_rewinding(self):
+        while True:
+            anode_batch = self.anode_output_queue.get()
+            cathode_batch = self.cathode_output_queue.get()
+            # merge batch
+            merged = Batch.merge_batches(anode_batch, cathode_batch)
+
+            # start the rewinding
+            machine = self.factory_structure["cell"]["rewinding"]
+            machine.receive_model_from_previous_process(merged.cell_line_model)
+            machine.run()
+            merged.cell_line_model = machine.battery_model
+            machine.clean_up()
+
+            # debug console
+            print(f"[Rewinding] Merged batch {anode_batch.batch_id} + {cathode_batch.batch_id} with the end result batch id {merged.batch_id}")
+            
+            # put batch to queue
+            self.rewinding_output_queue.put(merged)
+
+    # def __run_assembled_cell_line(
+    #     self,
+    #     batch: Batch,
+    # ):
+    #     """this function is to run the assembled cell line for a specific batch (part of __run_pipeline_on_batch)
+    #     Needs further work to improve the efficiency of the simulation
+    #     """
+    #     model = batch.cell_line_model
+    #     for stage in ["rewinding", "electrolyte_filling", "formation_cycling", "aging"]:
+    #         # (1) get the machine in order in the cell line (which could be from the previous stage or from the initial rewinding machine)
+    #         running_machine = self.factory_structure["cell"][stage]
+    #         # (2) input into the machine (could be from the previous stage or from the initial rewinding machine)
+    #         running_machine.receive_model_from_previous_process(model)
+    #         # (3) run the machine (start the simulation)
+    #         running_machine.run()
+    #         # (4) update the batch model (local)
+    #         model = running_machine.battery_model
+    #         # (5) clean up the machine (turn off the machine and empty the battery model (possibly for the next batch))
+    #         running_machine.clean_up()
+    #         # (6) update the batch model (global)
+    #         setattr(batch, f"cell_line_model", model)
+
+    # def __run_pipeline_on_batch(self, batch: Batch):
+    #     # to simulate anode and cathode lines in parallel
+    #     run_anode_thread = Thread(
+    #         target=self.__run_electrode_line, args=("anode", batch)
+    #     )
+    #     run_cathode_thread = Thread(
+    #         target=self.__run_electrode_line, args=("cathode", batch)
+    #     )
+    #     # start electrode lines' simulation in parallel
+    #     run_anode_thread.start()
+    #     run_cathode_thread.start()
+    #     # wait for the electrode lines' simulation to finish in parallel
+    #     run_anode_thread.join()
+    #     run_cathode_thread.join()
+    #     # assemble the cell line model
+    #     batch.assemble_cell_line_model()
+    #     # run the assembled cell line
+    #     self.__run_assembled_cell_line(batch)
+    #     return True
 
     def __get_machine(self, line_type: str, machine_id: str):
         if line_type not in self.factory_structure:
@@ -238,28 +270,23 @@ class PlantSimulation:
             return self.factory_structure[line_type][machine_id]
 
     def add_batch(self, batch: Batch):
-        if len(self.batch_requests) >= 10:
-            raise ValueError("Maximum number of batches reached")
-        else:
-            self.batch_requests.append(batch)
+        self.anode_input_queue.put(batch)
+        self.cathode_input_queue.put(batch)
+        # if len(self.batch_requests) >= 10:
+        #     raise ValueError("Maximum number of batches reached")
+        # else:
+        #     self.batch_requests.append(batch)
 
     def run(self, out_of_batch_event: Event = None):
-        """this function is to run the pipeline for a specific batch (part of __run_pipeline_on_batch)"""
-        while self.batch_requests:
-            # check the mixing machines
-            anode_mixing_machine = self.factory_structure["anode"]["mixing"].state
-            cathode_mixing_machine = self.factory_structure["cathode"]["mixing"].state
-            if not anode_mixing_machine and not cathode_mixing_machine:
-                batch = self.batch_requests.pop(0)
-                run_batch_thread = Thread(
-                    target=self.__run_pipeline_on_batch, args=(batch,)
-                )
-                run_batch_thread.start()
-                self.running_batches.append(batch)
-                run_batch_thread.join()
-                self.running_batches.remove(batch)
+        t_anode = Thread(target=self.__run_electrode_line, args=("anode", self.anode_input_queue, self.anode_output_queue), daemon=True)
+        t_cathode = Thread(target=self.__run_electrode_line, args=("cathode", self.cathode_input_queue, self.cathode_output_queue), daemon=True)
+        t_rewind = Thread(target=self.run_rewinding, daemon = True)
+
+        t_anode.start()
+        t_cathode.start()
+        t_rewind.start()
         if out_of_batch_event:
-            out_of_batch_event.set()
+            out_of_batch_event.wait()
 
     def get_machine_status(self, line_type: str, machine_id: str):
         machine = self.__get_machine(line_type, machine_id)
