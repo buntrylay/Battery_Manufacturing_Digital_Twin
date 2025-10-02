@@ -23,3 +23,14 @@ USER appuser
 
 # During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker", "backend.src.server.main:app"]
+
+FROM grafana/grafana:8.2.3-ubuntu
+
+EXPOSE 3000
+
+# Add provisioning
+ADD provisioning /etc/Battery_Manufacturing_Digital_Twin/provisioning
+# Add configuration file
+ADD grafana.ini /etc/Battery_Manufacturing_Digital_Twin/grafana.ini
+# Add dashboard json files
+ADD dashboards /etc/Battery_Manufacturing_Digital_Twin/dashboards

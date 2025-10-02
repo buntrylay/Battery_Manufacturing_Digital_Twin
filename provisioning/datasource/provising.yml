@@ -1,0 +1,24 @@
+apiVersion: v1
+
+datasources:
+  - name: Postgres
+    type: postgres
+    access: proxy
+    url: localhost:5432
+    user: admin
+    secureJsonData:
+      password: password
+    jsonData:
+      database: postgres_db
+      user: grafana_reader
+      type: postgres
+      sslmode: disable
+      url: localhost:5432
+      version: 1
+      maxOpenConns: 100
+      maxIdleConns: 100
+      connMaxLifetime: 14400
+      connMaxIdleTime: 14400
+      timescaledb: true
+      secureJsonData:
+        password: password
