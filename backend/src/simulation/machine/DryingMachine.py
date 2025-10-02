@@ -17,18 +17,22 @@ class DryingMachine(BaseMachine):
 
     def receive_model_from_previous_process(self, previous_model: CoatingModel):
         self.battery_model = DryingModel(previous_model)
+    
+    # def step_logic(self, t: int):
+    #     pass
+
+    def calculate_total_steps(self):
+        if self.battery_model is not None and self.machine_parameters is not None:
+            DELTA_T = 1
+            residence_time = self.battery_model.drying_length / self.machine_parameters.web_speed
+            self.total_steps = int(residence_time / DELTA_T)
 
     def run(self):
         self.turn_on()
-        all_results = []
         total_steps = self.battery_model.time_steps(self.machine_parameters.web_speed)
         for t in range(total_steps):
             self.total_time = t
             self.battery_model.update_properties(self.machine_parameters)
-            result = self.get_current_state()
-            all_results.append(result)
-            self.save_data_to_local_folder()
-        self.save_all_results(all_results)
         self.turn_off()
 
     def validate_parameters(self, parameters: dict):

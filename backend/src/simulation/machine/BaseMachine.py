@@ -55,16 +55,15 @@ class BaseMachine(ABC):
         self.battery_model = battery_model
         self.machine_parameters = machine_parameters
         self.state = False
-        self.start_datetime = None
-        self.total_time = 0
+        self.current_process_start_time = None
+        self.current_time_step = 0
         # Helpers
         self.local_saver = LocalDataSaver(process_name)
         self.iot_sender = IoTHubSender(connection_string)
         self.data_broadcast_fn = data_broadcast_fn
         self.data_broadcast_interval_sec = data_broadcast_interval_sec
         self._last_broadcast_monotonic = None
-
-        #temporary fix
+         # temporary fix
         self.batch_id = None
 
     @abstractmethod
@@ -102,7 +101,7 @@ class BaseMachine(ABC):
             current_properties = self.get_current_state()
             print(current_properties)
             path = self.local_saver.save_current_state(
-                current_properties, self.total_time
+                current_properties, self.current_time_step
             )
             print(f"Data saved to {path}")
         except Exception as e:
@@ -117,6 +116,7 @@ class BaseMachine(ABC):
             if not self.data_broadcast_fn or not self.data_broadcast_interval_sec:
                 return
             import time as _t
+
             now = _t.monotonic()
             if self._last_broadcast_monotonic is None or (
                 now - self._last_broadcast_monotonic >= self.data_broadcast_interval_sec
@@ -142,25 +142,29 @@ class BaseMachine(ABC):
     def turn_on(self):
         """Turn on the machine."""
         self.state = True
-        self.start_datetime = datetime.now()
+        self.current_process_start_time = datetime.now()
         notify_machine_status(
             machine_id=self.process_name,
-            line_type=self.process_name.split('_')[-1],  # Get the last part after splitting
+            line_type=self.process_name.split("_")[
+                -1
+            ],  # Get the last part after splitting
             process_name=self.process_name,
             status="running",
-            data={"message": f"{self.process_name} was turned on"}
+            data={"message": f"{self.process_name} was turned on"},
         )
 
     def turn_off(self):
         """Turn off the machine."""
         self.state = False
-        self.total_time = 0
+        self.current_time_step = 0
         notify_machine_status(
             machine_id=self.process_name,
-            line_type=self.process_name.split('_')[-1],  # Get the last part after splitting
+            line_type=self.process_name.split("_")[
+                -1
+            ],  # Get the last part after splitting
             process_name=self.process_name,
             status="idle",
-            data={"message": f"{self.process_name} was turned off"}
+            data={"message": f"{self.process_name} was turned off"},
         )
 
     def pre_run_check(self):
@@ -169,23 +173,33 @@ class BaseMachine(ABC):
             raise ValueError("Battery model is not set")
         if self.machine_parameters is None:
             raise ValueError("Machine parameters are not set")
+        if self.total_steps is None:
+            self.calculate_total_steps()
         return True
+
+    def calculate_total_steps(self):
+        """Calculate the total number of steps for the machine."""
+        pass
 
     def get_current_state(self, process_specifics=None):
         """Get the current properties of the machine."""
         state = {
-        "timestamp": datetime.now().isoformat(),
-        "state": "On" if self.state else "Off",
-        "duration": round(self.total_time, 2),
-        "process": self.process_name,
-        "temperature_C": (
-            round(self.battery_model.temperature, 2)
-            if self.state and hasattr(self.battery_model, "temperature")
-            else None
-        ),
-        "battery_model": self.battery_model.get_properties() if self.battery_model else {},
-        "machine_parameters": asdict(self.machine_parameters) if self.machine_parameters else {},
-        "process_specifics": process_specifics,
+            "timestamp": datetime.now().isoformat(),
+            "state": "On" if self.state else "Off",
+            "duration": round(self.current_time_step, 2),
+            "process": self.process_name,
+            "temperature_C": (
+                round(self.battery_model.temperature, 2)
+                if self.state and hasattr(self.battery_model, "temperature")
+                else None
+            ),
+            "battery_model": (
+                self.battery_model.get_properties() if self.battery_model else {}
+            ),
+            "machine_parameters": (
+                asdict(self.machine_parameters) if self.machine_parameters else {}
+            ),
+            "process_specifics": process_specifics,
         }
         # Add context if available
         if hasattr(self, "batch_id"):
@@ -199,57 +213,61 @@ class BaseMachine(ABC):
             "process_specifics": process_specifics,
         }
 
+
     @abstractmethod
     def run(self):
         """Abstract method that must be implemented by concrete machine classes."""
         pass
 
+    @abstractmethod
+    def step_logic(self, t: int):
+        """Abstract method that must be implemented by concrete machine classes."""
+        pass
+
     # TODO: This is a future feature to run the simulation in a standardised way
     def run_simulation(self, total_steps=100, pause_between_steps=0.1, verbose=True):
-        """Run the simulation."""
-        self.turn_on()
-        if verbose:
-            print(f"Machine {self.process_name} is running for {total_steps} steps")
-        for t in range(1, total_steps):
-            self.total_time = t
-            self.battery_model.update_properties(self.machine_parameters)
-            # Send progress updates every 10 steps
-            if t % 10 == 0:
-                progress = (t / total_steps) * 100
-                notify_machine_status(
-                    machine_id=self.process_name,
-                    line_type=self.process_name.split('_')[-1],
-                    process_name=self.process_name,
-                    status="simulation_progress",
-                    data={
-                        "message": f"Simulation progress: {progress:.1f}%",
-                        "step": t,
-                        "total_steps": total_steps,
-                        "progress_percent": progress,
-                        "current_state": self.get_current_state()
-                    }
-                )
+        """Run the simulation.
+        Args:
+            total_steps (int): The total number of steps to run the simulation for
+            pause_between_steps (float): The pause between steps in seconds
+            verbose (bool): Whether to print to the console when running the simulation
+        """
+        # make sure the machine has a model to simulate and some parameters!
+        if self.pre_run_check():
+            # turn on the machine
+            self.turn_on()
             if verbose:
-                print(self.get_current_state())
-            time.sleep(pause_between_steps)
-        self.turn_off()
+                print(f"Machine {self.process_name} is running for {total_steps} steps")
+            for t in range(0, self.total_steps):
+                self.current_time_step = t # current time step
+                self.step_logic(t)
+                self.battery_model.update_properties(self.machine_parameters)
+                # notify the machine status
+                # Send progress updates every 10 steps
+                if verbose:
+                    print(self.get_current_state())
+                time.sleep(pause_between_steps)
+            self.turn_off()
 
     def clean_up(self):
         """Clean up the machine."""
         self.turn_off()
         self.battery_model = None
         self.state = False
-        self.total_time = 0
-        self.start_datetime = None
+        self.current_time_step = 0
+        self.current_process_start_time = None
 
     # idea to standardise the step logic with decorator @abstractmethod
-    #  @abstractmethod
-    # def step_logic(self):
-    #     """
-    #     Abstract method that must be implemented by concrete machine classes.
-    #     This method is called at each step of the simulation.
-    #     """
-    #     pass
+    @abstractmethod
+    def step_logic(self, t: int):
+        """
+        Abstract method that must be implemented by concrete machine classes.
+        This method is called at each step of the simulation.
+        """
+        pass
+
+    def add_notification(self):
+        notify_machine_status()
 
     @abstractmethod
     def validate_parameters(self, parameters: dict):

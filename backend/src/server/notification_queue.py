@@ -14,13 +14,12 @@ from datetime import datetime
 @dataclass
 class MachineNotification:
     """Represents a notification from a machine about its current state."""
-    machine_id: str
-    line_type: str
+
     process_name: str
     status: str  # "running", "idle", "completed", "error"
     timestamp: str
     data: Dict[str, Any] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
@@ -31,12 +30,12 @@ class NotificationQueue:
     Thread-safe queue for machine notifications.
     Machines can add notifications, and WebSocket handlers can consume them.
     """
-    
+
     def __init__(self, max_size: int = 1000):
         self._queue = asyncio.Queue(maxsize=max_size)
         self._lock = threading.Lock()
         self._subscribers: List[asyncio.Queue] = []
-    
+
     def add_notification(self, notification: MachineNotification):
         """
         Add a notification to the queue.
@@ -54,7 +53,7 @@ class NotificationQueue:
         except RuntimeError:
             # If no event loop is running, create a new one
             asyncio.run(self._add_notification_async(notification))
-    
+
     async def _add_notification_async(self, notification: MachineNotification):
         """Internal async method to add notification to queue."""
         try:
@@ -73,22 +72,22 @@ class NotificationQueue:
                 await self._queue.put(notification)
             except asyncio.QueueEmpty:
                 pass
-    
+
     async def get_notification(self) -> MachineNotification:
         """Get the next notification from the queue."""
         return await self._queue.get()
-    
+
     def subscribe(self) -> asyncio.Queue:
         """Subscribe to notifications. Returns a queue that will receive all new notifications."""
         subscriber_queue = asyncio.Queue(maxsize=100)
         self._subscribers.append(subscriber_queue)
         return subscriber_queue
-    
+
     def unsubscribe(self, subscriber_queue: asyncio.Queue):
         """Unsubscribe from notifications."""
         if subscriber_queue in self._subscribers:
             self._subscribers.remove(subscriber_queue)
-    
+
     def get_queue_size(self) -> int:
         """Get the current size of the notification queue."""
         return self._queue.qsize()
@@ -99,32 +98,18 @@ notification_queue = NotificationQueue()
 
 
 def create_machine_notification(
-    machine_id: str,
-    line_type: str,
-    process_name: str,
-    status: str,
-    data: Dict[str, Any] = None
+    process_name: str, status: str, data: Dict[str, Any] = None
 ) -> MachineNotification:
     """Helper function to create a machine notification."""
     return MachineNotification(
-        machine_id=machine_id,
-        line_type=line_type,
         process_name=process_name,
         status=status,
         timestamp=datetime.now().isoformat(),
-        data=data or {}
+        data=data or {},
     )
 
 
-def notify_machine_status(
-    machine_id: str,
-    line_type: str,
-    process_name: str,
-    status: str,
-    data: Dict[str, Any] = None
-):
+def notify_machine_status(process_name: str, status: str, data: Dict[str, Any] = None):
     """Helper function to quickly send a machine status notification."""
-    notification = create_machine_notification(
-        machine_id, line_type, process_name, status, data
-    )
+    notification = create_machine_notification(process_name, status, data)
     notification_queue.add_notification(notification)

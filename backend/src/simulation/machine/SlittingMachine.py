@@ -16,22 +16,13 @@ class SlittingMachine(BaseMachine):
         super().__init__(
             process_name, slitting_model, slitting_parameters, connection_string
         )
+        # self.total_steps = 30
 
     def receive_model_from_previous_process(self, previous_model: CalendaringModel):
         self.battery_model = SlittingModel(previous_model)
 
-    def run(self):
-        self.turn_on()
-        all_results = []
-
-        for t in range(30):
-            self.total_time = t
-            self.battery_model.update_properties(self.machine_parameters)
-            result = self.get_current_state()
-            all_results.append(result)
-            self.save_data_to_local_folder()
-        self.save_all_results(all_results)
-        self.turn_off()
+    def step_logic(self, t: int):
+        pass
 
     def validate_parameters(self, parameters: dict):
         return SlittingParameters(**parameters).validate_parameters()

@@ -3,9 +3,6 @@ import numpy as np
 from simulation.process_parameters.Parameters import MixingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.BaseMachine import BaseMachine
-from dataclasses import asdict
-import sys
-import os
 
 # Import notification functions
 try:
@@ -17,7 +14,7 @@ try:
 except ImportError:
     # Fallback if import fails
     def notify_machine_status(*args, **kwargs):
-        print(f"MixingMachine Notification: {args}")
+        print("No server is running")
         pass
 
 
@@ -60,7 +57,6 @@ class MixingMachine(BaseMachine):
         step_percent=0.02,
         pause_sec=0.1,
         duration_sec=10,
-        results_list=None,
     ):
         total_volume_of_material_to_add = self.mixing_tank_volume * getattr(
             self.machine_parameters, f"{material_type}_ratio"
@@ -68,8 +64,6 @@ class MixingMachine(BaseMachine):
         volume_added_in_each_step = step_percent * total_volume_of_material_to_add
         added_volume = 0.0
         comp_start_time = self.total_time
-        last_saved_time = time.time()
-        last_saved_result = None
         while self.total_time - comp_start_time < duration_sec:
             self.total_time += pause_sec
             if added_volume < total_volume_of_material_to_add:
@@ -80,132 +74,103 @@ class MixingMachine(BaseMachine):
                 self.battery_model.add(material_type, add_amt)
                 added_volume += add_amt
             self.battery_model.update_properties()
-            result = self.get_current_state()
-            results_list.append(result)
-            # Attempt real-time broadcast (throttled by BaseMachine)
-            try:
-                self._maybe_broadcast_data(result)
-            except Exception:
-                pass
-            now = time.time()
-            if (
-                now - last_saved_time >= 0.1 and result != last_saved_result
-            ):  # Check if data has changed
-                # self.send_json_to_iothub(result)  # Send to IoT Hub
-                self.save_data_to_local_folder()  # Print to console
-                last_saved_time = now
-                last_saved_result = result
+            # broadcast data
+            # websocket_manager.broadcast_data(self.get_current_state())
+            # save data to database
+            # postgres_helper.save_data_to_database(self.get_current_state())
+            # notify_machine_status()
             time.sleep(pause_sec)
 
     def run(self):
         if self.pre_run_check():
             self.turn_on()
-            
             # Notify start of mixing process
             notify_machine_status(
                 machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
+                line_type=self.process_name.split("_")[-1],
                 process_name=self.process_name,
                 status="mixing_started",
-                data={"message": f"Starting {self.process_name} mixing process", "tank_volume": self.mixing_tank_volume}
+                data={
+                    "message": f"Starting {self.process_name} mixing process",
+                    "tank_volume": self.mixing_tank_volume,
+                },
             )
-            
+
             # Add initial solvent
-            solvent_volume = self.mixing_tank_volume * self.machine_parameters.solvent_ratio
+            solvent_volume = (
+                self.mixing_tank_volume * self.machine_parameters.solvent_ratio
+            )
             self.battery_model.add("solvent", solvent_volume)
-            
             notify_machine_status(
                 machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
+                line_type=self.process_name.split("_")[-1],
                 process_name=self.process_name,
                 status="solvent_added",
-                data={"message": f"Added {solvent_volume:.2f}L solvent", "volume": solvent_volume}
+                data={
+                    "message": f"Added {solvent_volume:.2f}L solvent",
+                    "volume": solvent_volume,
+                },
             )
-            
-            all_results = []
-            
             # Mix PVDF
             notify_machine_status(
                 machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
+                line_type=self.process_name.split("_")[-1],
                 process_name=self.process_name,
                 status="component_mixing",
-                data={"message": "Starting PVDF mixing", "component": "PVDF", "duration": 8}
+                data={
+                    "message": "Starting PVDF mixing",
+                    "component": "PVDF",
+                    "duration": 8,
+                },
             )
-            self.__mix_component("PVDF", duration_sec=8, results_list=all_results)
-            
+            self.__mix_component("PVDF", duration_sec=8)
             # Mix CA
             notify_machine_status(
                 machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
+                line_type=self.process_name.split("_")[-1],
                 process_name=self.process_name,
                 status="component_mixing",
-                data={"message": "Starting CA mixing", "component": "CA", "duration": 8}
+                data={
+                    "message": "Starting CA mixing",
+                    "component": "CA",
+                    "duration": 8,
+                },
             )
-            self.__mix_component("CA", duration_sec=8, results_list=all_results)
-            
+            self.__mix_component("CA", duration_sec=8)
             # Mix AM
             notify_machine_status(
                 machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
+                line_type=self.process_name.split("_")[-1],
                 process_name=self.process_name,
                 status="component_mixing",
-                data={"message": "Starting AM mixing", "component": "AM", "duration": 10}
-            )
-            self.__mix_component("AM", duration_sec=10, results_list=all_results)
-            
-            # Save results
-            self.save_all_results(all_results)
-            
-            # Notify completion
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
-                process_name=self.process_name,
-                status="mixing_completed",
                 data={
-                    "message": f"{self.process_name} mixing completed successfully",
-                    "total_results": len(all_results),
-                    "final_state": self.get_current_state()
-                }
+                    "message": "Starting AM mixing",
+                    "component": "AM",
+                    "duration": 10,
+                },
             )
-            
+            self.__mix_component("AM", duration_sec=10)
             self.turn_off()
 
-    def validate_parameters(self, parameters: dict):
-        # Convert API format (AM, CA, PVDF, solvent) to internal format (AM_ratio, CA_ratio, etc.)
-        converted_params = {}
-        if "AM" in parameters:
-            converted_params["AM_ratio"] = parameters["AM"]
-        if "CA" in parameters:
-            converted_params["CA_ratio"] = parameters["CA"]
-        if "PVDF" in parameters:
-            converted_params["PVDF_ratio"] = parameters["PVDF"]
-        if "solvent" in parameters:
-            converted_params["solvent_ratio"] = parameters["solvent"]
-        
-        # Use the converted parameters or fall back to the original if already in correct format
-        params_to_use = converted_params if converted_params else parameters
-        return MixingParameters(**params_to_use).validate_parameters()
+    def step_logic(self, t: int):
+        if t == 0:
+            self.battery_model.add("solvent", solvent_volume)
+            notify_machine_status(
+                machine_id=self.process_name,
+                line_type=self.process_name.split("_")[-1],
+                process_name=self.process_name,
+                status="solvent_added",
+                data={
+                    "message": f"Added {solvent_volume:.2f}L solvent",
+                    "volume": solvent_volume,
+                },
+            )
+        elif t <= 100:
+            self.__mix_component("PVDF", duration_sec=8)
+        elif t <= 200:
+            self.__mix_component("CA", duration_sec=8)
+        elif t <= 300:
+            self.__mix_component("AM", duration_sec=10)
 
-    def update_machine_parameters(self, parameters):
-        """Update machine parameters, handling both dict and MixingParameters objects."""
-        if isinstance(parameters, dict):
-            # Convert API format (AM, CA, PVDF, solvent) to internal format (AM_ratio, CA_ratio, etc.)
-            converted_params = {}
-            if "AM" in parameters:
-                converted_params["AM_ratio"] = parameters["AM"]
-            if "CA" in parameters:
-                converted_params["CA_ratio"] = parameters["CA"]
-            if "PVDF" in parameters:
-                converted_params["PVDF_ratio"] = parameters["PVDF"]
-            if "solvent" in parameters:
-                converted_params["solvent_ratio"] = parameters["solvent"]
-            
-            # Use the converted parameters or fall back to the original if already in correct format
-            params_to_use = converted_params if converted_params else parameters
-            mixing_params = MixingParameters(**params_to_use)
-            super().update_machine_parameters(mixing_params)
-        else:
-            # Already a MixingParameters object
-            super().update_machine_parameters(parameters)
+    def validate_parameters(self, parameters: dict):
+        return MixingParameters(**parameters).validate_parameters()
