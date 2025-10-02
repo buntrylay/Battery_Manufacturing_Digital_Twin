@@ -1,0 +1,4 @@
+notification_queue created
+it is used as a static object in v2_server.py
+this object is used in a forever loop to check for notification 
+then broadcast them to the frontend.

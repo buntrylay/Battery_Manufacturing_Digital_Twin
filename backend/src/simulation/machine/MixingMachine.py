@@ -4,6 +4,21 @@ from simulation.process_parameters.Parameters import MixingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import asdict
+import sys
+import os
+
+# Import notification functions
+try:
+    # Try multiple import paths to handle different environments
+    try:
+        from server.notification_queue import notify_machine_status
+    except ImportError:
+        from backend.src.server.notification_queue import notify_machine_status
+except ImportError:
+    # Fallback if import fails
+    def notify_machine_status(*args, **kwargs):
+        print(f"MixingMachine Notification: {args}")
+        pass
 
 
 class MixingMachine(BaseMachine):
@@ -85,15 +100,76 @@ class MixingMachine(BaseMachine):
     def run(self):
         if self.pre_run_check():
             self.turn_on()
-            self.battery_model.add(
-                "solvent",
-                self.mixing_tank_volume * self.machine_parameters.solvent_ratio,
+            
+            # Notify start of mixing process
+            notify_machine_status(
+                machine_id=self.process_name,
+                line_type=self.process_name.split('_')[-1],
+                process_name=self.process_name,
+                status="mixing_started",
+                data={"message": f"Starting {self.process_name} mixing process", "tank_volume": self.mixing_tank_volume}
             )
+            
+            # Add initial solvent
+            solvent_volume = self.mixing_tank_volume * self.machine_parameters.solvent_ratio
+            self.battery_model.add("solvent", solvent_volume)
+            
+            notify_machine_status(
+                machine_id=self.process_name,
+                line_type=self.process_name.split('_')[-1],
+                process_name=self.process_name,
+                status="solvent_added",
+                data={"message": f"Added {solvent_volume:.2f}L solvent", "volume": solvent_volume}
+            )
+            
             all_results = []
+            
+            # Mix PVDF
+            notify_machine_status(
+                machine_id=self.process_name,
+                line_type=self.process_name.split('_')[-1],
+                process_name=self.process_name,
+                status="component_mixing",
+                data={"message": "Starting PVDF mixing", "component": "PVDF", "duration": 8}
+            )
             self.__mix_component("PVDF", duration_sec=8, results_list=all_results)
+            
+            # Mix CA
+            notify_machine_status(
+                machine_id=self.process_name,
+                line_type=self.process_name.split('_')[-1],
+                process_name=self.process_name,
+                status="component_mixing",
+                data={"message": "Starting CA mixing", "component": "CA", "duration": 8}
+            )
             self.__mix_component("CA", duration_sec=8, results_list=all_results)
+            
+            # Mix AM
+            notify_machine_status(
+                machine_id=self.process_name,
+                line_type=self.process_name.split('_')[-1],
+                process_name=self.process_name,
+                status="component_mixing",
+                data={"message": "Starting AM mixing", "component": "AM", "duration": 10}
+            )
             self.__mix_component("AM", duration_sec=10, results_list=all_results)
+            
+            # Save results
             self.save_all_results(all_results)
+            
+            # Notify completion
+            notify_machine_status(
+                machine_id=self.process_name,
+                line_type=self.process_name.split('_')[-1],
+                process_name=self.process_name,
+                status="mixing_completed",
+                data={
+                    "message": f"{self.process_name} mixing completed successfully",
+                    "total_results": len(all_results),
+                    "final_state": self.get_current_state()
+                }
+            )
+            
             self.turn_off()
 
     def validate_parameters(self, parameters: dict):
