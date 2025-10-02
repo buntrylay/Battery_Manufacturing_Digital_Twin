@@ -5,7 +5,6 @@ networks:
     driver: bridge
 
 services:
-  # React Frontend Service
   frontend:
     build:
       context: ./frontend
@@ -19,7 +18,6 @@ services:
     depends_on:
       - fastapi
 
-  # FastAPI Backend Service
   fastapi:
     build:
       context: ./backend
@@ -34,7 +32,6 @@ services:
     networks:
       - app-net
 
-  #PostgreSQL database
   db:
     image: postgres:15
     container_name: postgres_db
@@ -49,7 +46,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-net
-  # Grafana Service
+
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -58,13 +55,13 @@ services:
       - "3001:3000"
     volumes:
       - grafana-storage:/var/lib/grafana
+      - ./provisioning:/etc/grafana/provisioning
     networks:
       - app-net
-    ##Hardcoded admin user and password for Grafana - TODO: Change this in production
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=password
-
+      - GF_PLUGINS_ALLOW_UNSIGNED=true
 volumes:
   postgres_data:
   grafana-storage: {}
