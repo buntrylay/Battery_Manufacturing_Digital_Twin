@@ -148,7 +148,7 @@ class BaseMachine(ABC):
             line_type=self.process_name.split('_')[-1],  # Get the last part after splitting
             process_name=self.process_name,
             status="running",
-            data={"stage": "turned_on", "message": f"{self.process_name} turned on"}
+            data={"message": f"{self.process_name} was turned on"}
         )
 
     def turn_off(self):
@@ -160,7 +160,7 @@ class BaseMachine(ABC):
             line_type=self.process_name.split('_')[-1],  # Get the last part after splitting
             process_name=self.process_name,
             status="idle",
-            data={"stage": "turned_off", "message": f"{self.process_name} turned off"}
+            data={"message": f"{self.process_name} was turned off"}
         )
 
     def pre_run_check(self):
@@ -210,20 +210,9 @@ class BaseMachine(ABC):
         self.turn_on()
         if verbose:
             print(f"Machine {self.process_name} is running for {total_steps} steps")
-        
-        # Send starting notification
-        notify_machine_status(
-            machine_id=self.process_name,
-            line_type=self.process_name.split('_')[-1],
-            process_name=self.process_name,
-            status="simulation_started",
-            data={"message": f"Started simulation with {total_steps} steps", "total_steps": total_steps}
-        )
-        
         for t in range(1, total_steps):
             self.total_time = t
             self.battery_model.update_properties(self.machine_parameters)
-            
             # Send progress updates every 10 steps
             if t % 10 == 0:
                 progress = (t / total_steps) * 100
@@ -240,20 +229,9 @@ class BaseMachine(ABC):
                         "current_state": self.get_current_state()
                     }
                 )
-            
             if verbose:
                 print(self.get_current_state())
             time.sleep(pause_between_steps)
-            
-        # Send completion notification
-        notify_machine_status(
-            machine_id=self.process_name,
-            line_type=self.process_name.split('_')[-1],
-            process_name=self.process_name,
-            status="simulation_completed",
-            data={"message": f"Simulation completed successfully", "final_state": self.get_current_state()}
-        )
-        
         self.turn_off()
 
     def clean_up(self):
