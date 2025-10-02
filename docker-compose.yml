@@ -29,6 +29,8 @@ services:
     volumes:
       - .:/workspaces/app
     working_dir: /workspaces/app
+    env_file:
+      - .env
     depends_on:
       - db
     networks:
@@ -39,10 +41,12 @@ services:
     image: postgres:15
     container_name: postgres_db
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     ports:
       - "5432:5432"
     volumes:
@@ -60,10 +64,12 @@ services:
       - grafana-storage:/var/lib/grafana
     networks:
       - app-net
-    ##Hardcoded admin user and password for Grafana - TODO: Change this in production
+    env_file:
+      - .env
+    ##Configuration via environment variables for security
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=password
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-password}
 
 volumes:
   postgres_data:

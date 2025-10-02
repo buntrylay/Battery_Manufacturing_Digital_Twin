@@ -1,5 +1,5 @@
 # For more information, please refer to https://aka.ms/vscode-docker-python
-FROM python:3-slim
+FROM python:3.11-slim
 
 EXPOSE 8000
 
@@ -27,15 +27,9 @@ CMD ["gunicorn", "--bind", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker"
 FROM grafana/grafana:8.2.3-ubuntu
 
 EXPOSE 3000
-ENV GF_AUTH_DISABLE_LOGIN_FORM "false"
 
-# Allow anonymous authentication or not
-
-ENV GF_AUTH_ANONYMOUS_ENABLED "false"
-
-# Role of anonymous user
-
-ENV GF_AUTH_ANONYMOUS_ORG_ROLE "admin"
+# Grafana configuration will be handled via grafana.ini and environment variables
+# Remove hardcoded auth settings for security
  
 # Add provisioning
 ADD provisioning /etc/Battery_Manufacturing_Digital_Twin/provisioning
