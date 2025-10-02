@@ -274,10 +274,10 @@ class AnodeInspection(Base):
     porosity = Column(Float)
     epsilon_thickness = Column(Float)
     d_detected = Column(Float)
-    pass_width_mm = Column(Float)
-    pass_thickness_um = Column(Float)
-    pass_burr = Column(Float)
-    pass_surface = Column(Float)
+    pass_width_mm = Column(Boolean)
+    pass_thickness_um = Column(Boolean)
+    pass_burr = Column(Boolean)
+    pass_surface = Column(Boolean)
     overall = Column(Boolean)
 
     # machine_parameters
@@ -305,10 +305,10 @@ class CathodeInspection(Base):
     porosity = Column(Float)
     epsilon_thickness = Column(Float)
     d_detected = Column(Float)
-    pass_width_mm = Column(Float)
-    pass_thickness_um = Column(Float)
-    pass_burr = Column(Float)
-    pass_surface = Column(Float)
+    pass_width_mm = Column(Boolean)
+    pass_thickness_um = Column(Boolean)
+    pass_burr = Column(Boolean)
+    pass_surface = Column(Boolean)
     overall = Column(Boolean)
 
     # machine_parameters
