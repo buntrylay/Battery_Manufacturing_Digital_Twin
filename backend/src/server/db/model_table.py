@@ -1,5 +1,5 @@
 from backend.src.server.db.db import engine, Base
-from sqlalchemy import Column, Integer, Float, String, DateTime
+from sqlalchemy import Column, Integer, Float, String, DateTime, Boolean
 from datetime import datetime
 
 class CathodeMixing(Base):
@@ -73,9 +73,7 @@ class CathodeCoating(Base):
     viscosity_Pa_s = Column(Float)
     wet_thickness_um = Column(Float)
     dry_thickness_um = Column(Float)
-    shear_rate = Column(Float)
-    uniformity = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     coating_speed = Column(Float)
@@ -87,7 +85,7 @@ class AnodeCoating(Base):
     __tablename__ = "coating_anode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -100,9 +98,7 @@ class AnodeCoating(Base):
     viscosity_Pa_s = Column(Float)
     wet_thickness_um = Column(Float)
     dry_thickness_um = Column(Float)
-    shear_rate = Column(Float)
-    uniformity = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     coating_speed = Column(Float)
@@ -116,7 +112,7 @@ class CathodeDrying(Base):
     __tablename__ = "drying_cathode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -127,7 +123,7 @@ class CathodeDrying(Base):
     wet_thickness_um = Column(Float)
     dry_thickness_um = Column(Float)
     m_solvent = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
     solid_content = Column(Float)
     temperature = Column(Float)
 
@@ -138,7 +134,7 @@ class AnodeDrying(Base):
     __tablename__ = "drying_anode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -149,7 +145,7 @@ class AnodeDrying(Base):
     wet_thickness_um = Column(Float)
     dry_thickness_um = Column(Float)
     m_solvent = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
     solid_content = Column(Float)
     temperature = Column(Float)
 
@@ -163,7 +159,7 @@ class CathodeCalendaring(Base):
     __tablename__ = "calendaring_cathode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -173,7 +169,7 @@ class CathodeCalendaring(Base):
     # battery_model
     final_thickness_um = Column(Float)
     porosity = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     roll_gap_um = Column(Float)
@@ -187,7 +183,7 @@ class AnodeCalendaring(Base):
     __tablename__ = "calendaring_anode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -197,7 +193,7 @@ class AnodeCalendaring(Base):
     # battery_model
     final_thickness_um = Column(Float)
     porosity = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     roll_gap_um = Column(Float)
@@ -213,7 +209,7 @@ class CathodeSlitting(Base):
     __tablename__ = "slitting_cathode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -225,7 +221,7 @@ class CathodeSlitting(Base):
     width_final_mm = Column(Float)
     epsilon_width = Column(Float)
     burr_factor = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     blade_sharpness = Column(Float)
@@ -237,7 +233,7 @@ class AnodeSlitting(Base):
     __tablename__ = "slitting_anode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -249,7 +245,7 @@ class AnodeSlitting(Base):
     width_final_mm = Column(Float)
     epsilon_width = Column(Float)
     burr_factor = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     blade_sharpness = Column(Float)
@@ -259,11 +255,11 @@ class AnodeSlitting(Base):
 
 
 # --- Inspection ---
-class Inspection(Base):
-    __tablename__ = "inspection"
+class AnodeInspection(Base):
+    __tablename__ = "inspection_anode"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -278,11 +274,42 @@ class Inspection(Base):
     porosity = Column(Float)
     epsilon_thickness = Column(Float)
     d_detected = Column(Float)
-    pass_width_mm = Column(Float)
-    pass_thickness_um = Column(Float)
-    pass_burr = Column(Float)
-    pass_surface = Column(Float)
-    overall = Column(Float)
+    pass_width_mm = Column(Boolean)
+    pass_thickness_um = Column(Boolean)
+    pass_burr = Column(Boolean)
+    pass_surface = Column(Boolean)
+    overall = Column(Boolean)
+
+    # machine_parameters
+    epsilon_width_max = Column(Float)
+    epsilon_thickness_max = Column(Float)
+    b_max = Column(Float)
+    d_surface_max = Column(Float)
+
+class CathodeInspection(Base):
+    __tablename__ = "inspection_cathode"
+
+    id = Column(Integer, primary_key=True, index=True)
+    batch = Column(String, nullable=False)
+    state = Column(String, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    duration = Column(Float, nullable=False)
+    process = Column(String, nullable=False)
+    temperature_C = Column(Float)
+
+    # battery_model
+    final_width_mm = Column(Float)
+    final_thickness_um = Column(Float)
+    epsilon_width = Column(Float)
+    burr_factor = Column(Float)
+    porosity = Column(Float)
+    epsilon_thickness = Column(Float)
+    d_detected = Column(Float)
+    pass_width_mm = Column(Boolean)
+    pass_thickness_um = Column(Boolean)
+    pass_burr = Column(Boolean)
+    pass_surface = Column(Boolean)
+    overall = Column(Boolean)
 
     # machine_parameters
     epsilon_width_max = Column(Float)
@@ -296,7 +323,7 @@ class Rewinding(Base):
     __tablename__ = "rewinding"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -325,7 +352,7 @@ class ElectrolyteFilling(Base):
     __tablename__ = "electrolyte_filling"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -343,7 +370,7 @@ class ElectrolyteFilling(Base):
     v_max = Column(Float)
     eta_wetting = Column(Float)
     v_elec_filling = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     vacuum_level = Column(Float)
@@ -356,7 +383,7 @@ class FormationCycling(Base):
     __tablename__ = "formation_cycling"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -382,7 +409,7 @@ class Aging(Base):
     __tablename__ = "aging"
 
     id = Column(Integer, primary_key=True, index=True)
-    batch = Column(Integer, nullable=False)
+    batch = Column(String, nullable=False)
     state = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration = Column(Float, nullable=False)
@@ -394,7 +421,7 @@ class Aging(Base):
     initial_soc = Column(Float)
     final_ocv_v = Column(Float)
     leakage_current_A = Column(Float)
-    defect_risk = Column(Float)
+    defect_risk = Column(Boolean)
 
     # machine_parameters
     k_leak = Column(Float)
