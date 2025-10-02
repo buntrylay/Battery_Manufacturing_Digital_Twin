@@ -41,21 +41,25 @@ Machines → Events → PlantSimulation → Notifications → WebSocket Server
 ## Benefits
 
 ### 1. **Separation of Concerns**
+
 - Machines: Pure simulation logic
 - PlantSimulation: Event handling and coordination
 - NotificationQueue: WebSocket communication
 
 ### 2. **Testability**
+
 - Machines can be tested without WebSocket dependencies
 - Event system can be tested independently
 - PlantSimulation can be tested with mock events
 
 ### 3. **Maintainability**
+
 - Changes to notification logic don't affect machines
 - New event types can be added easily
 - Clear responsibility boundaries
 
 ### 4. **Extensibility**
+
 - Other components can listen to machine events
 - Multiple notification handlers possible
 - Event filtering/routing can be added

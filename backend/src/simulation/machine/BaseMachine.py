@@ -6,7 +6,7 @@ from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
 from simulation.helper.IoTHubSender import IoTHubSender
-from simulation.events import event_bus, MachineEventType
+from simulation.data_bus.events import event_bus, MachineEventType
 
 
 class BaseMachine(ABC):
@@ -41,11 +41,14 @@ class BaseMachine(ABC):
         self.battery_model = battery_model
         self.machine_parameters = machine_parameters
         self.state = False
-        self.start_datetime = None
-        self.total_time = 0
         # Helpers
         self.local_saver = LocalDataSaver(process_name)
         self.iot_sender = IoTHubSender(connection_string)
+        # Time-related attributes
+        self.total_ticks = None
+        self.pause_between_ticks = None
+        self.start_datetime = None
+        self.total_time = 0
 
     @abstractmethod
     def receive_model_from_previous_process(self, previous_model: BaseModel):
@@ -104,26 +107,42 @@ class BaseMachine(ABC):
         self.state = True
         self.start_datetime = datetime.now()
         # Emit event instead of direct notification
-        event_bus.emit_machine_event(
-            machine_id=self.process_name,
-            line_type=self.process_name.split('_')[1] if '_' in self.process_name else "unknown",
-            process_name=self.process_name,
-            event_type=MachineEventType.TURNED_ON,
-            data={"stage": "turned_on", "message": f"{self.process_name} turned on"}
-        )
+        if event_bus is not None:
+            event_bus.emit_machine_event(
+                machine_id=self.process_name,
+                line_type=(
+                    self.process_name.split("_")[1]
+                    if "_" in self.process_name
+                    else "unknown"
+                ),
+                process_name=self.process_name,
+                event_type=MachineEventType.TURNED_ON,
+                data={
+                    "stage": "turned_on",
+                    "message": f"{self.process_name} turned on",
+                },
+            )
 
     def turn_off(self):
         """Turn off the machine."""
         self.state = False
         self.total_time = 0
         # Emit event instead of direct notification
-        event_bus.emit_machine_event(
-            machine_id=self.process_name,
-            line_type=self.process_name.split('_')[1] if '_' in self.process_name else "unknown",
-            process_name=self.process_name,
-            event_type=MachineEventType.TURNED_OFF,
-            data={"stage": "turned_off", "message": f"{self.process_name} turned off"}
-        )
+        if event_bus is not None:
+            event_bus.emit_machine_event(
+                machine_id=self.process_name,
+                line_type=(
+                    self.process_name.split("_")[1]
+                    if "_" in self.process_name
+                    else "unknown"
+                ),
+                process_name=self.process_name,
+                event_type=MachineEventType.TURNED_OFF,
+                data={
+                    "stage": "turned_off",
+                    "message": f"{self.process_name} turned off",
+                },
+            )
 
     def pre_run_check(self):
         """Pre-run check for the machine."""
@@ -131,6 +150,10 @@ class BaseMachine(ABC):
             raise ValueError("Battery model is not set")
         if self.machine_parameters is None:
             raise ValueError("Machine parameters are not set")
+        if self.total_ticks is None:
+            raise ValueError("Total ticks are not set")
+        if self.pause_between_ticks is None:
+            raise ValueError("Pause between ticks are not set")
         return True
 
     def get_current_state(self, process_specifics=None):
@@ -166,29 +189,23 @@ class BaseMachine(ABC):
         }
 
     @abstractmethod
-    def run(self):
-        """Abstract method that must be implemented by concrete machine classes."""
-        pass
-
-    @abstractmethod
-    def step_logic(self):
-        """Abstract method that must be implemented by concrete machine classes."""
-        pass
-
-    # TODO: This is a future feature to run the simulation in a standardised way
-    def run_simulation(self, total_ticks=100, pause_between_ticks=0.1, verbose=True):
+    def run(self, verbose=True):
         """Run the simulation."""
         self.turn_on()
         if verbose:
-            print(f"Machine {self.process_name} is running for {total_ticks} steps")
-        for t in range(1, total_ticks):
+            print(f"Machine {self.process_name} is running for {self.total_ticks} steps")
+        for t in range(1, self.total_ticks):
             self.step_logic(t)
             self.battery_model.update_properties(self.machine_parameters)
-            notification_queue.add_notification(self.get_current_state())
             if verbose:
-                print(self.get_current_state())
-            time.sleep(pause_between_ticks)
+                print("Current process state:", self.get_current_state())
+            time.sleep(self.pause_between_ticks)
         self.turn_off()
+
+    @abstractmethod
+    def step_logic(self, tick):
+        """Abstract method that must be implemented by concrete machine classes."""
+        pass
 
     def clean_up(self):
         """Clean up the machine."""
@@ -197,15 +214,6 @@ class BaseMachine(ABC):
         self.state = False
         self.total_time = 0
         self.start_datetime = None
-
-    # idea to standardise the step logic with decorator @abstractmethod
-    #  @abstractmethod
-    # def step_logic(self):
-    #     """
-    #     Abstract method that must be implemented by concrete machine classes.
-    #     This method is called at each step of the simulation.
-    #     """
-    #     pass
 
     @abstractmethod
     def validate_parameters(self, parameters: dict):
