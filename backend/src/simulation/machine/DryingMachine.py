@@ -31,5 +31,11 @@ class DryingMachine(BaseMachine):
         self.save_all_results(all_results)
         self.turn_off()
 
+    def step_logic(self, tick):
+        """
+        Update the properties of the drying model.
+        """
+        pass
+
     def validate_parameters(self, parameters: dict):
         return DryingParameters(**parameters).validate_parameters()

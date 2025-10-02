@@ -45,8 +45,6 @@ class BaseMachine(ABC):
         self.local_saver = LocalDataSaver(process_name)
         self.iot_sender = IoTHubSender(connection_string)
         # Time-related attributes
-        self.total_ticks = None
-        self.pause_between_ticks = None
         self.start_datetime = None
         self.total_time = 0
 
@@ -150,10 +148,10 @@ class BaseMachine(ABC):
             raise ValueError("Battery model is not set")
         if self.machine_parameters is None:
             raise ValueError("Machine parameters are not set")
-        if self.total_ticks is None:
-            raise ValueError("Total ticks are not set")
-        if self.pause_between_ticks is None:
-            raise ValueError("Pause between ticks are not set")
+        # if self.total_ticks is None:
+        #     raise ValueError("Total ticks are not set")
+        # if self.pause_between_ticks is None:
+        #     raise ValueError("Pause between ticks are not set")
         return True
 
     def get_current_state(self, process_specifics=None):
@@ -196,7 +194,7 @@ class BaseMachine(ABC):
             "process_specifics": process_specifics,
         }
 
-    def run(self, verbose=True):
+    def run_simulation(self, verbose=True):
         """Run the simulation."""
         self.turn_on()
         if verbose:
@@ -213,9 +211,14 @@ class BaseMachine(ABC):
         self.turn_off()
 
     @abstractmethod
-    def step_logic(self, tick):
+    def run(self):
         """Abstract method that must be implemented by concrete machine classes."""
         pass
+
+    # @abstractmethod
+    # def step_logic(self, tick):
+    #     """Abstract method that must be implemented by concrete machine classes."""
+    #     pass
 
     @abstractmethod
     def validate_parameters(self, parameters: dict):

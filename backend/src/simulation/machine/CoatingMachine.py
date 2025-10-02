@@ -119,28 +119,12 @@ class CoatingMachine(BaseMachine):
         """
         Run the coating process with detailed step simulation.
         """
-        self.turn_on()
-        all_results = []
-        self.__simulate(results_list=all_results)
-        self.save_all_results(all_results)
-        self.turn_off()
-
-    def step_logic(self, tick):
-        """
-        Update the properties of the coating model.
-        """
-        # update shear rate and wet thickness first to trigger changes in other properties
-        self.shear_rate = calculate_shear_rate(
-            self.machine_parameters.coating_speed,
-            self.machine_parameters.gap_height,
-        )
-        self.uniformity_std = calculate_uniformity_std(self.shear_rate)
-        self.append_process_specifics(
-            {
-                "shear_rate": self.shear_rate,
-                "uniformity_std": self.uniformity_std,
-            }
-        )
+        if self.pre_run_check():
+            self.turn_on()
+            all_results = []
+            self.__simulate(results_list=all_results)
+            self.save_all_results(all_results)
+            self.turn_off()
 
     def validate_parameters(self, parameters: dict):
         return CoatingParameters(**parameters).validate_parameters()

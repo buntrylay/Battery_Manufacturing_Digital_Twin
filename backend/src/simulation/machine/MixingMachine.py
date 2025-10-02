@@ -3,7 +3,6 @@ import numpy as np
 from simulation.process_parameters.Parameters import MixingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.BaseMachine import BaseMachine
-from dataclasses import asdict
 
 
 class MixingMachine(BaseMachine):
@@ -45,7 +44,6 @@ class MixingMachine(BaseMachine):
         step_percent=0.02,
         pause_sec=0.1,
         duration_sec=10,
-        results_list=None,
     ):
         total_volume_of_material_to_add = self.mixing_tank_volume * getattr(
             self.machine_parameters, f"{material_type}_ratio"
@@ -53,8 +51,6 @@ class MixingMachine(BaseMachine):
         volume_added_in_each_step = step_percent * total_volume_of_material_to_add
         added_volume = 0.0
         comp_start_time = self.total_time
-        last_saved_time = time.time()
-        last_saved_result = None
         while self.total_time - comp_start_time < duration_sec:
             self.total_time += pause_sec
             if added_volume < total_volume_of_material_to_add:
@@ -65,31 +61,22 @@ class MixingMachine(BaseMachine):
                 self.battery_model.add(material_type, add_amt)
                 added_volume += add_amt
             self.battery_model.update_properties()
-            result = self.get_current_state()
-            results_list.append(result)
-            now = time.time()
-            if (
-                now - last_saved_time >= 0.1 and result != last_saved_result
-            ):  # Check if data has changed
-                # self.send_json_to_iothub(result)  # Send to IoT Hub
-                self.save_data_to_local_folder()  # Print to console
-                last_saved_time = now
-                last_saved_result = result
             time.sleep(pause_sec)
 
     def run(self):
         if self.pre_run_check():
             self.turn_on()
-            self.battery_model.add(
-                "solvent",
-                self.mixing_tank_volume * self.machine_parameters.solvent_ratio,
-            )
-            all_results = []
-            self.__mix_component("PVDF", duration_sec=8, results_list=all_results)
-            self.__mix_component("CA", duration_sec=8, results_list=all_results)
-            self.__mix_component("AM", duration_sec=10, results_list=all_results)
-            self.save_all_results(all_results)
+            self.battery_model.add("solvent",self.mixing_tank_volume * self.machine_parameters.solvent_ratio)
+            self.__mix_component("PVDF", duration_sec=8)
+            self.__mix_component("CA", duration_sec=8)
+            self.__mix_component("AM", duration_sec=10)
             self.turn_off()
+
+    def step_logic(self, tick):
+        """
+        Update the properties of the mixing model.
+        """
+        pass
 
     def validate_parameters(self, parameters: dict):
         return MixingParameters(**parameters).validate_parameters()
