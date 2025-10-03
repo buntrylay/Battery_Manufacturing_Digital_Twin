@@ -4,7 +4,6 @@ This module provides a thread-safe queue for machines to send real-time updates.
 """
 
 import asyncio
-import json
 import threading
 from typing import Dict, Any, List
 from dataclasses import dataclass, asdict
@@ -14,7 +13,6 @@ from datetime import datetime
 @dataclass
 class MachineNotification:
     """Represents a notification from a machine about its current state."""
-
     process_name: str
     status: str  # "running", "idle", "completed", "error"
     timestamp: str
@@ -51,16 +49,6 @@ class NotificationQueue:
             # this event loop belongs to the main thread - v2_server.py.
             # get the event loop. if there is no event loop, raise a runtime error based on the documentation.
             loop = asyncio.get_event_loop()
-            '''
-            Things that an event loop can be doing in the main thread (in v2_server.py):
-            - Running coroutines (asyncio.create_task)
-            - Running tasks (asyncio.run)
-            - Running callbacks (asyncio.run)
-            - Running timers
-            - Running network operations (asyncio.run)
-            - Running file operations (asyncio.run)
-            - Running system calls (asyncio.run)
-            '''
             if loop.is_running():
                 asyncio.create_task(self._add_notification_async(notification))
             else:
@@ -111,11 +99,11 @@ class NotificationQueue:
         return self._queue.qsize()
 
 
-# Global notification queue instance. Like a singleton.
+# Global notification queue instance. A singleton.
 notification_queue = NotificationQueue()
 
 
-def create_machine_notification(
+def __create_machine_notification(
     process_name: str, status: str, data: Dict[str, Any] = None
 ) -> MachineNotification:
     """Helper function to create a machine notification."""
@@ -126,8 +114,8 @@ def create_machine_notification(
         data=data or {},
     )
 
-
+'''Exported function'''
 def notify_machine_status(process_name: str, status: str, data: Dict[str, Any] = None):
     """Helper function to quickly send a machine status notification."""
-    notification = create_machine_notification(process_name, status, data)
+    notification = __create_machine_notification(process_name, status, data)
     notification_queue.add_notification(notification)
