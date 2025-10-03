@@ -6,7 +6,6 @@ from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
 from simulation.helper.IoTHubSender import IoTHubSender
-from simulation.data_bus.events import event_bus, MachineEventType
 from server.notification_queue import notify_machine_status
 
 
@@ -46,13 +45,11 @@ class BaseMachine(ABC):
         self.state = False
         self.current_process_start_time = None
         self.current_time_step = 0
-        # Helpers
-        self.local_saver = LocalDataSaver(process_name)
-        self.iot_sender = IoTHubSender(connection_string)
+
         self.data_broadcast_fn = data_broadcast_fn
         self.data_broadcast_interval_sec = data_broadcast_interval_sec
         self._last_broadcast_monotonic = None
-         # temporary fix
+        # temporary fix
         self.batch_id = None
 
     @abstractmethod
@@ -67,35 +64,6 @@ class BaseMachine(ABC):
         """Update the machine parameters."""
         self.machine_parameters = machine_parameters
 
-    # delegate to a different class
-    def send_json_to_iothub(self, data):
-        """
-        Send a JSON-serializable dictionary to Azure IoT Hub via MQTT.
-
-        Args:
-            data (dict): The data to send.
-        """
-        sent = self.iot_sender.send_json(data)
-        if sent:
-            print(f"Sent data to IoT Hub for machine {self.process_name}")
-        else:
-            print("IoT Hub client not initialised or send failed.")
-
-    # delegate to a different class
-    def save_data_to_local_folder(self):
-        """
-        Save data to a local folder.
-        """
-        try:
-            current_properties = self.get_current_state()
-            print(current_properties)
-            path = self.local_saver.save_current_state(
-                current_properties, self.current_time_step
-            )
-            print(f"Data saved to {path}")
-        except Exception as e:
-            print(f"Failed to save data to local folder: {e}")
-
     def _maybe_broadcast_data(self, payload):
         """
         If data broadcasting is configured, send JSON payload no more frequently than
@@ -104,47 +72,31 @@ class BaseMachine(ABC):
         try:
             notify_machine_status(
                 machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
+                line_type=self.process_name.split("_")[-1],
                 process_name=self.process_name,
                 status="data_generated",
-                data=payload
+                data=payload,
             )
             print("Generated data pushed to notification queue!")
         except Exception as e:
             # Never let broadcasting break simulation loop
             print(f"Failed to broadcast data via callback function: {e}")
 
-    # delegate to a different class
-    def save_all_results(self, results):
-        """
-        Save all results to a local folder.
-        """
-        try:
-            path = self.local_saver.save_all_results(results)
-            print(f"Summary of all results saved to {path}")
-        except Exception as e:
-            print(f"Failed to save summary of all results: {e}")
-
     def turn_on(self):
         """Turn on the machine."""
         self.state = True
         self.start_datetime = datetime.now()
         # Emit event instead of direct notification
-        if event_bus is not None:
-            event_bus.emit_machine_event(
-                machine_id=self.process_name,
-                line_type=(
-                    self.process_name.split("_")[1]
-                    if "_" in self.process_name
-                    else "unknown"
-                ),
-                process_name=self.process_name,
-                event_type=MachineEventType.TURNED_ON,
-                data={
-                    "stage": "turned_on",
-                    "message": f"{self.process_name} turned on",
-                },
-            )
+        # if event_bus is not None:
+        #     event_bus.emit_machine_event(
+        #         machine_id=self.process_name,
+        #         process_name=self.process_name,
+        #         event_type=MachineEventType.TURNED_ON,
+        #         data={
+        #             "stage": "turned_on",
+        #             "message": f"{self.process_name} turned on",
+        #         },
+        #     )
         self.current_process_start_time = datetime.now()
         notify_machine_status(
             machine_id=self.process_name,
@@ -161,21 +113,21 @@ class BaseMachine(ABC):
         self.state = False
         self.total_time = 0
         # Emit event instead of direct notification
-        if event_bus is not None:
-            event_bus.emit_machine_event(
-                machine_id=self.process_name,
-                line_type=(
-                    self.process_name.split("_")[1]
-                    if "_" in self.process_name
-                    else "unknown"
-                ),
-                process_name=self.process_name,
-                event_type=MachineEventType.TURNED_OFF,
-                data={
-                    "stage": "turned_off",
-                    "message": f"{self.process_name} turned off",
-                },
-            )
+        # if event_bus is not None:
+        #     event_bus.emit_machine_event(
+        #         machine_id=self.process_name,
+        #         line_type=(
+        #             self.process_name.split("_")[1]
+        #             if "_" in self.process_name
+        #             else "unknown"
+        #         ),
+        #         process_name=self.process_name,
+        #         event_type=MachineEventType.TURNED_OFF,
+        #         data={
+        #             "stage": "turned_off",
+        #             "message": f"{self.process_name} turned off",
+        #         },
+        #     )
         self.current_time_step = 0
         notify_machine_status(
             machine_id=self.process_name,
@@ -207,13 +159,8 @@ class BaseMachine(ABC):
             return {
                 "timestamp": datetime.now().isoformat(),
                 "state": "On",
-                "duration": round(self.total_time, 2),
+                "duration": round(self.current_time_step, 2),
                 "process": self.process_name,
-                "temperature_C": (
-                    round(self.battery_model.temperature, 2)
-                    if hasattr(self.battery_model, "temperature")
-                    else None
-                ),
                 "battery_model": self.battery_model.get_properties(),
                 "machine_parameters": asdict(self.machine_parameters),
                 "process_specifics": process_specifics,
@@ -227,20 +174,11 @@ class BaseMachine(ABC):
                 "process_specifics": process_specifics,
             }
 
-    def clean_up(self):
-        """Clean up the machine."""
-        self.turn_off()
-        self.battery_model = None
-        self.state = False
-        self.total_time = 0
-        self.start_datetime = None
-
     def append_process_specifics(self, process_specifics):
         """Append the process state to the current properties."""
         return {
             "process_specifics": process_specifics,
         }
-
 
     @abstractmethod
     def run(self):
@@ -250,6 +188,19 @@ class BaseMachine(ABC):
     @abstractmethod
     def step_logic(self, t: int):
         """Abstract method that must be implemented by concrete machine classes."""
+        pass
+
+    def clean_up(self):
+        """Clean up the machine."""
+        self.turn_off()
+        self.battery_model = None
+        self.state = False
+        self.current_time_step = 0
+        self.current_process_start_time = None
+
+    @abstractmethod
+    def validate_parameters(self, parameters: dict):
+        """Validate the parameters."""
         pass
 
     # TODO: This is a future feature to run the simulation in a standardised way
@@ -267,7 +218,7 @@ class BaseMachine(ABC):
             if verbose:
                 print(f"Machine {self.process_name} is running for {total_steps} steps")
             for t in range(0, self.total_steps):
-                self.current_time_step = t # current time step
+                self.current_time_step = t  # current time step
                 self.step_logic(t)
                 self.battery_model.update_properties(self.machine_parameters)
                 # notify the machine status
@@ -276,28 +227,3 @@ class BaseMachine(ABC):
                     print(self.get_current_state())
                 time.sleep(pause_between_steps)
             self.turn_off()
-
-    def clean_up(self):
-        """Clean up the machine."""
-        self.turn_off()
-        self.battery_model = None
-        self.state = False
-        self.current_time_step = 0
-        self.current_process_start_time = None
-
-    # idea to standardise the step logic with decorator @abstractmethod
-    @abstractmethod
-    def step_logic(self, t: int):
-        """
-        Abstract method that must be implemented by concrete machine classes.
-        This method is called at each step of the simulation.
-        """
-        pass
-
-    def add_notification(self):
-        notify_machine_status()
-
-    @abstractmethod
-    def validate_parameters(self, parameters: dict):
-        """Validate the parameters."""
-        pass

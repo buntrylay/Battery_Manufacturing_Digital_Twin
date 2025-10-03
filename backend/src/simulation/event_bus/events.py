@@ -10,8 +10,9 @@ from enum import Enum
 
 
 class MachineEventType(Enum):
-    """Types of events that machines can emit."""
-
+    """Types of events that machines can emit. 
+    Types of notifications that can be sent to any software component.
+    """
     TURNED_ON = "turned_on"
     TURNED_OFF = "turned_off"
     PROCESS_STARTED = "process_started"
@@ -24,10 +25,7 @@ class MachineEventType(Enum):
 @dataclass
 class MachineEvent:
     """Represents an event emitted by a machine."""
-
     machine_id: str
-    line_type: str
-    process_name: str
     event_type: MachineEventType
     timestamp: str
     data: Dict[str, Any] = None
@@ -76,22 +74,14 @@ class EventBus:
     def emit_machine_event(
         self,
         machine_id: str,
-        line_type: str,
-        process_name: str,
         event_type: MachineEventType,
         data: Dict[str, Any] = None,
     ):
         """Convenience method to emit a machine event."""
         event = MachineEvent(
             machine_id=machine_id,
-            line_type=line_type,
-            process_name=process_name,
             event_type=event_type,
             timestamp=datetime.now().isoformat(),
             data=data or {},
         )
         self.emit(event)
-
-
-# Global event bus instance. This is a singleton.
-event_bus = EventBus()
