@@ -33,4 +33,4 @@ class ConnectionManager:
             self.disconnect(connection)
 
 
-manager = ConnectionManager()
+websocket_manager = ConnectionManager()
