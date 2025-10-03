@@ -194,8 +194,13 @@ class PlantSimulation:
             running_machine.receive_model_from_previous_process(model)
 
             running_machine.batch_id = batch.batch_id
+            running_machine.calculate_total_steps()
             # (4) run the machine (start the simulation)
-            running_machine.run()
+            running_machine.run_simulation(
+                total_steps=running_machine.total_steps,
+                pause_between_steps=0.1,
+                verbose=True
+            )
             # (5) update the batch model (local)
             model = running_machine.battery_model
             # (6) clean up the machine (turn off the machine and empty the battery model (possibly for the next batch))
@@ -216,8 +221,13 @@ class PlantSimulation:
             running_machine = self.factory_structure["cell"][stage]
             # (2) input into the machine (could be from the previous stage or from the initial rewinding machine)
             running_machine.receive_model_from_previous_process(model)
+            running_machine.calculate_total_steps()
             # (3) run the machine (start the simulation)
-            running_machine.run()
+            running_machine.run_simulation(
+                total_steps=running_machine.total_steps,
+                pause_between_steps=0.1,
+                verbose=True
+            )            
             # (4) update the batch model (local)
             model = running_machine.battery_model
             # (5) clean up the machine (turn off the machine and empty the battery model (possibly for the next batch))
@@ -234,18 +244,18 @@ class PlantSimulation:
                 pass
         
         # Notify batch processing start
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="batch_processing",
-            status="batch_started",
-            data={
-                "message": f"🚀 Starting full battery manufacturing process for batch {batch.batch_id}",
-                "batch_id": batch.batch_id,
-                "anode_params": batch.anode_mixing_params.get_parameters_dict(),
-                "cathode_params": batch.cathode_mixing_params.get_parameters_dict()
-            }
-        )
+        # notify_machine_status(
+        #     machine_id="plant_simulation",
+        #     line_type="factory",
+        #     process_name="batch_processing",
+        #     status="batch_started",
+        #     data={
+        #         "message": f"🚀 Starting full battery manufacturing process for batch {batch.batch_id}",
+        #         "batch_id": batch.batch_id,
+        #         "anode_params": batch.anode_mixing_params.get_parameters_dict(),
+        #         "cathode_params": batch.cathode_mixing_params.get_parameters_dict()
+        #     }
+        # )
         
         # to simulate anode and cathode lines in parallel
         run_anode_thread = Thread(
@@ -256,16 +266,16 @@ class PlantSimulation:
         )
         
         # Notify electrode line processing start
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="electrode_lines",
-            status="electrode_processing_started",
-            data={
-                "message": "Starting anode and cathode electrode lines in parallel",
-                "batch_id": batch.batch_id
-            }
-        )
+        # notify_machine_status(
+        #     machine_id="plant_simulation",
+        #     line_type="factory",
+        #     process_name="electrode_lines",
+        #     status="electrode_processing_started",
+        #     data={
+        #         "message": "Starting anode and cathode electrode lines in parallel",
+        #         "batch_id": batch.batch_id
+        #     }
+        # )
         
         # start electrode lines' simulation in parallel
         run_anode_thread.start()
@@ -275,31 +285,31 @@ class PlantSimulation:
         run_cathode_thread.join()
         
         # Notify electrode lines completion
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="electrode_lines",
-            status="electrode_processing_completed",
-            data={
-                "message": "✅ Anode and cathode electrode lines completed successfully",
-                "batch_id": batch.batch_id
-            }
-        )
+        # notify_machine_status(
+        #     machine_id="plant_simulation",
+        #     line_type="factory",
+        #     process_name="electrode_lines",
+        #     status="electrode_processing_completed",
+        #     data={
+        #         "message": "✅ Anode and cathode electrode lines completed successfully",
+        #         "batch_id": batch.batch_id
+        #     }
+        # )
         
         # assemble the cell line model
         batch.assemble_cell_line_model()
         
         # Notify cell assembly start
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="cell_assembly",
-            status="cell_assembly_started",
-            data={
-                "message": "🔋 Starting cell assembly line (rewinding → electrolyte filling → formation cycling → aging)",
-                "batch_id": batch.batch_id
-            }
-        )
+        # notify_machine_status(
+        #     machine_id="plant_simulation",
+        #     line_type="factory",
+        #     process_name="cell_assembly",
+        #     status="cell_assembly_started",
+        #     data={
+        #         "message": "🔋 Starting cell assembly line (rewinding → electrolyte filling → formation cycling → aging)",
+        #         "batch_id": batch.batch_id
+        #     }
+        # )
         
         # run the assembled cell line
         self.__run_assembled_cell_line(batch)

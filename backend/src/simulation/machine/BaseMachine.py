@@ -6,8 +6,13 @@ from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
 from simulation.helper.IoTHubSender import IoTHubSender
-from server.notification_queue import notify_machine_status
+# from server.notification_queue import notify_machine_status
 
+try:
+    from server.notification_queue import notify_machine_status
+except ImportError:
+    def notify_machine_status(*args, **kwargs):
+        return None
 
 class BaseMachine(ABC):
     """
@@ -95,23 +100,23 @@ class BaseMachine(ABC):
         except Exception as e:
             print(f"Failed to save data to local folder: {e}")
 
-    def _maybe_broadcast_data(self, payload):
-        """
-        If data broadcasting is configured, send JSON payload no more frequently than
-        data_broadcast_interval_sec. Uses a monotonic clock to avoid wall-clock drift.
-        """
-        try:
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
-                process_name=self.process_name,
-                status="data_generated",
-                data=payload
-            )
-            print("Generated data pushed to notification queue!")
-        except Exception as e:
-            # Never let broadcasting break simulation loop
-            print(f"Failed to broadcast data via callback function: {e}")
+    # def _maybe_broadcast_data(self, payload):
+    #     """
+    #     If data broadcasting is configured, send JSON payload no more frequently than
+    #     data_broadcast_interval_sec. Uses a monotonic clock to avoid wall-clock drift.
+    #     """
+    #     try:
+    #         notify_machine_status(
+    #             machine_id=self.process_name,
+    #             line_type=self.process_name.split('_')[-1],
+    #             process_name=self.process_name,
+    #             status="data_generated",
+    #             data=payload
+    #         )
+    #         print("Generated data pushed to notification queue!")
+    #     except Exception as e:
+    #         # Never let broadcasting break simulation loop
+    #         print(f"Failed to broadcast data via callback function: {e}")
 
     # delegate to a different class
     def save_all_results(self, results):
@@ -128,29 +133,29 @@ class BaseMachine(ABC):
         """Turn on the machine."""
         self.state = True
         self.current_process_start_time = datetime.now()
-        notify_machine_status(
-            machine_id=self.process_name,
-            line_type=self.process_name.split("_")[
-                -1
-            ],  # Get the last part after splitting
-            process_name=self.process_name,
-            status="running",
-            data={"message": f"{self.process_name} was turned on"},
-        )
+        # notify_machine_status(
+        #     machine_id=self.process_name,
+        #     line_type=self.process_name.split("_")[
+        #         -1
+        #     ],  # Get the last part after splitting
+        #     process_name=self.process_name,
+        #     status="running",
+        #     data={"message": f"{self.process_name} was turned on"},
+        # )
 
     def turn_off(self):
         """Turn off the machine."""
         self.state = False
         self.current_time_step = 0
-        notify_machine_status(
-            machine_id=self.process_name,
-            line_type=self.process_name.split("_")[
-                -1
-            ],  # Get the last part after splitting
-            process_name=self.process_name,
-            status="idle",
-            data={"message": f"{self.process_name} was turned off"},
-        )
+        # notify_machine_status(
+        #     machine_id=self.process_name,
+        #     line_type=self.process_name.split("_")[
+        #         -1
+        #     ],  # Get the last part after splitting
+        #     process_name=self.process_name,
+        #     status="idle",
+        #     data={"message": f"{self.process_name} was turned off"},
+        # )
 
     def pre_run_check(self):
         """Pre-run check for the machine."""
@@ -198,11 +203,11 @@ class BaseMachine(ABC):
             "process_specifics": process_specifics,
         }
 
-
-    @abstractmethod
-    def run(self):
-        """Abstract method that must be implemented by concrete machine classes."""
-        pass
+# this serve as a reference to all machine run_simulation further implementation
+    # @abstractmethod
+    # def run(self):
+    #     """Abstract method that must be implemented by concrete machine classes."""
+    #     pass
 
     @abstractmethod
     def step_logic(self, t: int):
@@ -226,7 +231,10 @@ class BaseMachine(ABC):
             for t in range(0, self.total_steps):
                 self.current_time_step = t # current time step
                 self.step_logic(t)
-                self.battery_model.update_properties(self.machine_parameters)
+                try:
+                    self.battery_model.update_properties(self.machine_parameters, t)
+                except TypeError:
+                    self.battery_model.update_properties(self.machine_parameters)
                 # notify the machine status
                 # Send progress updates every 10 steps
                 if verbose:
@@ -251,8 +259,8 @@ class BaseMachine(ABC):
         """
         pass
 
-    def add_notification(self):
-        notify_machine_status()
+    # def add_notification(self):
+    #     notify_machine_status()
 
     @abstractmethod
     def validate_parameters(self, parameters: dict):

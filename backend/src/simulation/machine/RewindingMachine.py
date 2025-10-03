@@ -38,6 +38,8 @@ class RewindingMachine(BaseMachine):
         assembled_rewinding_model: RewindingModel,
     ):
         self.battery_model = assembled_rewinding_model
+    def calculate_total_steps(self):
+        self.total_steps = 10
 
     def step_logic(self, t: int):
         pass

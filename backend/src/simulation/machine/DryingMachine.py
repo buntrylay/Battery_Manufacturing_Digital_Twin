@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from simulation.battery_model import CoatingModel
 from simulation.battery_model.DryingModel import DryingModel
 from simulation.machine.BaseMachine import BaseMachine
@@ -18,22 +17,18 @@ class DryingMachine(BaseMachine):
     def receive_model_from_previous_process(self, previous_model: CoatingModel):
         self.battery_model = DryingModel(previous_model)
     
-    # def step_logic(self, t: int):
-    #     pass
+    def step_logic(self, t: int):
+        self.battery_model.update_properties(self.machine_parameters)
+        if t == 0:
+            print(f"{self.process_name}: Drying started")
+        if t == self.total_steps - 1:
+            print(f"{self.process_name}: Drying finished")
 
     def calculate_total_steps(self):
         if self.battery_model is not None and self.machine_parameters is not None:
             DELTA_T = 1
             residence_time = self.battery_model.drying_length / self.machine_parameters.web_speed
             self.total_steps = int(residence_time / DELTA_T)
-
-    def run(self):
-        self.turn_on()
-        total_steps = self.battery_model.time_steps(self.machine_parameters.web_speed)
-        for t in range(total_steps):
-            self.total_time = t
-            self.battery_model.update_properties(self.machine_parameters)
-        self.turn_off()
 
     def validate_parameters(self, parameters: dict):
         return DryingParameters(**parameters).validate_parameters()

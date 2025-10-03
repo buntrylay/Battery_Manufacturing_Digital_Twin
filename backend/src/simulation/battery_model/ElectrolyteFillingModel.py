@@ -34,7 +34,8 @@ class ElectrolyteFillingModel(BaseModel):
     def eta_wetting_calc(self, t, soaking_time):
         return 1 - np.exp(-3 * (t / soaking_time))
 
-    def update_properties(self, params, t):
+    def update_properties(self, params):
+        t = getattr(self, "current_time_step", 0)
         self.V_sep = self.V_sep_calc()
         self.V_elec = self.V_elec_calc()
         self.V_max = self.V_max_calc()

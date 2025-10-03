@@ -51,126 +51,82 @@ class MixingMachine(BaseMachine):
     def receive_model_from_previous_process(self, initial_mixing_model: MixingModel):
         self.battery_model = initial_mixing_model
 
-    def __mix_component(
-        self,
-        material_type,
-        step_percent=0.02,
-        pause_sec=0.1,
-        duration_sec=10,
-    ):
-        total_volume_of_material_to_add = self.mixing_tank_volume * getattr(
-            self.machine_parameters, f"{material_type}_ratio"
+    def calculate_total_steps(self, interval=0.1):
+        self.solvent_step = 0
+        self.pvdf_step = 100
+        self.ca_step = 100
+        self.am_step = 100
+
+        self.total_steps = (
+            self.solvent_step + 
+            self.pvdf_step + 
+            self.ca_step + 
+            self.am_step
         )
-        volume_added_in_each_step = step_percent * total_volume_of_material_to_add
-        added_volume = 0.0
-        comp_start_time = self.total_time
-        while self.total_time - comp_start_time < duration_sec:
-            self.total_time += pause_sec
-            if added_volume < total_volume_of_material_to_add:
-                add_amt = min(
-                    volume_added_in_each_step,
-                    total_volume_of_material_to_add - added_volume,
-                )
-                self.battery_model.add(material_type, add_amt)
-                added_volume += add_amt
-            self.battery_model.update_properties()
-            # broadcast data
-            # websocket_manager.broadcast_data(self.get_current_state())
-            # save data to database
-            # postgres_helper.save_data_to_database(self.get_current_state())
-            # notify_machine_status()
-            time.sleep(pause_sec)
-
-    def run(self):
-        if self.pre_run_check():
-            self.turn_on()
-            # Notify start of mixing process
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split("_")[-1],
-                process_name=self.process_name,
-                status="mixing_started",
-                data={
-                    "message": f"Starting {self.process_name} mixing process",
-                    "tank_volume": self.mixing_tank_volume,
-                },
-            )
-
-            # Add initial solvent
-            solvent_volume = (
-                self.mixing_tank_volume * self.machine_parameters.solvent_ratio
-            )
-            self.battery_model.add("solvent", solvent_volume)
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split("_")[-1],
-                process_name=self.process_name,
-                status="solvent_added",
-                data={
-                    "message": f"Added {solvent_volume:.2f}L solvent",
-                    "volume": solvent_volume,
-                },
-            )
-            # Mix PVDF
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split("_")[-1],
-                process_name=self.process_name,
-                status="component_mixing",
-                data={
-                    "message": "Starting PVDF mixing",
-                    "component": "PVDF",
-                    "duration": 8,
-                },
-            )
-            self.__mix_component("PVDF", duration_sec=8)
-            # Mix CA
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split("_")[-1],
-                process_name=self.process_name,
-                status="component_mixing",
-                data={
-                    "message": "Starting CA mixing",
-                    "component": "CA",
-                    "duration": 8,
-                },
-            )
-            self.__mix_component("CA", duration_sec=8)
-            # Mix AM
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split("_")[-1],
-                process_name=self.process_name,
-                status="component_mixing",
-                data={
-                    "message": "Starting AM mixing",
-                    "component": "AM",
-                    "duration": 10,
-                },
-            )
-            self.__mix_component("AM", duration_sec=10)
-            self.turn_off()
 
     def step_logic(self, t: int):
+        solvent_volume = self.mixing_tank_volume * self.machine_parameters.solvent_ratio
+        pvdf_volume = self.mixing_tank_volume * self.machine_parameters.PVDF_ratio  
+        ca_volume = self.mixing_tank_volume * self.machine_parameters.CA_ratio
+        am_volume = self.mixing_tank_volume * self.machine_parameters.AM_ratio
+
+        pvdf_per_step = pvdf_volume / max(1, self.pvdf_step)
+        ca_per_step = ca_volume / max(1, self.ca_step)
+        am_per_step = am_volume / max(1, self.am_step)
+
+        # solvent
         if t == 0:
             self.battery_model.add("solvent", solvent_volume)
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split("_")[-1],
-                process_name=self.process_name,
-                status="solvent_added",
-                data={
-                    "message": f"Added {solvent_volume:.2f}L solvent",
-                    "volume": solvent_volume,
-                },
-            )
-        elif t <= 100:
-            self.__mix_component("PVDF", duration_sec=8)
-        elif t <= 200:
-            self.__mix_component("CA", duration_sec=8)
-        elif t <= 300:
-            self.__mix_component("AM", duration_sec=10)
+            # notify_machine_status(
+            #     machine_id=self.process_name,
+            #     line_type=self.process_name.split("_")[-1],
+            #     process_name=self.process_name,
+            #     status="solvent_added",
+            #     data={"message": f"Added {solvent_volume:.2f}L solvent"}
+            # )
+            pass
+
+        # pvdf
+        elif self.solvent_step <= t < self.solvent_step + self.pvdf_step:
+            if t == self.solvent_step:
+                # notify_machine_status(
+                #     machine_id=self.process_name,
+                #     line_type=self.process_name.split("_")[-1],
+                #     process_name=self.process_name,
+                #     status="pvdf_started",
+                #     data={"message": "Starting PVDF mixing"}
+                # )
+                pass
+            self.battery_model.add("PVDF", pvdf_per_step)
+
+        # ca
+        elif self.solvent_step + self.pvdf_step <= t < self.solvent_step + self.pvdf_step + self.ca_step:
+            if t == self.solvent_step + self.pvdf_step:
+                # notify_machine_status(
+                #     machine_id=self.process_name,
+                #     line_type=self.process_name.split("_")[-1],
+                #     process_name=self.process_name,
+                #     status="ca_started",
+                #     data={"message": "Starting CA mixing"}
+                # )
+                pass
+            self.battery_model.add("CA", ca_per_step)
+        # am
+        elif self.solvent_step + self.pvdf_step + self.ca_step <= t < self.solvent_step + self.pvdf_step + self.ca_step + self.am_step: 
+            if t == self.solvent_step + self.pvdf_step + self.ca_step:
+                # notify_machine_status(
+                #     machine_id=self.process_name,
+                #     line_type=self.process_name.split("_")[-1],
+                #     process_name=self.process_name,
+                #     status="am_started",
+                #     data={"message": "Starting AM mixing"}
+                # )
+
+                pass
+            self.battery_model.add("AM", am_per_step)
 
     def validate_parameters(self, parameters: dict):
         return MixingParameters(**parameters).validate_parameters()
+
+
+        
