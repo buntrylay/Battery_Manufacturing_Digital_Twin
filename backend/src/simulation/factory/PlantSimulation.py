@@ -26,7 +26,7 @@ from simulation.process_parameters import (
     AgingParameters,
 )
 from simulation.factory.Batch import Batch
-from simulation.event_bus.events import EventBus, event_bus, MachineEventType, MachineEvent
+from simulation.event_bus.events import EventBus, event_bus, PlantSimulationEventType, MachineEvent
 
 
 class PlantSimulation:
@@ -76,12 +76,12 @@ class PlantSimulation:
             """Convert machine events to notifications."""
             # Map event types to notification statuses
             status_mapping = {
-                MachineEventType.TURNED_ON: "running",
-                MachineEventType.TURNED_OFF: "idle",
-                MachineEventType.PROCESS_STARTED: "running",
-                MachineEventType.PROCESS_COMPLETED: "completed",
-                MachineEventType.PROCESS_ERROR: "error",
-                MachineEventType.STATUS_UPDATE: "running",
+                PlantSimulationEventType.MACHINE_TURNED_ON: "running",
+                PlantSimulationEventType.MACHINE_TURNED_OFF: "idle",
+                PlantSimulationEventType.PROCESS_STARTED: "running",
+                PlantSimulationEventType.PROCESS_COMPLETED: "completed",
+                PlantSimulationEventType.MACHINE_SIMULATION_ERROR: "error",
+                PlantSimulationEventType.STATUS_UPDATE: "running",
             }
 
             status = status_mapping.get(event.event_type, "unknown")
@@ -94,7 +94,7 @@ class PlantSimulation:
             )
 
         # Subscribe to all machine event types
-        for event_type in MachineEventType:
+        for event_type in PlantSimulationEventType:
             event_bus.subscribe(event_type, handle_machine_event)
 
     def __initialise_default_factory_structure(self):

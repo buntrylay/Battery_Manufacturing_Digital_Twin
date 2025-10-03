@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
 import time
-from backend.src.simulation.event_bus.events import EventBus, MachineEventType
+from backend.src.simulation.event_bus.events import EventBus, PlantSimulationEventType
 from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
@@ -33,10 +33,6 @@ class BaseMachine(ABC):
         self.current_time_step = 0
         # Event bus related
         self.event_bus = event_bus
-        # WebSocket related
-        self.data_broadcast_fn = data_broadcast_fn
-        self.data_broadcast_interval_sec = data_broadcast_interval_sec
-        self._last_broadcast_monotonic = None
         # temporary fix
         self.batch_id = None
 
@@ -82,7 +78,7 @@ class BaseMachine(ABC):
         self.start_datetime = datetime.now()
         self.current_process_start_time = datetime.now()
         self.__emit_event(
-            MachineEventType.TURNED_ON,
+            PlantSimulationEventType.MACHINE_TURNED_ON,
             data={
                 "message": f"{self.process_name} was turned on at {self.current_process_start_time.isoformat()}"
             },
@@ -95,7 +91,7 @@ class BaseMachine(ABC):
         self.current_time_step = 0
         self.current_process_start_time = None
         self.__emit_event(
-            MachineEventType.TURNED_OFF,
+            PlantSimulationEventType.MACHINE_TURNED_OFF,
             data={
                 "message": f"{self.process_name} was turned off at {datetime.now().isoformat()}"
             },
@@ -176,7 +172,7 @@ class BaseMachine(ABC):
                 self.step_logic(t)
                 self.battery_model.update_properties(self.machine_parameters)
                 self.__emit_event(
-                    MachineEventType.STATUS_UPDATE,
+                    PlantSimulationEventType.MACHINE_DATA_GENERATED,
                     data={
                         "message": f"Machine {self.process_name} is running for {t} steps",
                         "machine_state": self.get_current_state(),
@@ -187,7 +183,7 @@ class BaseMachine(ABC):
                 time.sleep(pause_between_steps)
             self.turn_off()
 
-    def __emit_event(self, event_type: MachineEventType, data: dict = None):
+    def __emit_event(self, event_type: PlantSimulationEventType, data: dict = None):
         """Emit an event to the event bus."""
         if self.event_bus is not None:
             self.event_bus.emit_machine_event(

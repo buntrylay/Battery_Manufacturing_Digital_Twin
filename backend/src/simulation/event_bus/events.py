@@ -9,28 +9,35 @@ from typing import Dict, Any, Callable, List
 from enum import Enum
 
 
-class MachineEventType(Enum):
+class PlantSimulationEventType(Enum):
     """Types of events that machines can emit."""
-    TURNED_ON = "turned_on"
-    TURNED_OFF = "turned_off"
-    PROCESS_STARTED = "process_started"
-    PROCESS_COMPLETED = "process_completed"
-    PROCESS_ERROR = "process_error"
-    STATUS_UPDATE = "status_update"
-    DATA_UPDATE = "data_update"
+    # for machines
+    MACHINE_TURNED_ON = "machine_turned_on"
+    MACHINE_TURNED_OFF = "machine_turned_off"
+    MACHINE_SIMULATION_ERROR = "machine_simulation_error"
+    MACHINE_DATA_GENERATED = "data_generated"
+    # for plant simulation
+    BATCH_REQUESTED = "batch_requested"
+    BATCH_STARTED_ANODE_LINE = "batch_started_anode_line"
+    BATCH_STARTED_CATHODE_LINE = "batch_started_cathode_line"
+    BATCH_MERGED = "batch_merged"
+    BATCH_STARTED_CELL_LINE = "batch_started_cell_line"
+    BATCH_COMPLETED = "batch_completed"
+    BATCH_ERROR = "batch_error"
 
 
 @dataclass
-class MachineEvent:
-    """Represents an event emitted by a machine."""
-    machine_id: str
-    event_type: MachineEventType
+class PlantSimulationEvent:
+    """Represents an event emitted by the plant simulation."""
+    event_type: PlantSimulationEventType
     timestamp: str = None
     data: Dict[str, Any] = None
 
-    def __post_init__(self):
-        if self.timestamp is None:
-            self.timestamp = datetime.now().isoformat()
+
+@dataclass
+class MachineEvent(PlantSimulationEvent):
+    """Represents an event emitted by a machine."""
+    machine_id: str
 
 
 class EventBus:
@@ -40,10 +47,12 @@ class EventBus:
     """
 
     def __init__(self):
-        self._listeners: Dict[MachineEventType, List[Callable]] = {}
+        self._listeners: Dict[PlantSimulationEventType, List[Callable]] = {}
 
     def subscribe(
-        self, event_type: MachineEventType, callback: Callable[[MachineEvent], None]
+        self,
+        event_type: PlantSimulationEventType,
+        callback: Callable[[MachineEvent], None],
     ):
         """Subscribe to events of a specific type.
         For example, if the event type is MachineEventType.TURNED_ON, the callback (callback_x) will be called when the machine is turned on.
@@ -52,13 +61,18 @@ class EventBus:
             MachineEventType.TURNED_ON: [callback_x],
         }
         """
-        if event_type not in self._listeners: # check if the event type is already in the listeners
+        if (
+            event_type not in self._listeners
+        ):  # check if the event type is already in the listeners
             self._listeners[event_type] = []
-        self._listeners[event_type].append(callback) # add the callback to the listeners
-
+        self._listeners[event_type].append(
+            callback
+        )  # add the callback to the listeners
 
     def unsubscribe(
-        self, event_type: MachineEventType, callback: Callable[[MachineEvent], None]
+        self,
+        event_type: PlantSimulationEventType,
+        callback: Callable[[MachineEvent], None],
     ):
         """Unsubscribe from events."""
         if event_type in self._listeners:
@@ -80,12 +94,25 @@ class EventBus:
     def emit_machine_event(
         self,
         machine_id: str,
-        event_type: MachineEventType,
+        event_type: PlantSimulationEventType,
         data: Dict[str, Any] = None,
     ):
         """Convenience method to emit a machine event."""
         event = MachineEvent(
             machine_id=machine_id,
+            event_type=event_type,
+            timestamp=datetime.now().isoformat(),
+            data=data or {},
+        )
+        self.__emit(event)
+
+    def emit_plant_simulation_event(
+        self,
+        event_type: PlantSimulationEventType,
+        data: Dict[str, Any] = None,
+    ):
+        """Emit a plant simulation event."""
+        event = PlantSimulationEvent(
             event_type=event_type,
             timestamp=datetime.now().isoformat(),
             data=data or {},
