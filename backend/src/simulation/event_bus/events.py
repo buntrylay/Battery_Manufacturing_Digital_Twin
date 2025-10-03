@@ -25,7 +25,7 @@ class MachineEvent:
     """Represents an event emitted by a machine."""
     machine_id: str
     event_type: MachineEventType
-    timestamp: str
+    timestamp: str = None
     data: Dict[str, Any] = None
 
     def __post_init__(self):
@@ -45,10 +45,17 @@ class EventBus:
     def subscribe(
         self, event_type: MachineEventType, callback: Callable[[MachineEvent], None]
     ):
-        """Subscribe to events of a specific type."""
-        if event_type not in self._listeners:
+        """Subscribe to events of a specific type.
+        For example, if the event type is MachineEventType.TURNED_ON, the callback (callback_x) will be called when the machine is turned on.
+        The _listeners dict at this point after subscribing to the event type is:
+        {
+            MachineEventType.TURNED_ON: [callback_x],
+        }
+        """
+        if event_type not in self._listeners: # check if the event type is already in the listeners
             self._listeners[event_type] = []
-        self._listeners[event_type].append(callback)
+        self._listeners[event_type].append(callback) # add the callback to the listeners
+
 
     def unsubscribe(
         self, event_type: MachineEventType, callback: Callable[[MachineEvent], None]
@@ -60,13 +67,14 @@ class EventBus:
             except ValueError:
                 pass
 
-    def emit(self, event: MachineEvent):
+    def __emit(self, event: MachineEvent):
         """Emit an event to all subscribers."""
         if event.event_type in self._listeners:
             for callback in self._listeners[event.event_type]:
                 try:
                     callback(event)
                 except Exception as e:
+                    # general error handling for the event callback
                     print(f"Error in event callback: {e}")
 
     def emit_machine_event(
@@ -82,4 +90,4 @@ class EventBus:
             timestamp=datetime.now().isoformat(),
             data=data or {},
         )
-        self.emit(event)
+        self.__emit(event)
