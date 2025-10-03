@@ -1,5 +1,5 @@
 from threading import Event, Thread
-from typing import Union
+from typing import Callable, Union
 from simulation.machine import (
     MixingMachine,
     CoatingMachine,
@@ -12,14 +12,11 @@ from simulation.machine import (
     FormationCyclingMachine,
     AgingMachine,
 )
-
-# Mixing/Coating/Drying have their own files
-from simulation.process_parameters.MixingParameters import MixingParameters, MaterialRatios
-from simulation.process_parameters.CoatingParameters import CoatingParameters
-from simulation.process_parameters.DryingParameters import DryingParameters
-
 # All other process parameters come from Parameters.py (via __init__.py)
 from simulation.process_parameters import (
+    MixingParameters,
+    CoatingParameters,
+    DryingParameters,
     CalendaringParameters,
     SlittingParameters,
     ElectrodeInspectionParameters,
@@ -28,16 +25,15 @@ from simulation.process_parameters import (
     FormationCyclingParameters,
     AgingParameters,
 )
-
 from simulation.factory.Batch import Batch
-from simulation.data_bus.events import event_bus, MachineEventType, MachineEvent
+from simulation.event_bus.events import EventBus, event_bus, MachineEventType, MachineEvent
 
 
 class PlantSimulation:
-    def __init__(self):
-        self.batch_requests: list[any] = []
-        self.running_batches: list[any] = []
-        self.factory_structure = {
+    def __init__(self, listeners: list[Callable[[MachineEvent], None]] = None):
+        self.batch_requests: list[any] = [] # array of batches requests (to be processed)
+        self.running_batches: list[any] = [] # array of batches that are currently being processed
+        self.factory_structure = { # structure of the factory (to be used to create the machines) - hardcoded design.
             "anode": {
                 "mixing": None,
                 "coating": None,
@@ -61,51 +57,53 @@ class PlantSimulation:
                 "aging": None,
             },
         }
-        self.__initialise_default_factory_structure()
-        self._setup_event_listeners()
+        self.__initialise_default_factory_structure() # initialise the factory structure with the default machines
+        # self._setup_event_listeners()
+        self.event_bus = EventBus()
 
     def _setup_event_listeners(self):
         """Set up event listeners to handle machine events and convert them to notifications."""
         # Import notification functions here to avoid circular imports
         import sys
         import os
-        sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'server'))
-        from notification_queue import notify_machine_status  # pyright: ignore[reportMissingImports]
-        
+
+        sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "server"))
+        from notification_queue import (
+            notify_machine_status,
+        )  # pyright: ignore[reportMissingImports]
+
         def handle_machine_event(event: MachineEvent):
             """Convert machine events to notifications."""
             # Map event types to notification statuses
             status_mapping = {
                 MachineEventType.TURNED_ON: "running",
-                MachineEventType.TURNED_OFF: "idle", 
+                MachineEventType.TURNED_OFF: "idle",
                 MachineEventType.PROCESS_STARTED: "running",
                 MachineEventType.PROCESS_COMPLETED: "completed",
                 MachineEventType.PROCESS_ERROR: "error",
-                MachineEventType.STATUS_UPDATE: "running"
+                MachineEventType.STATUS_UPDATE: "running",
             }
-            
+
             status = status_mapping.get(event.event_type, "unknown")
             notify_machine_status(
                 machine_id=event.machine_id,
                 line_type=event.line_type,
                 process_name=event.process_name,
                 status=status,
-                data=event.data
+                data=event.data,
             )
-        
+
         # Subscribe to all machine event types
         for event_type in MachineEventType:
             event_bus.subscribe(event_type, handle_machine_event)
 
     def __initialise_default_factory_structure(self):
-        # ✅ Mixing uses MaterialRatios
         default_mixing_parameters_anode = MixingParameters(
-            material_ratios=MaterialRatios(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41)
+            AM_ratio=0.495, CA_ratio=0.045, PVDF_ratio=0.05, solvent_ratio=0.41
         )
         default_mixing_parameters_cathode = MixingParameters(
-            material_ratios=MaterialRatios(AM=0.513, CA=0.039, PVDF=0.098, solvent=0.35)
+            AM_ratio=0.513, CA_ratio=0.039, PVDF_ratio=0.098, solvent_ratio=0.35
         )
-
         default_coating_parameters = CoatingParameters(
             coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5
         )
@@ -147,7 +145,6 @@ class PlantSimulation:
         default_aging_parameters = AgingParameters(
             k_leak=1e-8, temperature=25, aging_time_days=10
         )
-
         # ✅ Create and append machines to anode & cathode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
@@ -180,8 +177,7 @@ class PlantSimulation:
                     electrode_inspection_parameters=default_electrode_inspection_parameters,
                 )
             )
-
-        # ✅ Cell line machines
+        # ✅ Create and append cell line machines
         self.factory_structure["cell"]["rewinding"] = RewindingMachine(
             process_name="rewinding_cell",
             rewinding_parameters=default_rewinding_parameters,
@@ -219,15 +215,13 @@ class PlantSimulation:
         ]:
             # (1) get the machine in order in the electrode line
             running_machine = self.factory_structure[electrode_type][stage]
-            
             # (2) For mixing stage, update machine parameters with batch-specific parameters
             if stage == "mixing":
                 mixing_params = getattr(batch, f"{electrode_type}_mixing_params")
                 running_machine.update_machine_parameters(mixing_params)
-            
+
             # (3) input into the machine (could be from the previous stage or from the initial mixing machine)
             running_machine.receive_model_from_previous_process(model)
-
             running_machine.batch_id = batch.batch_id
             # (4) run the machine (start the simulation)
             running_machine.run()
@@ -267,7 +261,7 @@ class PlantSimulation:
         except ImportError:
             def notify_machine_status(*args, **kwargs):
                 pass
-        
+
         # Notify batch processing start
         notify_machine_status(
             machine_id="plant_simulation",
@@ -278,10 +272,9 @@ class PlantSimulation:
                 "message": f"🚀 Starting full battery manufacturing process for batch {batch.batch_id}",
                 "batch_id": batch.batch_id,
                 "anode_params": batch.anode_mixing_params.get_parameters_dict(),
-                "cathode_params": batch.cathode_mixing_params.get_parameters_dict()
-            }
+                "cathode_params": batch.cathode_mixing_params.get_parameters_dict(),
+            },
         )
-        
         # to simulate anode and cathode lines in parallel
         run_anode_thread = Thread(
             target=self.__run_electrode_line, args=("anode", batch)
@@ -289,7 +282,7 @@ class PlantSimulation:
         run_cathode_thread = Thread(
             target=self.__run_electrode_line, args=("cathode", batch)
         )
-        
+
         # Notify electrode line processing start
         notify_machine_status(
             machine_id="plant_simulation",
@@ -298,17 +291,17 @@ class PlantSimulation:
             status="electrode_processing_started",
             data={
                 "message": "Starting anode and cathode electrode lines in parallel",
-                "batch_id": batch.batch_id
-            }
+                "batch_id": batch.batch_id,
+            },
         )
-        
+
         # start electrode lines' simulation in parallel
         run_anode_thread.start()
         run_cathode_thread.start()
         # wait for the electrode lines' simulation to finish in parallel
         run_anode_thread.join()
         run_cathode_thread.join()
-        
+
         # Notify electrode lines completion
         notify_machine_status(
             machine_id="plant_simulation",
@@ -317,13 +310,13 @@ class PlantSimulation:
             status="electrode_processing_completed",
             data={
                 "message": "✅ Anode and cathode electrode lines completed successfully",
-                "batch_id": batch.batch_id
-            }
+                "batch_id": batch.batch_id,
+            },
         )
-        
+
         # assemble the cell line model
         batch.assemble_cell_line_model()
-        
+
         # Notify cell assembly start
         notify_machine_status(
             machine_id="plant_simulation",
@@ -332,13 +325,13 @@ class PlantSimulation:
             status="cell_assembly_started",
             data={
                 "message": "🔋 Starting cell assembly line (rewinding → electrolyte filling → formation cycling → aging)",
-                "batch_id": batch.batch_id
-            }
+                "batch_id": batch.batch_id,
+            },
         )
-        
+
         # run the assembled cell line
         self.__run_assembled_cell_line(batch)
-        
+
         # Notify complete batch completion
         notify_machine_status(
             machine_id="plant_simulation",
@@ -348,10 +341,10 @@ class PlantSimulation:
             data={
                 "message": f"🎉 BATCH COMPLETE: Battery manufacturing finished for batch {batch.batch_id}!",
                 "batch_id": batch.batch_id,
-                "manufacturing_complete": True
-            }
+                "manufacturing_complete": True,
+            },
         )
-        
+
         return True
 
     def __get_machine(self, line_type: str, machine_id: str):

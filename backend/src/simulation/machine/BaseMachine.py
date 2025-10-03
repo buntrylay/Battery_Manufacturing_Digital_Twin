@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
 import time
+from backend.src.simulation.event_bus.events import EventBus, MachineEventType
 from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
@@ -12,11 +13,6 @@ from server.notification_queue import notify_machine_status
 class BaseMachine(ABC):
     """
     Abstract base class representing a generic machine in the battery manufacturing process.
-
-    Attributes:
-        id (str): Unique identifier for the machine
-        is_on (bool): Current operational status of the machine
-        calculator (SlurryPropertyCalculator): Calculator for slurry properties
     """
 
     def __init__(
@@ -24,28 +20,20 @@ class BaseMachine(ABC):
         process_name,
         battery_model: BaseModel = None,
         machine_parameters: BaseMachineParameters = None,
+        event_bus: EventBus = None,
         connection_string=None,
         data_broadcast_fn=None,
         data_broadcast_interval_sec=5,
-        **kwargs,
     ):
-        """
-        Initialise a new Machine instance.
-
-        Args:
-            process_name (str): The name of the process
-            battery_model (BaseModel): The battery model to be used
-            machine_parameters (dataclass): The machine parameters to be used
-            connection_string (str): The connection string for the IoT Hub
-            **kwargs: Additional keyword arguments (probably for properties that are not in the machine parameters and specific to the machine)
-        """
         self.process_name = process_name
         self.battery_model = battery_model
         self.machine_parameters = machine_parameters
         self.state = False
         self.current_process_start_time = None
         self.current_time_step = 0
-
+        # Event bus related
+        self.event_bus = event_bus
+        # WebSocket related
         self.data_broadcast_fn = data_broadcast_fn
         self.data_broadcast_interval_sec = data_broadcast_interval_sec
         self._last_broadcast_monotonic = None
@@ -56,9 +44,15 @@ class BaseMachine(ABC):
     def receive_model_from_previous_process(self, previous_model: BaseModel):
         pass
 
-    def empty_battery_model(self):
-        """Empty the model."""
+    @abstractmethod
+    def input_model(self, model: BaseModel):
+        pass
+
+    @abstractmethod
+    def empty_model(self) -> BaseModel:
+        returned_model = self.battery_model
         self.battery_model = None
+        return returned_model
 
     def update_machine_parameters(self, machine_parameters: BaseMachineParameters):
         """Update the machine parameters."""
@@ -86,57 +80,25 @@ class BaseMachine(ABC):
         """Turn on the machine."""
         self.state = True
         self.start_datetime = datetime.now()
-        # Emit event instead of direct notification
-        # if event_bus is not None:
-        #     event_bus.emit_machine_event(
-        #         machine_id=self.process_name,
-        #         process_name=self.process_name,
-        #         event_type=MachineEventType.TURNED_ON,
-        #         data={
-        #             "stage": "turned_on",
-        #             "message": f"{self.process_name} turned on",
-        #         },
-        #     )
         self.current_process_start_time = datetime.now()
-        notify_machine_status(
-            machine_id=self.process_name,
-            line_type=self.process_name.split("_")[
-                -1
-            ],  # Get the last part after splitting
-            process_name=self.process_name,
-            status="running",
-            data={"message": f"{self.process_name} was turned on"},
+        self.__emit_event(
+            MachineEventType.TURNED_ON,
+            data={
+                "message": f"{self.process_name} was turned on at {self.current_process_start_time.isoformat()}"
+            },
         )
 
     def turn_off(self):
         """Turn off the machine."""
         self.state = False
         self.total_time = 0
-        # Emit event instead of direct notification
-        # if event_bus is not None:
-        #     event_bus.emit_machine_event(
-        #         machine_id=self.process_name,
-        #         line_type=(
-        #             self.process_name.split("_")[1]
-        #             if "_" in self.process_name
-        #             else "unknown"
-        #         ),
-        #         process_name=self.process_name,
-        #         event_type=MachineEventType.TURNED_OFF,
-        #         data={
-        #             "stage": "turned_off",
-        #             "message": f"{self.process_name} turned off",
-        #         },
-        #     )
         self.current_time_step = 0
-        notify_machine_status(
-            machine_id=self.process_name,
-            line_type=self.process_name.split("_")[
-                -1
-            ],  # Get the last part after splitting
-            process_name=self.process_name,
-            status="idle",
-            data={"message": f"{self.process_name} was turned off"},
+        self.current_process_start_time = None
+        self.__emit_event(
+            MachineEventType.TURNED_OFF,
+            data={
+                "message": f"{self.process_name} was turned off at {datetime.now().isoformat()}"
+            },
         )
 
     def pre_run_check(self):
@@ -190,14 +152,6 @@ class BaseMachine(ABC):
         """Abstract method that must be implemented by concrete machine classes."""
         pass
 
-    def clean_up(self):
-        """Clean up the machine."""
-        self.turn_off()
-        self.battery_model = None
-        self.state = False
-        self.current_time_step = 0
-        self.current_process_start_time = None
-
     @abstractmethod
     def validate_parameters(self, parameters: dict):
         """Validate the parameters."""
@@ -221,9 +175,23 @@ class BaseMachine(ABC):
                 self.current_time_step = t  # current time step
                 self.step_logic(t)
                 self.battery_model.update_properties(self.machine_parameters)
-                # notify the machine status
-                # Send progress updates every 10 steps
+                self.__emit_event(
+                    MachineEventType.STATUS_UPDATE,
+                    data={
+                        "message": f"Machine {self.process_name} is running for {t} steps",
+                        "machine_state": self.get_current_state(),
+                    },
+                )
                 if verbose:
-                    print(self.get_current_state())
+                    print("Current machine state: ", self.get_current_state())
                 time.sleep(pause_between_steps)
             self.turn_off()
+
+    def __emit_event(self, event_type: MachineEventType, data: dict = None):
+        """Emit an event to the event bus."""
+        if self.event_bus is not None:
+            self.event_bus.emit_machine_event(
+                machine_id=self.process_name,
+                event_type=event_type,
+                data=data,
+            )

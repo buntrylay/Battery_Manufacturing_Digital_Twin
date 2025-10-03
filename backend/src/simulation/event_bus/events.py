@@ -10,9 +10,7 @@ from enum import Enum
 
 
 class MachineEventType(Enum):
-    """Types of events that machines can emit. 
-    Types of notifications that can be sent to any software component.
-    """
+    """Types of events that machines can emit."""
     TURNED_ON = "turned_on"
     TURNED_OFF = "turned_off"
     PROCESS_STARTED = "process_started"
