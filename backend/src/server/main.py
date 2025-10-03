@@ -11,6 +11,10 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import json
+from backend.src.server.db.db import engine, SessionLocal
+from backend.src.server.db.model_table import *
+from backend.src.server.db.db_helper import DBHelper
+import sqlalchemy
 
 # for generation of unique batch ID
 import uuid
@@ -78,6 +82,11 @@ manager = ConnectionManager()
 
 @app.get("/")
 def root():
+    try:
+        with engine.connect() as conn:
+            conn.execute(sqlalchemy.text("SELECT 1"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     return {"message": "This is the V2 API for the battery manufacturing digital twin!"}
 
 @app.get("/health")
@@ -388,6 +397,11 @@ async def process_notifications():
 async def startup_event():
     """Start the background task for processing notifications."""
     asyncio.create_task(process_notifications())
+
+    try:
+        create_tables()
+    except Exception as e:
+            print(f"Error processing notification: {e}")
 
 
 if __name__ == "__main__":
