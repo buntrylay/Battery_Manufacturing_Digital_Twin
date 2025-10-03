@@ -35,9 +35,12 @@ class PlantSimulationEvent:
 
 
 @dataclass
-class MachineEvent(PlantSimulationEvent):
+class MachineEvent:
     """Represents an event emitted by a machine."""
     machine_id: str
+    event_type: PlantSimulationEventType
+    timestamp: str = None
+    data: Dict[str, Any] = None
 
 
 class EventBus:

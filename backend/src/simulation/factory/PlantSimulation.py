@@ -12,6 +12,7 @@ from simulation.machine import (
     FormationCyclingMachine,
     AgingMachine,
 )
+
 # All other process parameters come from Parameters.py (via __init__.py)
 from simulation.process_parameters import (
     MixingParameters,
@@ -26,14 +27,23 @@ from simulation.process_parameters import (
     AgingParameters,
 )
 from simulation.factory.Batch import Batch
-from simulation.event_bus.events import EventBus, event_bus, PlantSimulationEventType, MachineEvent
+from simulation.event_bus.events import (
+    EventBus,
+    event_bus,
+    PlantSimulationEventType,
+    MachineEvent,
+)
 
 
 class PlantSimulation:
     def __init__(self, listeners: list[Callable[[MachineEvent], None]] = None):
-        self.batch_requests: list[any] = [] # array of batches requests (to be processed)
-        self.running_batches: list[any] = [] # array of batches that are currently being processed
-        self.factory_structure = { # structure of the factory (to be used to create the machines) - hardcoded design.
+        self.batch_requests: list[any] = (
+            []
+        )  # array of batches requests (to be processed)
+        self.running_batches: list[any] = (
+            []
+        )  # array of batches that are currently being processed
+        self.factory_structure = {  # structure of the factory (to be used to create the machines) - hardcoded design.
             "anode": {
                 "mixing": None,
                 "coating": None,
@@ -57,45 +67,8 @@ class PlantSimulation:
                 "aging": None,
             },
         }
-        self.__initialise_default_factory_structure() # initialise the factory structure with the default machines
-        # self._setup_event_listeners()
         self.event_bus = EventBus()
-
-    def _setup_event_listeners(self):
-        """Set up event listeners to handle machine events and convert them to notifications."""
-        # Import notification functions here to avoid circular imports
-        import sys
-        import os
-
-        sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "server"))
-        from notification_queue import (
-            notify_machine_status,
-        )  # pyright: ignore[reportMissingImports]
-
-        def handle_machine_event(event: MachineEvent):
-            """Convert machine events to notifications."""
-            # Map event types to notification statuses
-            status_mapping = {
-                PlantSimulationEventType.MACHINE_TURNED_ON: "running",
-                PlantSimulationEventType.MACHINE_TURNED_OFF: "idle",
-                PlantSimulationEventType.PROCESS_STARTED: "running",
-                PlantSimulationEventType.PROCESS_COMPLETED: "completed",
-                PlantSimulationEventType.MACHINE_SIMULATION_ERROR: "error",
-                PlantSimulationEventType.STATUS_UPDATE: "running",
-            }
-
-            status = status_mapping.get(event.event_type, "unknown")
-            notify_machine_status(
-                machine_id=event.machine_id,
-                line_type=event.line_type,
-                process_name=event.process_name,
-                status=status,
-                data=event.data,
-            )
-
-        # Subscribe to all machine event types
-        for event_type in PlantSimulationEventType:
-            event_bus.subscribe(event_type, handle_machine_event)
+        self.__initialise_default_factory_structure()  # initialise the factory structure with the default machines
 
     def __initialise_default_factory_structure(self):
         default_mixing_parameters_anode = MixingParameters(
@@ -154,47 +127,57 @@ class PlantSimulation:
                     if electrode_type == "anode"
                     else default_mixing_parameters_cathode
                 ),
+                event_bus=self.event_bus,
             )
             self.factory_structure[electrode_type]["coating"] = CoatingMachine(
                 process_name=f"coating_{electrode_type}",
                 coating_parameters=default_coating_parameters,
+                event_bus=self.event_bus,
             )
             self.factory_structure[electrode_type]["drying"] = DryingMachine(
                 process_name=f"drying_{electrode_type}",
                 drying_parameters=default_drying_parameters,
+                event_bus=self.event_bus,
             )
             self.factory_structure[electrode_type]["calendaring"] = CalendaringMachine(
                 process_name=f"calendaring_{electrode_type}",
                 calendaring_parameters=default_calendaring_parameters,
+                event_bus=self.event_bus,
             )
             self.factory_structure[electrode_type]["slitting"] = SlittingMachine(
                 process_name=f"slitting_{electrode_type}",
                 slitting_parameters=default_slitting_parameters,
+                event_bus=self.event_bus,
             )
             self.factory_structure[electrode_type]["inspection"] = (
                 ElectrodeInspectionMachine(
                     process_name=f"inspection_{electrode_type}",
                     electrode_inspection_parameters=default_electrode_inspection_parameters,
+                    event_bus=self.event_bus,
                 )
             )
         # ✅ Create and append cell line machines
         self.factory_structure["cell"]["rewinding"] = RewindingMachine(
             process_name="rewinding_cell",
             rewinding_parameters=default_rewinding_parameters,
+            event_bus=self.event_bus,
         )
         self.factory_structure["cell"]["electrolyte_filling"] = (
             ElectrolyteFillingMachine(
                 process_name="electrolyte_filling_cell",
                 electrolyte_filling_parameters=default_electrolyte_filling_parameters,
+                event_bus=self.event_bus,
             )
         )
         self.factory_structure["cell"]["formation_cycling"] = FormationCyclingMachine(
             process_name="formation_cycling_cell",
             formation_cycling_parameters=default_formation_cycling_parameters,
+            event_bus=self.event_bus,
         )
         self.factory_structure["cell"]["aging"] = AgingMachine(
             process_name="aging_cell",
             aging_parameters=default_aging_parameters,
+            event_bus=self.event_bus,
         )
 
     def __run_electrode_line(
@@ -259,6 +242,7 @@ class PlantSimulation:
         try:
             from backend.src.server.notification_queue import notify_machine_status
         except ImportError:
+
             def notify_machine_status(*args, **kwargs):
                 pass
 
@@ -433,3 +417,7 @@ class PlantSimulation:
         machine.validate_parameters(parameters)
         machine.update_machine_parameters(parameters)
         return True
+
+    def get_event_bus(self):
+        """Get the event bus instance."""
+        return self.event_bus

@@ -4,7 +4,8 @@ from collections import deque
 from datetime import datetime
 from backend.src.server.db.db import SessionLocal
 from backend.src.server.db.model_table import *
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from simulation.event_bus.events import EventBus, PlantSimulationEventType, MachineEvent
 
 class DBHelper:
     def __init__(self, queue_size=1000, batch_size=50, interval=5):
@@ -14,6 +15,25 @@ class DBHelper:
         self.db_worker_running = False
         self.batch_size = batch_size
         self.interval = interval
+        self.event_bus: Optional[EventBus] = None
+        self.event_handlers = None
+
+    def set_event_bus(self, event_bus: EventBus, event_handlers):
+        """Set the event bus and handlers for this DB helper."""
+        self.event_bus = event_bus
+        self.event_handlers = event_handlers
+        self._subscribe_to_events()
+
+    def _subscribe_to_events(self):
+        """Subscribe to relevant machine events for database storage."""
+        if not self.event_bus or not self.event_handlers:
+            return
+        
+        # Subscribe only to data generation events for database storage
+        self.event_bus.subscribe(
+            PlantSimulationEventType.MACHINE_DATA_GENERATED,
+            self.event_handlers.handle_machine_event_for_database
+        )
 
     def queue_data(self, payload: Dict[str, Any]):
         with self.db_lock:

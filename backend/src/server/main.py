@@ -25,11 +25,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from simulation.factory.Batch import Batch
 from simulation.factory.PlantSimulation import PlantSimulation
 
-# Import notification queue
-from .notification_queue import notification_queue
-
 # Import websocket manager
 from .WebSocketManager import websocket_manager
+
+# Import event handlers
+from .event_handlers import EventHandlers
 
 # Import database engine & session
 from backend.src.server.db.db import engine, SessionLocal
@@ -54,6 +54,9 @@ out_of_batch_event = threading.Event()
 
 # WebSocket connection management
 db_helper = DBHelper()
+
+# Initialize event handlers
+event_handlers = EventHandlers(db_helper)
 
 
 @app.get("/")
@@ -186,33 +189,23 @@ def convert_numpy_types(obj):
         return obj
 
 
-# Background task to process notifications and broadcast to WebSocket clients
-async def process_notifications():
-    """Background task to process machine notifications and broadcast to WebSocket clients."""
-    while True:
-        try:
-            # Get notification from queue
-            notification = await notification_queue.get_notification()
-            # Convert to JSON and broadcast to all connected clients
-            message = json.dumps(notification.to_dict())
-            await websocket_manager.broadcast(message)
-            # If this is a data notification, queue for DB writing
-            if notification.status == "data_generated":
-                # Merge notification fields with data
-                db_helper.queue_data(notification.data)
-                print("Generated data pushed to db helper queue!")
-                continue
-        except Exception as e:
-            print(f"Error processing notification: {e}")
-            # Small delay to prevent busy waiting
-            await asyncio.sleep(0.1)
-
-
-# Startup event to start the notification processor
+# Startup event to initialize event-driven architecture
 @app.on_event("startup")
 async def startup_event():
-    """Start the background task for processing notifications."""
-    asyncio.create_task(process_notifications())
+    """Initialize the event-driven architecture."""
+    try:
+        # Get event bus from plant simulation
+        event_bus = battery_plant_simulation.get_event_bus()
+        
+        # Set up WebSocket manager to subscribe to events
+        websocket_manager.set_event_bus(event_bus, event_handlers)
+        
+        # Set up DB helper to subscribe to events
+        db_helper.set_event_bus(event_bus, event_handlers)
+        
+        print("Successfully initialized event-driven architecture!")
+    except Exception as e:
+        print(f"Error initializing event-driven architecture: {e}")
 
     try:
         create_tables()
