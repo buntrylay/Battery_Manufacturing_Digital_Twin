@@ -4,13 +4,15 @@ from simulation.battery_model import (
     ElectrodeInspectionModel,
     RewindingModel,
 )
-from simulation.process_parameters.Parameters import MixingParameters
 
 
 class Batch:
-    def __init__(self, batch_id: str, anode_mixing_params: dict = None, cathode_mixing_params: dict = None):
+    def __init__(
+        self,
+        batch_id: str
+    ):
         self.batch_id = batch_id
-        # Initialize the models
+        # Initialise the models
         self.anode_line_model: BaseModel = MixingModel("Anode")
         self.cathode_line_model: BaseModel = MixingModel("Cathode")
         self.cell_line_model = None
