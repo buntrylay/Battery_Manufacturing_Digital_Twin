@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from simulation.process_parameters import BaseMachineParameters
 
-#simple Nase class for battery models
+# simple Base class for battery models
 class BaseModel(ABC):
 
     # def __init__(self, previous_model: "BaseModel" = None):

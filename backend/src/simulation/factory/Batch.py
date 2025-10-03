@@ -61,4 +61,3 @@ class Batch:
         self.cell_line_model = RewindingModel(
             self.anode_line_model, self.cathode_line_model
         )
-        # print(self.get_batch_state())

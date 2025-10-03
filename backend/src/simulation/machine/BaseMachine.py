@@ -6,6 +6,7 @@ from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
 from simulation.helper.IoTHubSender import IoTHubSender
+from simulation.data_bus.events import event_bus, MachineEventType
 from server.notification_queue import notify_machine_status
 
 
@@ -127,6 +128,23 @@ class BaseMachine(ABC):
     def turn_on(self):
         """Turn on the machine."""
         self.state = True
+        self.start_datetime = datetime.now()
+        # Emit event instead of direct notification
+        if event_bus is not None:
+            event_bus.emit_machine_event(
+                machine_id=self.process_name,
+                line_type=(
+                    self.process_name.split("_")[1]
+                    if "_" in self.process_name
+                    else "unknown"
+                ),
+                process_name=self.process_name,
+                event_type=MachineEventType.TURNED_ON,
+                data={
+                    "stage": "turned_on",
+                    "message": f"{self.process_name} turned on",
+                },
+            )
         self.current_process_start_time = datetime.now()
         notify_machine_status(
             machine_id=self.process_name,
@@ -141,6 +159,23 @@ class BaseMachine(ABC):
     def turn_off(self):
         """Turn off the machine."""
         self.state = False
+        self.total_time = 0
+        # Emit event instead of direct notification
+        if event_bus is not None:
+            event_bus.emit_machine_event(
+                machine_id=self.process_name,
+                line_type=(
+                    self.process_name.split("_")[1]
+                    if "_" in self.process_name
+                    else "unknown"
+                ),
+                process_name=self.process_name,
+                event_type=MachineEventType.TURNED_OFF,
+                data={
+                    "stage": "turned_off",
+                    "message": f"{self.process_name} turned off",
+                },
+            )
         self.current_time_step = 0
         notify_machine_status(
             machine_id=self.process_name,
@@ -168,29 +203,37 @@ class BaseMachine(ABC):
 
     def get_current_state(self, process_specifics=None):
         """Get the current properties of the machine."""
-        state = {
-            "timestamp": datetime.now().isoformat(),
-            "state": "On" if self.state else "Off",
-            "duration": round(self.current_time_step, 2),
-            "process": self.process_name,
-            "temperature_C": (
-                round(self.battery_model.temperature, 2)
-                if self.state and hasattr(self.battery_model, "temperature")
-                else None
-            ),
-            "battery_model": (
-                self.battery_model.get_properties() if self.battery_model else {}
-            ),
-            "machine_parameters": (
-                asdict(self.machine_parameters) if self.machine_parameters else {}
-            ),
-            "process_specifics": process_specifics,
-        }
-        # Add context if available
-        if hasattr(self, "batch_id"):
-            state["batch_id"] = self.batch_id
+        if self.state:
+            return {
+                "timestamp": datetime.now().isoformat(),
+                "state": "On",
+                "duration": round(self.total_time, 2),
+                "process": self.process_name,
+                "temperature_C": (
+                    round(self.battery_model.temperature, 2)
+                    if hasattr(self.battery_model, "temperature")
+                    else None
+                ),
+                "battery_model": self.battery_model.get_properties(),
+                "machine_parameters": asdict(self.machine_parameters),
+                "process_specifics": process_specifics,
+            }
+        else:
+            return {
+                "timestamp": datetime.now().isoformat(),
+                "process": self.process_name,
+                "state": "Off",
+                "machine_parameters": asdict(self.machine_parameters),
+                "process_specifics": process_specifics,
+            }
 
-        return state
+    def clean_up(self):
+        """Clean up the machine."""
+        self.turn_off()
+        self.battery_model = None
+        self.state = False
+        self.total_time = 0
+        self.start_datetime = None
 
     def append_process_specifics(self, process_specifics):
         """Append the process state to the current properties."""
