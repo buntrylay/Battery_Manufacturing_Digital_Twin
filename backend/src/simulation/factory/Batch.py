@@ -7,14 +7,11 @@ from simulation.battery_model import (
 
 
 class Batch:
-    def __init__(
-        self,
-        batch_id: str
-    ):
+    def __init__(self, batch_id: str):
         self.batch_id = batch_id
         # Initialise the models
-        self.anode_line_model: BaseModel = MixingModel("Anode")
-        self.cathode_line_model: BaseModel = MixingModel("Cathode")
+        self.anode_line_model: BaseModel = MixingModel("Anode") # 
+        self.cathode_line_model: BaseModel = MixingModel("Cathode") #
         self.cell_line_model = None
 
     def get_batch_state(self):
