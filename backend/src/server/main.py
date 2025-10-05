@@ -29,7 +29,7 @@ from simulation.factory.PlantSimulation import PlantSimulation
 from .WebSocketManager import websocket_manager
 
 # Import event handlers
-from .event_handlers import EventHandlers
+from .event_handler import EventHandler
 
 # Import database engine & session
 from backend.src.server.db.db import engine, SessionLocal
@@ -51,12 +51,10 @@ app.add_middleware(
 battery_plant_simulation = PlantSimulation()
 factory_run_thread = None
 out_of_batch_event = threading.Event()
-
 # WebSocket connection management
 db_helper = DBHelper()
-
-# Initialize event handlers
-event_handlers = EventHandlers(db_helper)
+# Initialize event handler
+event_handler = EventHandler()
 
 
 @app.get("/")
@@ -198,10 +196,10 @@ async def startup_event():
         event_bus = battery_plant_simulation.get_event_bus()
         
         # Set up WebSocket manager to subscribe to events
-        websocket_manager.set_event_bus(event_bus, event_handlers)
+        websocket_manager.set_event_bus(event_bus, event_handler)
         
         # Set up DB helper to subscribe to events
-        db_helper.set_event_bus(event_bus, event_handlers)
+        db_helper.set_event_bus(event_bus, event_handler)
         
         print("Successfully initialized event-driven architecture!")
     except Exception as e:
