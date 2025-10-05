@@ -441,3 +441,6 @@ class DBHelper:
                 broadcast_fn(f"✗ Error creating DB record: {str(e)}")
                 broadcast_fn(f"Problematic data: {simulation_data}")
             return None
+
+# a singleton instance of the DBHelper
+database_helper = DBHelper()
