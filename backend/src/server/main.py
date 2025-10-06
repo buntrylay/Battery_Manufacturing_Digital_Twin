@@ -83,6 +83,29 @@ manager = ConnectionManager()
 
 db_helper = DBHelper()
 
+TABLE_MAP = {
+    "anode_mixing": AnodeMixing,
+    "cathode_mixing": CathodeMixing,
+    "anode_coating": AnodeCoating,
+    "cathode_coating": CathodeCoating,
+    "anode_drying": AnodeDrying,
+    "cathode_drying": CathodeDrying,
+    "anode_calendaring": AnodeCalendaring,
+    "cathode_calendaring": CathodeCalendaring,
+    "anode_slitting": AnodeSlitting,
+    "cathode_slitting": CathodeSlitting,
+    "anode_inspection": AnodeInspection,
+    "cathode_inspection": CathodeInspection,
+    "rewinding": Rewinding,
+    "electrolyte_filling": ElectrolyteFilling,
+    "formation_cycling": FormationCycling,
+    "aging": Aging,
+}
+
+def serialize_row(row):
+    """Serialize a SQLAlchemy row to a dict."""
+    return {c.name: getattr(row, c.name) for c in row.__table__.columns}
+
 @app.get("/")
 def root():
     try:
@@ -376,18 +399,6 @@ def reset_plant():
         out_of_batch_event.clear()
     return {"message": "Plant reset successfully"}
 
-def convert_numpy_types(obj):
-    import numpy as np
-    
-    if isinstance(obj, dict):
-        return {k: convert_numpy_types(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_numpy_types(v) for v in obj]
-    elif isinstance(obj, np.generic):
-        return obj.item()
-    else:
-        return obj
-
 # Background task to process notifications and broadcast to WebSocket clients
 async def process_notifications():
     
@@ -432,6 +443,21 @@ async def startup_event():
     except Exception as e:
             print(f"Error creating db helper: {e}")
     
+@app.get("/api/db/{table_name}")
+def get_table_entries(table_name: str):
+    """Return all entries from the specified table."""
+    table_class = TABLE_MAP.get(table_name)
+    if not table_class:
+        return {"error": f"Table '{table_name}' not found."}
+    try:
+        db = SessionLocal()
+        rows = db.query(table_class).all()
+        db.close()
+        if not rows:
+            return {"message": f"No entries found in {table_name} table.", "data": []}
+        return {"data": [serialize_row(row) for row in rows]}
+    except Exception as e:
+        return {"error": f"Failed to fetch entries from {table_name}: {str(e)}"}
 
 
 if __name__ == "__main__":
