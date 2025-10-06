@@ -123,7 +123,7 @@ class MixingModel(BaseModel):
             + WEIGHTS["s"] * solvent_volume * RHO["solvent"]
         )
 
-    def update_properties(self):
+    def update_properties(self, params: MixingParameters = None):
         """Update all computed properties and fluctuate temperature"""
         self.update_temperature()
         self.density = self.calculate_density(

@@ -25,8 +25,11 @@ class Batch:
         }
 
     def assemble_cell_line_model(self):
-        assert isinstance(self.anode_line_model, ElectrodeInspectionModel)
-        assert isinstance(self.cathode_line_model, ElectrodeInspectionModel)
+        assert isinstance(self.anode_line_model, ElectrodeInspectionModel), \
+            f"Anode model must be ElectrodeInspectionModel, got {type(self.anode_line_model)}"
+        assert isinstance(self.cathode_line_model, ElectrodeInspectionModel), \
+            f"Cathode model must be ElectrodeInspectionModel, got {type(self.cathode_line_model)}"
+        
         self.cell_line_model = RewindingModel(
             self.anode_line_model, self.cathode_line_model
         )

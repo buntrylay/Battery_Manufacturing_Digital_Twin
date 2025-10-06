@@ -7,8 +7,13 @@ from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.helper.LocalDataSaver import LocalDataSaver
 from simulation.helper.IoTHubSender import IoTHubSender
-from server.notification_queue import notify_machine_status
+# from server.notification_queue import notify_machine_status
 
+try:
+    from server.notification_queue import notify_machine_status
+except ImportError:
+    def notify_machine_status(*args, **kwargs):
+        return None
 
 class BaseMachine(ABC):
     """
@@ -138,10 +143,11 @@ class BaseMachine(ABC):
             "process_specifics": process_specifics,
         }
 
-    @abstractmethod
-    def run(self):
-        """Abstract method that must be implemented by concrete machine classes."""
-        pass
+# this serve as a reference to all machine run_simulation further implementation
+    # @abstractmethod
+    # def run(self):
+    #     """Abstract method that must be implemented by concrete machine classes."""
+    #     pass
 
     @abstractmethod
     def step_logic(self, t: int):

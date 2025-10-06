@@ -88,6 +88,9 @@ class CoatingMachine(BaseMachine):
     
     def receive_model_from_previous_process(self, previous_model: MixingModel):
         self.battery_model = CoatingModel(previous_model)
+    def calculate_total_steps(self):
+        self.total_steps = 10  # default
+
 
     def step_logic(self, t: int):
         # update shear rate and wet thickness first to trigger changes in other properties

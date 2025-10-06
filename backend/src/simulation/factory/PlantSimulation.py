@@ -210,8 +210,13 @@ class PlantSimulation:
             # (3) input into the machine (could be from the previous stage or from the initial mixing machine)
             running_machine.receive_model_from_previous_process(model)
             running_machine.batch_id = batch.batch_id
+            running_machine.calculate_total_steps()
             # (4) run the machine (start the simulation)
-            running_machine.run()
+            running_machine.run_simulation(
+                total_steps=running_machine.total_steps,
+                pause_between_steps=0.1,
+                verbose=True
+            )
             # (5) update the batch model (local)
             model = running_machine.battery_model
             # (6) clean up the machine (turn off the machine and empty the battery model (possibly for the next batch))
@@ -232,8 +237,13 @@ class PlantSimulation:
             running_machine = self.factory_structure["cell"][stage]
             # (2) input into the machine (could be from the previous stage or from the initial rewinding machine)
             running_machine.receive_model_from_previous_process(model)
+            running_machine.calculate_total_steps()
             # (3) run the machine (start the simulation)
-            running_machine.run()
+            running_machine.run_simulation(
+                total_steps=running_machine.total_steps,
+                pause_between_steps=0.1,
+                verbose=True
+            )            
             # (4) update the batch model (local)
             model = running_machine.battery_model
             # (5) clean up the machine (turn off the machine and empty the battery model (possibly for the next batch))

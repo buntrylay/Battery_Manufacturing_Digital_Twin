@@ -20,7 +20,8 @@ class CalendaringMachine(BaseMachine):
             drying_model=previous_model,
             initial_porosity=self.machine_parameters.initial_porosity,
         )
-
+    def calculate_total_steps(self):
+        self.total_steps = 10  # default placeholder
     def step_logic(self, t: int):
         pass
 

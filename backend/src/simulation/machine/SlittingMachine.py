@@ -21,6 +21,9 @@ class SlittingMachine(BaseMachine):
     def receive_model_from_previous_process(self, previous_model: CalendaringModel):
         self.battery_model = SlittingModel(previous_model)
 
+    def calculate_total_steps(self):
+        self.total_steps = 10  # default
+
     def step_logic(self, t: int):
         pass
 

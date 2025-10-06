@@ -1,5 +1,4 @@
 from simulation.machine.BaseMachine import BaseMachine
-from dataclasses import dataclass
 from simulation.process_parameters.Parameters import ElectrolyteFillingParameters
 from simulation.battery_model.RewindingModel import RewindingModel
 from simulation.battery_model.ElectrolyteFillingModel import ElectrolyteFillingModel
@@ -24,13 +23,14 @@ class ElectrolyteFillingMachine(BaseMachine):
         if self.battery_model is not None and self.machine_parameters is not None:
             self.total_steps = int(self.machine_parameters.Soaking_time)
 
-    def run(self):
-        self.turn_on()
-        # the range can be adjusted based on real process time
-        for t in range(self.machine_parameters.Soaking_time):
-            self.total_time = t
-            self.battery_model.update_properties(self.machine_parameters, t)
-        self.turn_off()
+    def step_logic(self, t: int):
+        self.battery_model.update_properties(self.machine_parameters)
+        if t == 0:
+            print(f"{self.process_name}: Electrolyte filling started")
+        if t == self.total_steps - 1:
+            print(f"{self.process_name}: Electrolyte filling finished")
 
     def validate_parameters(self, parameters: dict):
         return ElectrolyteFillingParameters(**parameters).validate_parameters()
+
+
