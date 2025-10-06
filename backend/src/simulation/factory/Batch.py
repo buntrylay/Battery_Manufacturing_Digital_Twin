@@ -33,3 +33,13 @@ class Batch:
         self.cell_line_model = RewindingModel(
             self.anode_line_model, self.cathode_line_model
         )
+
+    def update_batch_model(self, line_type, model):
+        if line_type == "anode":
+            self.anode_line_model = model
+        elif line_type == "cathode":
+            self.cathode_line_model = model
+        elif line_type == "cell":
+            self.cell_line_model = model
+        else:
+            raise ValueError("line_type not found")

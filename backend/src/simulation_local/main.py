@@ -101,24 +101,27 @@ def test_update_machine_parameters():
                 "CA_ratio": 0.045,
                 "PVDF_ratio": 0.05,
                 "solvent_ratio": 0.442,
-            }
+            },
         )
         print(plant_simulation.get_machine_status("anode", "mixing"))
     except Exception as e:
         print(type(e))
         print(e)
 
+
 def test_two_batches():
     batch_1 = Batch(batch_id="Batch_1")
     batch_2 = Batch(batch_id="Batch_2")
     plant_simulation.add_batch(batch_1)
     plant_simulation.run()
-    time.sleep(2) # wait for the first batch to run for some time
+    time.sleep(2)  # wait for the first batch to run for some time
     plant_simulation.add_batch(batch_2)
     plant_simulation.run()
 
+
 def test_get_plant_state():
     print(plant_simulation.get_current_plant_state())
+
 
 if __name__ == "__main__":
     test_run_simulation()

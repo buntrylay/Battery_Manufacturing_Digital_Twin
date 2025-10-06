@@ -1,3 +1,4 @@
+from simulation.event_bus.events import EventBus
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.process_parameters.Parameters import CalendaringParameters
 from simulation.battery_model.DryingModel import DryingModel
@@ -10,9 +11,11 @@ class CalendaringMachine(BaseMachine):
         process_name: str,
         calendaring_parameters: CalendaringParameters,
         calendaring_model: CalendaringModel = None,
-        connection_string=None,
+        event_bus: EventBus = None,
     ):
-        super().__init__(process_name, calendaring_model, calendaring_parameters)
+        super().__init__(
+            process_name, calendaring_model, calendaring_parameters, event_bus
+        )
         # self.total_steps = 60
 
     def receive_model_from_previous_process(self, previous_model: DryingModel):
@@ -20,9 +23,11 @@ class CalendaringMachine(BaseMachine):
             drying_model=previous_model,
             initial_porosity=self.machine_parameters.initial_porosity,
         )
+
     def calculate_total_steps(self):
         self.total_steps = 10  # default placeholder
-    def step_logic(self, t: int):
+
+    def step_logic(self, t: int, verbose: bool):
         pass
 
     def validate_parameters(self, parameters: dict):

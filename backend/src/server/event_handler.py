@@ -28,7 +28,7 @@ class EventHandler:
             PlantSimulationEventType.BATCH_REQUESTED: "batch_requested",
             PlantSimulationEventType.BATCH_STARTED_ANODE_LINE: "batch_started_anode_line",
             PlantSimulationEventType.BATCH_STARTED_CATHODE_LINE: "batch_started_cathode_line",
-            PlantSimulationEventType.BATCH_MERGED: "batch_merged",
+            PlantSimulationEventType.BATCH_ASSEMBLED: "batch_merged",
             PlantSimulationEventType.BATCH_STARTED_CELL_LINE: "batch_started_cell_line",
             PlantSimulationEventType.BATCH_COMPLETED: "batch_completed",
             PlantSimulationEventType.BATCH_ERROR: "batch_error",

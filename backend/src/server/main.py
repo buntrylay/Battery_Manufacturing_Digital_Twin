@@ -180,23 +180,18 @@ async def startup_event():
     try:
         # Get event bus from plant simulation
         event_bus = battery_plant_simulation.get_event_bus()
-
         # Set up WebSocket manager to subscribe to events
         websocket_manager.set_event_bus(event_bus, event_handler)
-
         # Set up DB helper to subscribe to events
         db_helper.set_event_bus(event_bus, event_handler)
-
         print("Successfully initialized event-driven architecture!")
     except Exception as e:
         print(f"Error initializing event-driven architecture: {e}")
-
     try:
         create_tables()
         print(f"Successfully populated tables!")
     except Exception as e:
         print(f"Error populating tables: {e}")
-
     try:
         db_helper.start_worker(lambda msg: print(msg))
         print(f"Successfully created db helper!")

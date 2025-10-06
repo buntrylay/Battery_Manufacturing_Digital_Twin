@@ -2,18 +2,10 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
 import time
-from backend.src.simulation.event_bus.events import EventBus, PlantSimulationEventType
+from simulation.event_bus.events import EventBus, PlantSimulationEventType
 from simulation.process_parameters import BaseMachineParameters
 from simulation.battery_model.BaseModel import BaseModel
-from simulation.helper.LocalDataSaver import LocalDataSaver
-from simulation.helper.IoTHubSender import IoTHubSender
-# from server.notification_queue import notify_machine_status
 
-try:
-    from server.notification_queue import notify_machine_status
-except ImportError:
-    def notify_machine_status(*args, **kwargs):
-        return None
 
 class BaseMachine(ABC):
     """
@@ -26,9 +18,6 @@ class BaseMachine(ABC):
         battery_model: BaseModel = None,
         machine_parameters: BaseMachineParameters = None,
         event_bus: EventBus = None,
-        connection_string=None,
-        data_broadcast_fn=None,
-        data_broadcast_interval_sec=5,
     ):
         self.process_name = process_name
         self.battery_model = battery_model
@@ -40,16 +29,14 @@ class BaseMachine(ABC):
         self.event_bus = event_bus
         # temporary fix
         self.batch_id = None
+        # simulation-related
+        self.total_steps = None  # required
 
     @abstractmethod
     def receive_model_from_previous_process(self, previous_model: BaseModel):
+        # could be improved
         pass
 
-    @abstractmethod
-    def input_model(self, model: BaseModel):
-        pass
-
-    @abstractmethod
     def empty_model(self) -> BaseModel:
         returned_model = self.battery_model
         self.battery_model = None
@@ -58,24 +45,6 @@ class BaseMachine(ABC):
     def update_machine_parameters(self, machine_parameters: BaseMachineParameters):
         """Update the machine parameters."""
         self.machine_parameters = machine_parameters
-
-    def _maybe_broadcast_data(self, payload):
-        """
-        If data broadcasting is configured, send JSON payload no more frequently than
-        data_broadcast_interval_sec. Uses a monotonic clock to avoid wall-clock drift.
-        """
-        try:
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split("_")[-1],
-                process_name=self.process_name,
-                status="data_generated",
-                data=payload,
-            )
-            print("Generated data pushed to notification queue!")
-        except Exception as e:
-            # Never let broadcasting break simulation loop
-            print(f"Failed to broadcast data via callback function: {e}")
 
     def turn_on(self):
         """Turn on the machine."""
@@ -143,14 +112,8 @@ class BaseMachine(ABC):
             "process_specifics": process_specifics,
         }
 
-# this serve as a reference to all machine run_simulation further implementation
-    # @abstractmethod
-    # def run(self):
-    #     """Abstract method that must be implemented by concrete machine classes."""
-    #     pass
-
     @abstractmethod
-    def step_logic(self, t: int):
+    def step_logic(self, t: int, verbose: bool):
         """Abstract method that must be implemented by concrete machine classes."""
         pass
 
@@ -159,8 +122,7 @@ class BaseMachine(ABC):
         """Validate the parameters."""
         pass
 
-    # TODO: This is a future feature to run the simulation in a standardised way
-    def run_simulation(self, total_steps=100, pause_between_steps=0.1, verbose=True):
+    def run_simulation(self, verbose=True):
         """Run the simulation.
         Args:
             total_steps (int): The total number of steps to run the simulation for
@@ -172,11 +134,19 @@ class BaseMachine(ABC):
             # turn on the machine
             self.turn_on()
             if verbose:
-                print(f"Machine {self.process_name} is running for {total_steps} steps")
+                print(
+                    f"Machine {self.process_name} is going to be running for {self.total_steps} steps"
+                )
             for t in range(0, self.total_steps):
                 self.current_time_step = t  # current time step
-                self.step_logic(t)
-                self.battery_model.update_properties(self.machine_parameters)
+                try:
+                    self.step_logic(t, True)
+                except RuntimeError as rt:
+                    if verbose:
+                        print("Plant Warning: Voltage exceeded! ", rt)
+                    self.__emit_event(PlantSimulationEventType.BATCH_ERROR)
+                    break
+                self.battery_model.update_properties(self.machine_parameters, t)
                 self.__emit_event(
                     PlantSimulationEventType.MACHINE_DATA_GENERATED,
                     data={
@@ -186,14 +156,16 @@ class BaseMachine(ABC):
                 )
                 if verbose:
                     print("Current machine state: ", self.get_current_state())
-                time.sleep(pause_between_steps)
+                time.sleep(0.1)
             self.turn_off()
 
     def __emit_event(self, event_type: PlantSimulationEventType, data: dict = None):
         """Emit an event to the event bus."""
+        processed_data = None
+        if data is not None:
+            processed_data = {"machine_id": self.process_name, **data}
         if self.event_bus is not None:
-            self.event_bus.emit_machine_event(
-                machine_id=self.process_name,
+            self.event_bus.emit_plant_simulation_event(
                 event_type=event_type,
-                data=data,
+                data=processed_data,
             )

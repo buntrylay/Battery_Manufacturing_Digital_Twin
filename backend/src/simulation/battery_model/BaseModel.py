@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from simulation.process_parameters import BaseMachineParameters
 
+
 # simple Base class for battery models
 class BaseModel(ABC):
 
@@ -12,5 +13,7 @@ class BaseModel(ABC):
         pass
 
     @abstractmethod
-    def update_properties(self, machine_parameters: BaseMachineParameters):
+    def update_properties(
+        self, machine_parameters: BaseMachineParameters, current_time_step: int = None
+    ):
         pass

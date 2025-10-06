@@ -1,21 +1,7 @@
+from simulation.event_bus.events import EventBus
 from simulation.machine.BaseMachine import BaseMachine
-from dataclasses import dataclass
 from simulation.process_parameters.Parameters import RewindingParameters
 from simulation.battery_model.RewindingModel import RewindingModel
-from simulation.battery_model import ElectrodeInspectionModel
-
-# Import notification functions
-try:
-    # Try multiple import paths to handle different environments
-    try:
-        from server.notification_queue import notify_machine_status
-    except ImportError:
-        from backend.src.server.notification_queue import notify_machine_status
-except ImportError:
-    # Fallback if import fails
-    def notify_machine_status(*args, **kwargs):
-        print(f"RewindingMachine Notification: {args}")
-        pass
 
 
 class RewindingMachine(BaseMachine):
@@ -24,13 +10,9 @@ class RewindingMachine(BaseMachine):
         process_name: str,
         rewinding_parameters: RewindingParameters,
         rewinding_model: RewindingModel = None,
-        connection_string=None,
+        event_bus: EventBus = None,
     ):
-        super().__init__(
-            process_name,
-            rewinding_model,
-            rewinding_parameters,
-        )
+        super().__init__(process_name, rewinding_model, rewinding_parameters, event_bus)
         # self.total_steps = 120 // 5
 
     def receive_model_from_previous_process(
@@ -38,10 +20,11 @@ class RewindingMachine(BaseMachine):
         assembled_rewinding_model: RewindingModel,
     ):
         self.battery_model = assembled_rewinding_model
+
     def calculate_total_steps(self):
         self.total_steps = 10
 
-    def step_logic(self, t: int):
+    def step_logic(self, t: int, verbose: bool):
         pass
 
     def validate_parameters(self, parameters: dict):

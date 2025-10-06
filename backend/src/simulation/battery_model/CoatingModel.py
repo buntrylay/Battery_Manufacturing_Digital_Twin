@@ -1,8 +1,6 @@
 from simulation.process_parameters.Parameters import CoatingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.battery_model.BaseModel import BaseModel
-import numpy as np
-import random
 
 
 class CoatingModel(BaseModel):
@@ -76,23 +74,25 @@ class CoatingModel(BaseModel):
         K = 100  # Defect risk constant (10-100)
         return (coating_speed / gap_height) > (K * viscosity)
 
-    def update_properties(self, coating_parameters: CoatingParameters):
+    def update_properties(
+        self, machine_parameters: CoatingParameters, current_time_step: int = None
+    ):
         """
         Update all computed properties dynamically.
         """
         self.wet_thickness = self.calculate_wet_thickness(
-            coating_parameters.flow_rate,
-            coating_parameters.coating_speed,
-            coating_parameters.coating_width,
+            machine_parameters.flow_rate,
+            machine_parameters.coating_speed,
+            machine_parameters.coating_width,
         )
 
         self.dry_thickness = self.calculate_dry_thickness(
             self.wet_thickness, self.solid_content
         )
-        
+
         self.defect_risk = self.calculate_defect_risk(
-            coating_parameters.coating_speed,
-            coating_parameters.gap_height,
+            machine_parameters.coating_speed,
+            machine_parameters.gap_height,
             self.viscosity,
         )
 
