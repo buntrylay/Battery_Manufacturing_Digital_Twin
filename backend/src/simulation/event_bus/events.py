@@ -18,10 +18,14 @@ class PlantSimulationEventType(Enum):
     MACHINE_DATA_GENERATED = "data_generated"
     # for plant simulation
     BATCH_REQUESTED = "batch_requested"
+    BATCH_STARTED_PROCESSING = "batch_started_processing"
     BATCH_STARTED_ANODE_LINE = "batch_started_anode_line"
     BATCH_STARTED_CATHODE_LINE = "batch_started_cathode_line"
+    BATCH_COMPLETED_ANODE_LINE = "batch_completed_anode_line"
+    BATCH_COMPLETED_CATHODE_LINE = "batch_completed_cathode_line"
     BATCH_MERGED = "batch_merged"
     BATCH_STARTED_CELL_LINE = "batch_started_cell_line"
+    BATCH_COMPLETED_CELL_LINE = "batch_completed_cell_line"
     BATCH_COMPLETED = "batch_completed"
     BATCH_ERROR = "batch_error"
 
@@ -35,12 +39,9 @@ class PlantSimulationEvent:
 
 
 @dataclass
-class MachineEvent:
+class MachineEvent(PlantSimulationEvent):
     """Represents an event emitted by a machine."""
     machine_id: str
-    event_type: PlantSimulationEventType
-    timestamp: str = None
-    data: Dict[str, Any] = None
 
 
 class EventBus:
@@ -50,6 +51,16 @@ class EventBus:
     """
 
     def __init__(self):
+        """ listeners example:
+        {
+            PlantSimulationEventType.BATCH_STARTED_ANODE_LINE: [callback_x],
+            PlantSimulationEventType.BATCH_STARTED_CATHODE_LINE: [callback_y],
+            PlantSimulationEventType.BATCH_MERGED: [callback_z],
+            PlantSimulationEventType.BATCH_STARTED_CELL_LINE: [callback_a],
+            PlantSimulationEventType.BATCH_COMPLETED: [callback_b],
+            PlantSimulationEventType.BATCH_ERROR: [callback_c],
+        }
+        """
         self._listeners: Dict[PlantSimulationEventType, List[Callable]] = {}
 
     def subscribe(
@@ -64,13 +75,11 @@ class EventBus:
             MachineEventType.TURNED_ON: [callback_x],
         }
         """
-        if (
-            event_type not in self._listeners
-        ):  # check if the event type is already in the listeners
+        # check if the event type is already in the listeners.
+        if (event_type not in self._listeners): 
             self._listeners[event_type] = []
-        self._listeners[event_type].append(
-            callback
-        )  # add the callback to the listeners
+        # add the callback to the listeners. This callback will be executed when the event is emitted.
+        self._listeners[event_type].append(callback)  
 
     def unsubscribe(
         self,
@@ -86,7 +95,9 @@ class EventBus:
 
     def __emit(self, event: MachineEvent):
         """Emit an event to all subscribers."""
+        # check the event type is in the listeners  
         if event.event_type in self._listeners:
+            # call all of the callbacks for the event type.
             for callback in self._listeners[event.event_type]:
                 try:
                     callback(event)

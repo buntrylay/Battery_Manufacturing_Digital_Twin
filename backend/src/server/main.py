@@ -32,11 +32,12 @@ from .WebSocketManager import websocket_manager
 from .event_handler import EventHandler
 
 # Import database engine & session
-from backend.src.server.db.db import engine, SessionLocal
+from backend.src.server.db.db import engine
 from backend.src.server.db.model_table import *
 from backend.src.server.db.db_helper import DBHelper
 import sqlalchemy
 
+# main FastAPI app
 app = FastAPI()
 
 # Add CORS middleware
@@ -48,28 +49,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# core plant simulation object
 battery_plant_simulation = PlantSimulation()
+# regarding the simulation thread
 factory_run_thread = None
 out_of_batch_event = threading.Event()
 # WebSocket connection management
 db_helper = DBHelper()
-# Initialize event handler
+# Initialise event handler
 event_handler = EventHandler()
 
 
 @app.get("/")
 def root():
     try:
+        # what is this for? Health check?
         with engine.connect() as conn:
             conn.execute(sqlalchemy.text("SELECT 1"))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {"message": "This is the V2 API for the battery manufacturing digital twin!"}
-
-
-@app.get("/health")
-def health_check():
-    return {"status": "healthy", "timestamp": "2025-10-01T16:00:00Z"}
 
 
 @app.websocket("/ws/status")
@@ -174,33 +173,20 @@ def reset_plant():
     return {"message": "Plant reset successfully"}
 
 
-def convert_numpy_types(obj):
-    import numpy as np
-
-    if isinstance(obj, dict):
-        return {k: convert_numpy_types(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_numpy_types(v) for v in obj]
-    elif isinstance(obj, np.generic):
-        return obj.item()
-    else:
-        return obj
-
-
-# Startup event to initialize event-driven architecture
+# Startup event to initialise event-driven architecture
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the event-driven architecture."""
+    """Initialise the event-driven architecture."""
     try:
         # Get event bus from plant simulation
         event_bus = battery_plant_simulation.get_event_bus()
-        
+
         # Set up WebSocket manager to subscribe to events
         websocket_manager.set_event_bus(event_bus, event_handler)
-        
+
         # Set up DB helper to subscribe to events
         db_helper.set_event_bus(event_bus, event_handler)
-        
+
         print("Successfully initialized event-driven architecture!")
     except Exception as e:
         print(f"Error initializing event-driven architecture: {e}")

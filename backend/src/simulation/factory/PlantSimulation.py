@@ -29,21 +29,24 @@ from simulation.process_parameters import (
 from simulation.factory.Batch import Batch
 from simulation.event_bus.events import (
     EventBus,
-    event_bus,
-    PlantSimulationEventType,
     MachineEvent,
+    PlantSimulationEventType,
 )
 
 
 class PlantSimulation:
+    """
+    This class is the main class for the plant simulation.
+    It is responsible for the overall simulation of the plant.
+    """
+
     def __init__(self, listeners: list[Callable[[MachineEvent], None]] = None):
-        self.batch_requests: list[any] = (
-            []
-        )  # array of batches requests (to be processed)
-        self.running_batches: list[any] = (
-            []
-        )  # array of batches that are currently being processed
-        self.factory_structure = {  # structure of the factory (to be used to create the machines) - hardcoded design.
+        # array of batches requests (to be processed)
+        self.batch_requests: list[any] = []
+        # array of batches that are CURRENTLY BEING processed
+        self.running_batches: list[any] = []
+        # structure of the factory (to be used to create the machines) - hardcoded design.
+        self.factory_structure = {
             "anode": {
                 "mixing": None,
                 "coating": None,
@@ -67,8 +70,10 @@ class PlantSimulation:
                 "aging": None,
             },
         }
+        # the event bus for different components to interface with the other components.
         self.event_bus = EventBus()
-        self.__initialise_default_factory_structure()  # initialise the factory structure with the default machines
+        # initialise the factory structure with the default machines
+        self.__initialise_default_factory_structure()
 
     def __initialise_default_factory_structure(self):
         default_mixing_parameters_anode = MixingParameters(
@@ -118,7 +123,7 @@ class PlantSimulation:
         default_aging_parameters = AgingParameters(
             k_leak=1e-8, temperature=25, aging_time_days=10
         )
-        # ✅ Create and append machines to anode & cathode lines
+        # Create and append machines to anode & cathode lines
         for electrode_type in ["anode", "cathode"]:
             self.factory_structure[electrode_type]["mixing"] = MixingMachine(
                 process_name=f"mixing_{electrode_type}",
@@ -156,7 +161,7 @@ class PlantSimulation:
                     event_bus=self.event_bus,
                 )
             )
-        # ✅ Create and append cell line machines
+        # Create and append cell line machines
         self.factory_structure["cell"]["rewinding"] = RewindingMachine(
             process_name="rewinding_cell",
             rewinding_parameters=default_rewinding_parameters,
@@ -202,7 +207,6 @@ class PlantSimulation:
             if stage == "mixing":
                 mixing_params = getattr(batch, f"{electrode_type}_mixing_params")
                 running_machine.update_machine_parameters(mixing_params)
-
             # (3) input into the machine (could be from the previous stage or from the initial mixing machine)
             running_machine.receive_model_from_previous_process(model)
             running_machine.batch_id = batch.batch_id
@@ -238,27 +242,6 @@ class PlantSimulation:
             setattr(batch, f"cell_line_model", model)
 
     def __run_pipeline_on_batch(self, batch: Batch):
-        # Import notification functions
-        try:
-            from backend.src.server.notification_queue import notify_machine_status
-        except ImportError:
-
-            def notify_machine_status(*args, **kwargs):
-                pass
-
-        # Notify batch processing start
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="batch_processing",
-            status="batch_started",
-            data={
-                "message": f"🚀 Starting full battery manufacturing process for batch {batch.batch_id}",
-                "batch_id": batch.batch_id,
-                "anode_params": batch.anode_mixing_params.get_parameters_dict(),
-                "cathode_params": batch.cathode_mixing_params.get_parameters_dict(),
-            },
-        )
         # to simulate anode and cathode lines in parallel
         run_anode_thread = Thread(
             target=self.__run_electrode_line, args=("anode", batch)
@@ -266,69 +249,51 @@ class PlantSimulation:
         run_cathode_thread = Thread(
             target=self.__run_electrode_line, args=("cathode", batch)
         )
-
-        # Notify electrode line processing start
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="electrode_lines",
-            status="electrode_processing_started",
-            data={
-                "message": "Starting anode and cathode electrode lines in parallel",
-                "batch_id": batch.batch_id,
-            },
-        )
-
         # start electrode lines' simulation in parallel
         run_anode_thread.start()
+        # emit event for anode line processing start
+        self.event_bus.emit_plant_simulation_event(
+            PlantSimulationEventType.BATCH_STARTED_ANODE_LINE,
+            {"batch_id": batch.batch_id},
+        )
         run_cathode_thread.start()
+        # emit event for cathode line processing start
+        self.event_bus.emit_plant_simulation_event(
+            PlantSimulationEventType.BATCH_STARTED_CATHODE_LINE,
+            {"batch_id": batch.batch_id},
+        )
         # wait for the electrode lines' simulation to finish in parallel
         run_anode_thread.join()
-        run_cathode_thread.join()
-
-        # Notify electrode lines completion
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="electrode_lines",
-            status="electrode_processing_completed",
-            data={
-                "message": "✅ Anode and cathode electrode lines completed successfully",
-                "batch_id": batch.batch_id,
-            },
+        # emit event for anode line processing completion
+        self.event_bus.emit_plant_simulation_event(
+            PlantSimulationEventType.BATCH_COMPLETED_ANODE_LINE,
+            {"batch_id": batch.batch_id},
         )
-
+        run_cathode_thread.join()
+        # emit event for cathode line processing completion
+        self.event_bus.emit_plant_simulation_event(
+            PlantSimulationEventType.BATCH_COMPLETED_CATHODE_LINE,
+            {"batch_id": batch.batch_id},
+        )
         # assemble the cell line model
         batch.assemble_cell_line_model()
-
-        # Notify cell assembly start
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="cell_assembly",
-            status="cell_assembly_started",
-            data={
-                "message": "🔋 Starting cell assembly line (rewinding → electrolyte filling → formation cycling → aging)",
-                "batch_id": batch.batch_id,
-            },
+        # emit event for batch merged
+        self.event_bus.emit_plant_simulation_event(
+            PlantSimulationEventType.BATCH_MERGED, {"batch_id": batch.batch_id}
         )
-
+        # assemble the cell line model
+        batch.assemble_cell_line_model()
+        # emit event for cell assembly start
+        self.event_bus.emit_plant_simulation_event(
+            PlantSimulationEventType.BATCH_STARTED_CELL_LINE,
+            {"batch_id": batch.batch_id},
+        )
         # run the assembled cell line
         self.__run_assembled_cell_line(batch)
-
-        # Notify complete batch completion
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="batch_processing",
-            status="batch_completed",
-            data={
-                "message": f"🎉 BATCH COMPLETE: Battery manufacturing finished for batch {batch.batch_id}!",
-                "batch_id": batch.batch_id,
-                "manufacturing_complete": True,
-            },
+        # emit event for complete batch completion
+        self.event_bus.emit_plant_simulation_event(
+            PlantSimulationEventType.BATCH_COMPLETED, {"batch_id": batch.batch_id}
         )
-
         return True
 
     def __get_machine(self, line_type: str, machine_id: str):
