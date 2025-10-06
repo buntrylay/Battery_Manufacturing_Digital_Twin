@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import "../styles/RealTimeDataPage.css";
-//TODO: Replace with Websocket updates
 import { useFlowPage } from "../contexts/FlowPageContext";
 import { GrafanaMachineDisplay } from "../components/GrafanaMachineDisplay";
+const GRAFANA_DASHBOARD_URL = process.env.REACT_APP_GRAFANA_DASHBOARD_URL || 'http://localhost:3001s/';
+
+
+
 function RealTimeDataPage() {
   const { MACHINE_FLOW } = useFlowPage();
   let machineIds = MACHINE_FLOW.map((stage) => stage.id);
@@ -35,7 +38,7 @@ function RealTimeDataPage() {
         {selectedMachine === "Cathode Mixing" && (
           <GrafanaMachineDisplay
             url={
-              "http://localhost:3001/public-dashboards/c40861f4fda2438e8b27c0590fdcb0c6"
+              'http://localhost:3001/d/mixing-anode-1/anode-mixing-dashobard?orgId=1&from=now-30s&to=now&timezone=browser&refresh=auto&theme=light'
             }
             name="Cathode Mixing"
           />

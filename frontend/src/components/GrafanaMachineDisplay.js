@@ -16,20 +16,7 @@ export function GrafanaMachineDisplay({ name, url }) {
           </div>
         </div>
 
-        <div className="data-card">
-          <h3>Current Batch</h3>
-          <div className="placeholder"></div>
-        </div>
-
-        <div className="data-card">
-          <h3>Sensor Information</h3>
-          <div className="placeholder"></div>
-        </div>
-
-        <div className="data-card">
-          <h3>Sensor Information</h3>
-          <div className="placeholder"></div>
-        </div>
+       
       </div>
     </div>
   );
