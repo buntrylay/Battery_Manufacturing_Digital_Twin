@@ -70,7 +70,6 @@ class BaseMachine(ABC):
                 "message": f"{self.process_name} was turned off at {datetime.now().isoformat()}"
             },
         )
-        
 
     def pre_run_check(self):
         """Pre-run check for the machine."""
@@ -123,7 +122,7 @@ class BaseMachine(ABC):
         """Validate the parameters."""
         pass
 
-    def run_simulation(self, verbose=True):
+    def run_simulation(self, verbose: bool = True):
         """Run the simulation.
         Args:
             total_steps (int): The total number of steps to run the simulation for
@@ -141,7 +140,7 @@ class BaseMachine(ABC):
             for t in range(0, self.total_steps):
                 self.current_time_step = t  # current time step
                 try:
-                    self.step_logic(t, True)
+                    self.step_logic(t, verbose)
                 except RuntimeError as rt:
                     if verbose:
                         print("Plant Warning: Voltage exceeded! ", rt)

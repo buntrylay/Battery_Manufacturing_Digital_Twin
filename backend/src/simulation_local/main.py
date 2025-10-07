@@ -121,19 +121,23 @@ def test_two_batches():
 def test_four_batches_staggered():
     plant_simulation.reset_plant()
     arrivals = [
-        ("Batch_1", 0),
+        ("Batch_1", 0.0),
         ("Batch_2", 1.0),
-        ("Batch_3", 0.5),
-        ("Batch_4", 1.5),
+        ("Batch_3", 4.0),
+        ("Batch_4", 6.0),
+        ("Batch_5", 6.5),
+        ("Batch_6", 6.7),
     ]
     start_time = time.perf_counter()
     for batch_id, delay in arrivals:
         elapsed = time.perf_counter() - start_time
         if delay > elapsed:
             time.sleep(delay - elapsed)
-        plant_simulation.add_batch(Batch(batch_id=batch_id))
+        try:
+            plant_simulation.add_batch(Batch(batch_id=batch_id))
+        except:
+            print("maximum three batch requests in the queue. Please slow down.")
     plant_simulation.run()
-
 
 if __name__ == "__main__":
     test_four_batches_staggered()
