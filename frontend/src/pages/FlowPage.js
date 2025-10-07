@@ -8,16 +8,21 @@ import { startSimulation } from "../services/api";
 
 const FlowPage = () => {
   const { setSelectedId, selectedStage } = useFlowPage();
-  const { clearLogs } = useLogs();
+  const { clearLogs, addLog } = useLogs();
   const [simulationStatus, setSimulationStatus] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [animationTrigger, setAnimationTrigger] = useState(false);
 
   const handleClearLogs = () => {
     clearLogs();
+    setAnimationTrigger(false); // Reset animation when clearing logs
   };
+
+
 
   const handleStartFullSimulation = async () => {
     setIsRunning(true);
+    setAnimationTrigger(true);
     setSimulationStatus("Starting full simulation...");
     clearLogs();
 
@@ -59,6 +64,7 @@ const FlowPage = () => {
       setSimulationStatus("Error: " + (error.response?.data?.detail || error.message));
     } finally {
       setIsRunning(false);
+      // Keep animation trigger active to show ongoing simulation
     }
   };
 
@@ -71,20 +77,22 @@ const FlowPage = () => {
           </button>
           <button 
             onClick={handleStartFullSimulation} 
-            className="start-full-simulation-btn"
+            className={`start-full-simulation-btn ${isRunning ? 'running' : ''}`}
             disabled={isRunning}
           >
             {isRunning ? "Running..." : "Start Full Simulation"}
           </button>
           <div className="instructions">
-            <p>1. Configure mixing inputs by clicking on Anode/Cathode Mixing machines</p>
-            <p>2. Save inputs in each machine's side panel</p>
-            <p>3. Click "Start Full Simulation" to run the complete manufacturing process from mixing to aging</p>
+            <p>Instructions:</p>
+            <p>1. Configure inputs by clicking on Machines.</p>
+            <p>2. Save inputs in each machine's side panel.</p>
+            <p>3. Click "Start Full Simulation" to run the complete battery manufacturing process.</p>
             {simulationStatus && <p className="simulation-status">{simulationStatus}</p>}
+            {animationTrigger && <p style={{color: 'green', fontWeight: 'bold'}}>Animation Active - Machines are pulsing!</p>}
           </div>
         </div>
-        <div className="flow-canvas">
-          <MachineFlowDiagram />
+        <div className={`flow-canvas ${animationTrigger ? 'simulation-started' : ''}`}>
+          <MachineFlowDiagram animationTrigger={animationTrigger} />
         </div>
       </div>
 
