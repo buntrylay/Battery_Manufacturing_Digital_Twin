@@ -9,10 +9,8 @@ import threading
 
 # for API
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-import json
 
 # for generation of unique batch ID
 import uuid
@@ -26,10 +24,10 @@ from simulation.factory.Batch import Batch
 from simulation.factory.PlantSimulation import PlantSimulation
 
 # Import websocket manager
-from .WebSocketManager import websocket_manager
+from websocket_manager import websocket_manager
 
 # Import event handlers
-from .event_handler import EventHandler
+from event_handler import EventHandler
 
 # Import database engine & session
 from backend.src.server.db.db import engine

@@ -12,7 +12,9 @@ from enum import Enum
 class PlantSimulationEventType(Enum):
     """Types of events that machines can emit."""
     # for machines
+    # whenever a machine is turned on to process a batch
     MACHINE_TURNED_ON = "machine_turned_on"
+    # whenever a machine is turned off to process a batch
     MACHINE_TURNED_OFF = "machine_turned_off"
     MACHINE_SIMULATION_ERROR = "machine_simulation_error"
     MACHINE_DATA_GENERATED = "data_generated"
@@ -96,6 +98,7 @@ class EventBus:
             for callback in self._listeners[event.event_type]:
                 try:
                     callback(event)
+                    # event.data["machine_state"]["battery_model"]
                 except Exception as e:
                     # general error handling for the event callback
                     print(f"Error in event callback: {e}")

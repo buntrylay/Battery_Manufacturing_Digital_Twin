@@ -70,6 +70,7 @@ class BaseMachine(ABC):
                 "message": f"{self.process_name} was turned off at {datetime.now().isoformat()}"
             },
         )
+        
 
     def pre_run_check(self):
         """Pre-run check for the machine."""
@@ -144,13 +145,13 @@ class BaseMachine(ABC):
                 except RuntimeError as rt:
                     if verbose:
                         print("Plant Warning: Voltage exceeded! ", rt)
-                    self.__emit_event(PlantSimulationEventType.BATCH_ERROR)
+                    self.__emit_event(PlantSimulationEventType.MACHINE_SIMULATION_ERROR)
                     break
                 self.battery_model.update_properties(self.machine_parameters, t)
                 self.__emit_event(
                     PlantSimulationEventType.MACHINE_DATA_GENERATED,
                     data={
-                        "message": f"Machine {self.process_name} is running for {t} steps",
+                        "message": f"Machine {self.process_name} has been running for {t} steps",
                         "machine_state": self.get_current_state(),
                     },
                 )
