@@ -5,7 +5,7 @@ import MachineFlowDiagram from "../components/MachineFlowDiagram";
 import "../styles/FlowPage.css";
 import { useLogs } from "../contexts/WebSocketContext";
 import { startSimulation } from "../services/api";
-
+import ToggleSwitch from "../components/ToggleSwitch";
 const FlowPage = () => {
   const { setSelectedId, selectedStage } = useFlowPage();
   const { clearLogs, addLog } = useLogs();
@@ -18,8 +18,6 @@ const FlowPage = () => {
     setAnimationTrigger(false); // Reset animation when clearing logs
   };
 
-
-
   const handleStartFullSimulation = async () => {
     setIsRunning(true);
     setAnimationTrigger(true);
@@ -28,11 +26,13 @@ const FlowPage = () => {
 
     try {
       // Get saved inputs from localStorage
-      const anodeInputs = localStorage.getItem('mixingInputs_Anode Mixing');
-      const cathodeInputs = localStorage.getItem('mixingInputs_Cathode Mixing');
+      const anodeInputs = localStorage.getItem("mixingInputs_Anode Mixing");
+      const cathodeInputs = localStorage.getItem("mixingInputs_Cathode Mixing");
 
       if (!anodeInputs || !cathodeInputs) {
-        setSimulationStatus("Error: Please configure both Anode and Cathode mixing inputs first");
+        setSimulationStatus(
+          "Error: Please configure both Anode and Cathode mixing inputs first"
+        );
         setIsRunning(false);
         return;
       }
@@ -46,22 +46,28 @@ const FlowPage = () => {
           AM: anodeData.AM,
           CA: anodeData.CA,
           PVDF: anodeData.PVDF,
-          Solvent: anodeData.Solvent
+          Solvent: anodeData.Solvent,
         },
-        cathode_params: {  
+        cathode_params: {
           AM: cathodeData.AM,
           CA: cathodeData.CA,
           PVDF: cathodeData.PVDF,
-          Solvent: cathodeData.Solvent
-        }
+          Solvent: cathodeData.Solvent,
+        },
       };
 
-      setSimulationStatus("Starting complete battery manufacturing simulation...");
+      setSimulationStatus(
+        "Starting complete battery manufacturing simulation..."
+      );
       const response = await startSimulation(simulationData);
-      
-      setSimulationStatus(`Full simulation started successfully! Batch ID: ${response.data.batch_id}`);
+
+      setSimulationStatus(
+        `Full simulation started successfully! Batch ID: ${response.data.batch_id}`
+      );
     } catch (error) {
-      setSimulationStatus("Error: " + (error.response?.data?.detail || error.message));
+      setSimulationStatus(
+        "Error: " + (error.response?.data?.detail || error.message)
+      );
     } finally {
       setIsRunning(false);
       // Keep animation trigger active to show ongoing simulation
@@ -71,27 +77,60 @@ const FlowPage = () => {
   return (
     <div className={`flow-layout ${selectedStage ? "with-panel" : "full"}`}>
       <div className="main-content">
+        <ToggleSwitch
+          label="Quick Tips"
+          infoContent={
+            <div className="instructions">
+              <p>Instructions:</p>
+              <p>1. Configure inputs by clicking on Machines.</p>
+              <p>2. Save inputs in each machine's side panel.</p>
+              <p>
+                3. Click "Start Full Simulation" to run the complete battery
+                manufacturing process.
+              </p>
+            </div>
+          }
+        />
+
+        <h2 className="page-title">Battery Manufacturing Flow</h2>
         <div className="controls">
           <button onClick={handleClearLogs} className="clear-logs-button">
             Clear Logs
           </button>
-          <button 
-            onClick={handleStartFullSimulation} 
-            className={`start-full-simulation-btn ${isRunning ? 'running' : ''}`}
+          <button
+            onClick={handleStartFullSimulation}
+            className={`start-full-simulation-btn ${
+              isRunning ? "running" : ""
+            }`}
             disabled={isRunning}
           >
             {isRunning ? "Running..." : "Start Full Simulation"}
           </button>
-          <div className="instructions">
-            <p>Instructions:</p>
-            <p>1. Configure inputs by clicking on Machines.</p>
-            <p>2. Save inputs in each machine's side panel.</p>
-            <p>3. Click "Start Full Simulation" to run the complete battery manufacturing process.</p>
-            {simulationStatus && <p className="simulation-status">{simulationStatus}</p>}
-            {animationTrigger && <p style={{color: 'green', fontWeight: 'bold'}}>Animation Active - Machines are pulsing!</p>}
-          </div>
         </div>
-        <div className={`flow-canvas ${animationTrigger ? 'simulation-started' : ''}`}>
+        <div className="instructions">
+          {simulationStatus && (
+            <ToggleSwitch
+              label="Simulation Status"
+              infoContent={
+                <div className="instructions">
+                  {simulationStatus && (
+                    <p className="simulation-status">{simulationStatus}</p>
+                  )}
+                  {animationTrigger && (
+                    <p style={{ color: "green", fontWeight: "bold" }}>
+                      Animation Active - Machines are pulsing!
+                    </p>
+                  )}
+                </div>
+              }
+            />
+          )}
+        </div>
+        <div
+          className={`flow-canvas ${
+            animationTrigger ? "simulation-started" : ""
+          }`}
+        >
           <MachineFlowDiagram animationTrigger={animationTrigger} />
         </div>
       </div>

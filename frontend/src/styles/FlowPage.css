@@ -14,7 +14,6 @@ body {
   font-family: Inter, system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
-  margin-top: 50px;
 }
 
 .flow-layout {
@@ -49,11 +48,11 @@ body {
   flex-direction: column; /* Stack children vertically */
   flex-grow: 1;
   height: 100%;
+  margin-top: 80px;
 }
 
 .controls {
   padding: 10px;
-  border-bottom: 1px solid #ddd;
   display: flex;
   align-items: center;
   gap: 20px;
@@ -129,6 +128,9 @@ body {
   min-height: auto;
   height: auto;
   box-sizing: border-box;
+
+  border-top: 1px solid #ddd;
+  border-radius: 0%;
 }
 
 /* Each group box */
