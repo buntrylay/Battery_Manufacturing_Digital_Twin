@@ -1,5 +1,5 @@
 // src/components/MachineFlowDiagram.js
-import React, { useMemo, useEffect, useState, use } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import {
   ReactFlow,
   useNodesState,
@@ -125,7 +125,46 @@ const generateLayout = (machineData) => {
   return { defaultNodes: nodes, defaultEdges: edges };
 };
 
-const MachineFlowDiagram = () => {
+const MachineFlowDiagram = ({ animationTrigger }) => {
+  // Map backend process names to frontend machine IDs (defined at component top to avoid closure issues)
+  const processToMachineMap = {
+    // Mixing processes (exact backend names from PlantSimulation.py)
+    'mixing_anode': 'Anode Mixing',
+    'mixing_cathode': 'Cathode Mixing',
+    
+    // Coating processes (exact backend names from PlantSimulation.py)
+    'coating_anode': 'Anode Coating',
+    'coating_cathode': 'Cathode Coating',
+    
+    // Drying processes (exact backend names from PlantSimulation.py)
+    'drying_anode': 'Anode Drying',
+    'drying_cathode': 'Cathode Drying',
+    
+    // Calendaring processes (exact backend names from PlantSimulation.py)
+    'calendaring_anode': 'Anode Calendaring',
+    'calendaring_cathode': 'Cathode Calendaring',
+    
+    // Slitting processes (exact backend names from PlantSimulation.py)
+    'slitting_anode': 'Anode Slitting',
+    'slitting_cathode': 'Cathode Slitting',
+    
+    // Inspection processes (exact backend names from PlantSimulation.py)
+    'inspection_anode': 'Anode Inspection',
+    'inspection_cathode': 'Cathode Inspection',
+    
+    // Cell line processes (exact backend names from PlantSimulation.py)
+    'rewinding_cell': 'Rewinding',
+    'electrolyte_filling_cell': 'Electrolyte Filling',
+    'formation_cycling_cell': 'Formation Cycling',
+    'aging_cell': 'Aging',
+    
+    // Legacy/alternative names for backward compatibility
+    'rewinding': 'Rewinding',
+    'electrolyte_filling': 'Electrolyte Filling',
+    'formation_cycling': 'Formation Cycling',
+    'aging': 'Aging'
+  };
+
   const { MACHINE_FLOW, setSelectedId } = useFlowPage();
   const { stageLog } = useLogs();
   // Generate default layout only once
@@ -137,64 +176,314 @@ const MachineFlowDiagram = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(defaultNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(defaultEdges);
   const [machineStatus, setMachineStatus] = useState({});
+  const [simulationStarted, setSimulationStarted] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+  const [lastProcessSeen, setLastProcessSeen] = useState({});
+  
   useEffect(() => {
+    console.log("Updating nodes with status:", machineStatus, "simulationStarted:", simulationStarted);
     setNodes((nds) =>
       nds.map((node) => ({
         ...node,
-        data: { ...node.data, status: machineStatus[node.id] || null },
+        data: { 
+          ...node.data, 
+          status: machineStatus[node.id] || null,
+          simulationStarted: simulationStarted
+        },
       }))
     );
-  }, [machineStatus, setNodes]);
+  }, [machineStatus, simulationStarted, setNodes]);
+
+  // Handle animation trigger from parent component
+  useEffect(() => {
+    if (animationTrigger) {
+      setSimulationStarted(true);
+      
+      // Reset process tracking
+      setLastProcessSeen({});
+      
+      // Reset and start with first machines (Anode and Cathode Mixing)
+      const initialStatus = {
+        "Anode Mixing": "running",
+        "Cathode Mixing": "running"
+      };
+      
+      setMachineStatus(initialStatus);
+      console.log("Animation triggered - Starting simulation with first machines:", initialStatus);
+      
+      // Force immediate node update
+      setTimeout(() => {
+        setNodes((nds) =>
+          nds.map((node) => ({
+            ...node,
+            data: { 
+              ...node.data, 
+              status: initialStatus[node.id] || null,
+              simulationStarted: true
+            },
+          }))
+        );
+      }, 100);
+      
+      // Add progressive startup animation for all edges
+      setEdges((eds) =>
+        eds.map((edge) => ({
+          ...edge,
+          animated: true,
+          style: { stroke: '#007bff', strokeWidth: 2 }
+        }))
+      );
+    }
+  }, [animationTrigger, setEdges, setNodes]);
 
   // TODO: This listens for WebSocket logs and updates state
   useEffect(() => {
     if (stageLog.length === 0) {
-      setMachineStatus({});
+      // Reset machine status when logs are cleared, but keep initial running state if simulation started
+      setLastProcessSeen({}); // Reset process tracking
+      if (simulationStarted) {
+        setMachineStatus({
+          "Anode Mixing": "running",
+          "Cathode Mixing": "running"
+        });
+      } else {
+        setMachineStatus({});
+      }
       return;
     }
+    
     const latestLog = stageLog[stageLog.length - 1];
-    const [stageId, status] = latestLog.split(":");
+    console.log("=== PROCESSING LATEST LOG ===");
+    console.log("Raw log:", latestLog);
+    console.log("All available machine IDs:", MACHINE_FLOW.map(m => m.id));
+    console.log("Current machine status:", machineStatus);
+    console.log("Process mapping available:", Object.keys(processToMachineMap));
 
-    if (status && status.trim() === "complete") {
-      const completedStageId = stageId.trim();
+    // NEW APPROACH: Direct completion detection from backend status messages
+    // Based on actual WebSocket messages from the live logs
+    const completionStatuses = [
+      'mixing_completed', 'coating_completed', 'drying_completed', 
+      'calendaring_completed', 'slitting_completed', 'inspection_completed',
+      'rewinding_completed', 'electrolyte_filling_completed', 
+      'formation_cycling_completed', 'aging_completed',
+      'simulation_completed', 'completed', 'finished', 'done'
+    ];
+    
+    const runningStatuses = [
+      'mixing_started', 'coating_started', 'drying_started',
+      'calendaring_started', 'slitting_started', 'inspection_started', 
+      'rewinding_started', 'electrolyte_filling_started',
+      'formation_cycling_started', 'aging_started',
+      'running', 'simulation_started', 'simulation_progress'
+    ];
 
-      // Find the index of the machine that just finished
-      const completedIndex = MACHINE_FLOW.findIndex(
-        (m) => m.id === completedStageId
-      );
+    let detectedMachine = null;
+    let detectedStatus = null;
 
-      let nextStageId = null;
-      // If it's not the last machine, find the next one
-      if (completedIndex > -1 && completedIndex < MACHINE_FLOW.length - 1) {
-        nextStageId = MACHINE_FLOW[completedIndex + 1].id;
+    // SIMPLIFIED APPROACH: Only focus on machine completion (when turned off)
+    // Check for "idle" status which indicates machine finished and turned off
+    if (latestLog.includes(': idle -') && latestLog.includes('turned off')) {
+      console.log("🛑 MACHINE TURNED OFF - Process completed");
+      
+      // Try to extract machine/process name from the message
+      for (const [processName, machineName] of Object.entries(processToMachineMap)) {
+        if (latestLog.includes(processName)) {
+          detectedMachine = machineName;
+          detectedStatus = 'completed';
+          console.log("🎯 Machine completed and turned off:", processName, "->", machineName);
+          break;
+        }
+      }
+    }
+
+    // Also check for explicit completion messages
+    if (!detectedMachine) {
+      for (const status of completionStatuses) {
+        if (latestLog.includes(status)) {
+          console.log("🏁 EXPLICIT COMPLETION DETECTED:", status);
+          
+          // Try to extract machine/process name from the message
+          for (const [processName, machineName] of Object.entries(processToMachineMap)) {
+            if (latestLog.includes(processName)) {
+              detectedMachine = machineName;
+              detectedStatus = 'completed';
+              console.log("🎯 Explicit completion for:", processName, "->", machineName);
+              break;
+            }
+          }
+          
+          if (detectedMachine) break;
+        }
+      }
+    }
+
+    // Also check for structured WebSocket message format: [timestamp] process_name: status - message
+    if (!detectedMachine) {
+      const structuredMatch = latestLog.match(/\[(.*?)\]\s+([^:]+):\s+([^-]+)\s*-\s*(.*)/);
+      if (structuredMatch) {
+        const [, timestamp, processOrMachine, status, message] = structuredMatch;
+        console.log("📡 Structured message detected:", { processOrMachine, status, message });
+        
+        // Try to map the process/machine name
+        const trimmedProcess = processOrMachine.trim();
+        detectedMachine = processToMachineMap[trimmedProcess] || 
+                         (MACHINE_FLOW.find(m => m.id.toLowerCase() === trimmedProcess.toLowerCase())?.id);
+        
+        if (detectedMachine) {
+          // Check for exact backend status values
+          const statusTrimmed = status.trim();
+          
+          if (completionStatuses.includes(statusTrimmed) || statusTrimmed === 'idle') {
+            detectedStatus = 'completed';
+          } else if (runningStatuses.includes(statusTrimmed) || statusTrimmed === 'running') {
+            detectedStatus = 'running';
+          }
+          
+          if (detectedStatus) {
+            console.log("📡 Structured detection result:", trimmedProcess, "->", detectedMachine, "->", detectedStatus);
+          }
+        }
+      }
+    }
+
+    // Apply the detected status change
+    if (detectedMachine && detectedStatus) {
+      console.log("📢 APPLYING STATUS CHANGE:", detectedMachine, "->", detectedStatus);
+      
+      // Check for aging completion - marks ALL machines as completed
+      if (latestLog.includes('aging_completed') || latestLog.includes('Battery manufacturing finished!') || 
+          (detectedMachine === 'Aging' && detectedStatus === 'completed')) {
+        console.log("🎉 AGING COMPLETED - Marking all machines as completed (final state)");
+        setMachineStatus(prevStatus => {
+          const allCompleted = {};
+          MACHINE_FLOW.forEach(machine => {
+            allCompleted[machine.id] = 'completed';
+          });
+          console.log("🎊 Final state: All machines completed:", allCompleted);
+          return allCompleted;
+        });
+        return;
       }
 
-      // Update the status for both the completed and the next running machine
-      setMachineStatus((prevStatus) => {
-        const newStatus = { ...prevStatus, [completedStageId]: "completed" };
-        if (nextStageId) {
-          newStatus[nextStageId] = "running";
-        }
-        return newStatus;
-      });
+      // Handle machine completion and auto-progression
+      if (detectedStatus === 'completed') {
+        setMachineStatus(prevStatus => {
+          const newStatus = { ...prevStatus };
+          
+          // Mark current machine as completed (blue)
+          newStatus[detectedMachine] = 'completed';
+          console.log("✅ Machine completed:", detectedMachine);
+          
+          // AUTO-PROGRESSION LOGIC: Start the next appropriate machine
+          if (detectedMachine === 'Anode Mixing') {
+            newStatus['Anode Coating'] = 'running';
+            console.log("⏭️ Anode Mixing done → Starting Anode Coating");
+          } else if (detectedMachine === 'Cathode Mixing') {
+            newStatus['Cathode Coating'] = 'running';
+            console.log("⏭️ Cathode Mixing done → Starting Cathode Coating");
+          } else if (detectedMachine === 'Anode Coating') {
+            newStatus['Anode Drying'] = 'running';
+            console.log("⏭️ Anode Coating done → Starting Anode Drying");
+          } else if (detectedMachine === 'Cathode Coating') {
+            newStatus['Cathode Drying'] = 'running';
+            console.log("⏭️ Cathode Coating done → Starting Cathode Drying");
+          } else if (detectedMachine === 'Anode Drying') {
+            newStatus['Anode Calendaring'] = 'running';
+            console.log("⏭️ Anode Drying done → Starting Anode Calendaring");
+          } else if (detectedMachine === 'Cathode Drying') {
+            newStatus['Cathode Calendaring'] = 'running';
+            console.log("⏭️ Cathode Drying done → Starting Cathode Calendaring");
+          } else if (detectedMachine === 'Anode Calendaring') {
+            newStatus['Anode Slitting'] = 'running';
+            console.log("⏭️ Anode Calendaring done → Starting Anode Slitting");
+          } else if (detectedMachine === 'Cathode Calendaring') {
+            newStatus['Cathode Slitting'] = 'running';
+            console.log("⏭️ Cathode Calendaring done → Starting Cathode Slitting");
+          } else if (detectedMachine === 'Anode Slitting') {
+            newStatus['Anode Inspection'] = 'running';
+            console.log("⏭️ Anode Slitting done → Starting Anode Inspection");
+          } else if (detectedMachine === 'Cathode Slitting') {
+            newStatus['Cathode Inspection'] = 'running';
+            console.log("⏭️ Cathode Slitting done → Starting Cathode Inspection");
+          } else if (detectedMachine === 'Anode Inspection' || detectedMachine === 'Cathode Inspection') {
+            // Check if BOTH inspections are complete before starting Rewinding
+            const anodeComplete = (detectedMachine === 'Anode Inspection') || newStatus['Anode Inspection'] === 'completed';
+            const cathodeComplete = (detectedMachine === 'Cathode Inspection') || newStatus['Cathode Inspection'] === 'completed';
+            
+            if (anodeComplete && cathodeComplete) {
+              newStatus['Rewinding'] = 'running';
+              console.log("🔗 Both inspections done → Starting Rewinding");
+            }
+          } else if (detectedMachine === 'Rewinding') {
+            newStatus['Electrolyte Filling'] = 'running';
+            console.log("⏭️ Rewinding done → Starting Electrolyte Filling");
+          } else if (detectedMachine === 'Electrolyte Filling') {
+            newStatus['Formation Cycling'] = 'running';
+            console.log("⏭️ Electrolyte Filling done → Starting Formation Cycling");
+          } else if (detectedMachine === 'Formation Cycling') {
+            newStatus['Aging'] = 'running';
+            console.log("⏭️ Formation Cycling done → Starting Aging");
+          }
+          // Aging completion is handled above to mark all machines as completed
+          
+          console.log("📊 Updated machine status:", newStatus);
+          return newStatus;
+        });
+      }
+      
+      return; // Exit early since we handled the status update
     }
-  }, [stageLog, MACHINE_FLOW]);
+  }, [stageLog, MACHINE_FLOW, simulationStarted]);
 
-  //TODO: Update the edge based of the machine status from Websocket
+  // Update edge animations based on machine status
   useEffect(() => {
     setEdges((eds) =>
       eds.map((edge) => {
         const sourceStatus = machineStatus[edge.source];
         const targetStatus = machineStatus[edge.target];
 
+        // ACTIVE ANIMATION: Source completed → Target running (package moving)
         if (sourceStatus === "completed" && targetStatus === "running") {
-          return { ...edge, type: "animated", animated: true };
-        } else {
-          return { ...edge, type: "default", animated: true };
+          return { 
+            ...edge, 
+            type: "animated", 
+            animated: true,
+            data: { isActive: true, showProgress: true },
+            style: { stroke: '#28a745', strokeWidth: 3 }
+          };
+        } 
+        // STOP ANIMATION: Both machines completed (no more packages)
+        else if (sourceStatus === "completed" && targetStatus === "completed") {
+          return { 
+            ...edge, 
+            type: "default", 
+            animated: false,
+            data: { isActive: false, showProgress: false },
+            style: { stroke: '#6c757d', strokeWidth: 2 } // Gray for completed path
+          };
+        }
+        // DEFAULT: Simulation running but no active transfer
+        else if (simulationStarted) {
+          return { 
+            ...edge, 
+            type: "default", 
+            animated: false,
+            data: { isActive: false, showProgress: false },
+            style: { stroke: '#007bff', strokeWidth: 2 }
+          };
+        } 
+        // IDLE: Simulation not started
+        else {
+          return { 
+            ...edge, 
+            type: "default", 
+            animated: false,
+            data: { isActive: false, showProgress: false }
+          };
         }
       })
     );
-  }, [machineStatus, setEdges]);
+  }, [machineStatus, simulationStarted, setEdges]);
 
   const onNodeClick = (_, node) => setSelectedId(node.id);
 
