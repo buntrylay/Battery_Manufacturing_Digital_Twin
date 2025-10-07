@@ -1,17 +1,17 @@
-export const DASHBOARD_TITLES = {
-     "Cathode Mixing": "cathode-mixing-uid",
+export const MACHINE_DASHBOARD_MAP = {
+  "Cathode Mixing": "cathode-mixing-uid",
   "Cathode Coating": "cathode-coating-uid",
   "Cathode Drying": "cathode-drying-uid",
   "Cathode Calendaring": "cathode-calendaring-uid",
   "Cathode Inspection": "cathode-inspection-uid",
-  "Anode Mixing": "anode-mixing-uid", 
+  "Anode Mixing": "anode-mixing-uid",
   "Anode Coating": "anode-coating-uid",
   "Anode Drying": "anode-drying-uid",
   "Anode Calendaring": "anode-calendaring-uid",
   "Anode Slitting": "anode-slitting-uid",
   "Anode Inspection": "anode-inspection-uid",
-  "Rewinding": "rewinding-uid",
+  Rewinding: "rewinding-uid",
   "Electrolyte Filling": "electrolyte-filling-uid",
   "Formation Cycling": "formation-cycling-uid",
-  "Aging": "aging-uid",
+  Aging: "aging-uid",
 };
