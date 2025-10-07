@@ -5,11 +5,11 @@ export function GrafanaMachineDisplay({ name, url }) {
     <div>
       <div className="data-grid">
         <h3>{name} - Grafana Dashboard Overview</h3>
-        <div>
+        <div className="">
           <iframe
             title="{Name} Grafana Dashboard"
             src={url}
-            style={{ width: "100%", height: "800px", border: "none" }}
+            className={"grafana-iframe"}
           ></iframe>
         </div>
       </div>
