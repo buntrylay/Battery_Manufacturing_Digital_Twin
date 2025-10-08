@@ -7,9 +7,6 @@ import numpy as np
 
 
 class MixingMachine(BaseMachine):
-    """
-    Mixing machine (refactored) – giữ logic cũ nhưng chạy theo step-based.
-    """
 
     def __init__(
         self,
