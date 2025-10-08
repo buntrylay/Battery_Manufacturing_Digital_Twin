@@ -7,6 +7,8 @@ import threading
 # for API
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Dict, Any
 import uvicorn
 
 # --- Path and Simulation Module Imports ---
@@ -17,17 +19,26 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from simulation.factory.PlantSimulation import PlantSimulation
 
 # Import websocket manager & database helper (singletons)
-from websocket_manager import websocket_manager
-from db.db_helper import database_helper
+from server.websocket_manager import websocket_manager
+from server.db.db_helper import database_helper
 
 # Import event handlers
-from event_handler import EventHandler
+from server.event_handler import EventHandler
 
-from logging_helper import configure_logging, get_logger
+# Import parameter mapping utilities
+from server.parameter_mapper import ParameterMapper
+
+from server.logging_helper import configure_logging, get_logger
 
 # initialise logging once for the server process
 configure_logging()
 logger = get_logger("server")
+
+# Pydantic models for request bodies
+class ParameterRequest(BaseModel):
+    stage: str
+    parameters: Dict[str, float]
+
 # main FastAPI app
 app = FastAPI()
 # Add CORS middleware
@@ -156,6 +167,139 @@ def reset_plant():
     if out_of_batch_event.is_set():
         out_of_batch_event.clear()
     return {"message": "Plant reset successfully"}
+
+
+@app.post("/api/parameters/validate")
+def validate_parameters(request_data: ParameterRequest):
+    """
+    Validate frontend parameters for a specific stage.
+    
+    Expected format:
+    {
+        "stage": "Anode Mixing",
+        "parameters": {
+            "Anode PVDF": 0.05,
+            "Anode CA": 0.045,
+            "Anode AM": 0.495,
+            "Anode Solvent": 0.41
+        }
+    }
+    """
+    try:
+        stage = request_data.stage
+        parameters = request_data.parameters
+        
+        if not stage:
+            raise HTTPException(status_code=400, detail="Stage name is required")
+        
+        validation_result = ParameterMapper.validate_frontend_parameters(parameters, stage)
+        
+        if validation_result["valid"]:
+            return {
+                "valid": True,
+                "message": validation_result["message"],
+                "stage": stage,
+                "line_type": validation_result["line_type"],
+                "machine_id": validation_result["machine_id"]
+            }
+        else:
+            return {
+                "valid": False,
+                "error": validation_result["error"],
+                "message": validation_result["message"]
+            }
+    
+    except Exception as e:
+        logger.error(f"Parameter validation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.post("/api/parameters/update")
+def update_parameters_from_frontend(request_data: ParameterRequest):
+    """
+    Update machine parameters using frontend field names.
+    
+    Expected format:
+    {
+        "stage": "Anode Mixing",
+        "parameters": {
+            "Anode PVDF": 0.05,
+            "Anode CA": 0.045,
+            "Anode AM": 0.495,
+            "Anode Solvent": 0.41
+        }
+    }
+    """
+    global battery_plant_simulation
+    
+    try:
+        stage = request_data.stage
+        parameters = request_data.parameters
+        
+        if not stage or not parameters:
+            raise HTTPException(status_code=400, detail="Stage and parameters are required")
+        
+        # Validate and convert parameters
+        validation_result = ParameterMapper.validate_frontend_parameters(parameters, stage)
+        
+        if not validation_result["valid"]:
+            raise HTTPException(status_code=400, detail=validation_result["error"])
+        
+        line_type = validation_result["line_type"]
+        machine_id = validation_result["machine_id"]
+        parameter_obj = validation_result["parameters"]
+        
+        # Update the machine parameters
+        try:
+            if battery_plant_simulation.update_machine_parameters(line_type, machine_id, parameter_obj):
+                return {
+                    "message": f"Parameters updated successfully for {stage}",
+                    "stage": stage,
+                    "line_type": line_type,
+                    "machine_id": machine_id,
+                    "updated_parameters": parameter_obj.get_parameters_dict()
+                }
+        except RuntimeError as e:
+            raise HTTPException(status_code=409, detail=str(e))  # Machine busy
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Parameter update error: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.get("/api/parameters/current/{stage}")
+def get_current_parameters(stage: str):
+    """
+    Get current parameters for a machine stage.
+    Returns parameters in frontend-friendly format.
+    """
+    global battery_plant_simulation
+    
+    try:
+        # Convert stage to machine info
+        line_type, machine_id = ParameterMapper.stage_to_machine_info(stage)
+        
+        # Get current machine status (includes parameters)
+        machine_status = battery_plant_simulation.get_machine_status(line_type, machine_id)
+        
+        if "machine_parameters" in machine_status:
+            return {
+                "stage": stage,
+                "line_type": line_type,
+                "machine_id": machine_id,
+                "parameters": machine_status["machine_parameters"],
+                "machine_state": machine_status.get("state", "Unknown")
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Machine parameters not found")
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Get parameters error: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 # Startup event to initialise event-driven architecture

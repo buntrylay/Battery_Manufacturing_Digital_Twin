@@ -156,5 +156,5 @@ class EventHandler:
             # )
         except Exception as exc:
             error(
-                f"[{notification.get("timestamp")}] WEBSOCKET: Error broadcasting an event status {notification.get("status")}: {exc}"
+                f"[{notification.get('timestamp')}] WEBSOCKET: Error broadcasting an event status {notification.get('status')}: {exc}"
             )

@@ -32,5 +32,10 @@ class FormationCyclingMachine(BaseMachine):
                 info(f"{self.process_name}: Voltage limit reached at step {t}")
             raise RuntimeError("Voltage limit was reached")
 
-    def validate_parameters(self, parameters: dict):
-        return FormationCyclingParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, FormationCyclingParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return FormationCyclingParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected FormationCyclingParameters or dict, got {type(parameters)}")

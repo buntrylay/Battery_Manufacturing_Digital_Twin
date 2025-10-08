@@ -29,5 +29,10 @@ class ElectrolyteFillingMachine(BaseMachine):
     def step_logic(self, t: int, verbose: bool):
         pass
 
-    def validate_parameters(self, parameters: dict):
-        return ElectrolyteFillingParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, ElectrolyteFillingParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return ElectrolyteFillingParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected ElectrolyteFillingParameters or dict, got {type(parameters)}")
