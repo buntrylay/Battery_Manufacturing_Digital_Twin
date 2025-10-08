@@ -95,3 +95,20 @@ export const inputsByStage = {
   "Formation Cycling": ["Charge Current", "Voltage", "Initial Voltage"],
   Aging: ["Leak Rate", "Temperature", "Aging Days"],
 };
+export const getDefaultParameters = (stageId) => {
+  const defaults = {
+    "Anode Mixing": {
+      "Anode PVDF": "0.1",
+      "Anode CA": "0.2",
+      "Anode AM": "0.3",
+      "Anode Solvent": "0.4",
+    },
+    "Cathode Mixing": {
+      "Cathode PVDF": "0.1",
+      "Cathode CA": "0.2",
+      "Cathode AM": "0.3",
+      "Cathode Solvent": "0.4",
+    },
+  };
+  return defaults[stageId] || {};
+};

@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { inputsByStage, stageDescriptions } from "./constants";
+import {
+  inputsByStage,
+  stageDescriptions,
+  getDefaultParameters,
+} from "./constants";
 import {
   validateParameters,
   updateParameters,
@@ -106,28 +110,6 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
       ...prev,
       [field]: value,
     }));
-
-    // Real-time validation
-    if (selectedStage && value !== "") {
-      let validation;
-      if (selectedStage.id.includes("Mixing")) {
-        const paramName = field.split(" ")[1]; // Extract "AM" from "Anode AM"
-        validation = validateParameter(selectedStage.id, paramName, value);
-      } else {
-        validation = validateParameter(selectedStage.id, field, value);
-      }
-
-      setValidationErrors((prev) => ({
-        ...prev,
-        [field]: validation.isValid ? null : validation.error,
-      }));
-    } else {
-      // Clear validation error when field is empty
-      setValidationErrors((prev) => ({
-        ...prev,
-        [field]: null,
-      }));
-    }
   };
 
   const hasRequiredInputs = () => {
@@ -169,10 +151,6 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
 
   const handleSaveInputs = async () => {
     // Validate mixing inputs if it's a mixing stage
-    if (isMixingStage && !validateMixingInputs()) {
-      setStatus("❌ Error: Mixing ratios must total exactly 1.00");
-      return;
-    }
 
     // Check if we have any inputs to save
     if (!hasRequiredInputs()) {

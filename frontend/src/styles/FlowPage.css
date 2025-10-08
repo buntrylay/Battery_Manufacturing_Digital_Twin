@@ -26,11 +26,6 @@ body {
   transition: grid-template-columns 0.3s ease;
 }
 
-/* With side panel visible */
-.flow-layout.with-panel {
-  grid-template-columns: 1fr minmax(250px, 350px);
-}
-
 /* Without side panel */
 .flow-layout.full {
   grid-template-columns: 1fr;
@@ -263,7 +258,6 @@ body {
 } */
 
 .side-panel {
-  z-index: 9999;
   background: var(--card);
   border-left: 1px solid var(--border);
   box-sizing: border-box;
@@ -277,7 +271,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  opacity: 0;
   transform: translateX(100%);
   pointer-events: none;
   transition: opacity 0.5s, transform 2s;
@@ -583,6 +576,7 @@ body {
   padding: 2px 4px;
   border-radius: 3px;
   font-size: 12px;
+}
 /* Parameter controls for all machine types */
 .parameter-controls {
   margin-top: 20px;
@@ -596,7 +590,8 @@ body {
   margin-top: 12px;
 }
 
-.load-params-btn, .validate-btn {
+.load-params-btn,
+.validate-btn {
   flex: 1;
   padding: 10px;
   border: 1px solid var(--border);
