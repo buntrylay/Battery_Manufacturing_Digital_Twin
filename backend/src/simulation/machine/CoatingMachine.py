@@ -1,20 +1,7 @@
 from simulation.battery_model import MixingModel, CoatingModel
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.process_parameters.Parameters import CoatingParameters
-import time
-
-# Import notification functions
-try:
-    # Try multiple import paths to handle different environments
-    try:
-        from server.notification_queue import notify_machine_status
-    except ImportError:
-        from backend.src.server.notification_queue import notify_machine_status
-except ImportError:
-    # Fallback if import fails
-    def notify_machine_status(*args, **kwargs):
-        print(f"CoatingMachine Notification: {args}")
-        pass
+from simulation.event_bus.events import EventBus
 
 
 def calculate_shear_rate(coating_speed, gap_height):
@@ -68,7 +55,7 @@ class CoatingMachine(BaseMachine):
         process_name: str,
         coating_parameters: CoatingParameters,
         coating_model: CoatingModel = None,
-        connection_string=None,
+        event_bus: EventBus = None,
     ):
         """
         Initialise the coating machine.
@@ -82,27 +69,29 @@ class CoatingMachine(BaseMachine):
             process_name,
             coating_model,
             coating_parameters,
-            connection_string,
+            event_bus,
         )
         # self.total_steps = 20
-    
+
     def receive_model_from_previous_process(self, previous_model: MixingModel):
         self.battery_model = CoatingModel(previous_model)
+
     def calculate_total_steps(self):
-        self.total_steps = 10  # default
+        self.total_steps = 20
 
-
-    def step_logic(self, t: int):
+    def step_logic(self, t: int, verbose: bool):
         # update shear rate and wet thickness first to trigger changes in other properties
         self.shear_rate = calculate_shear_rate(
             self.machine_parameters.coating_speed,
             self.machine_parameters.gap_height,
         )
         self.uniformity_std = calculate_uniformity_std(self.shear_rate)
-        self.append_process_specifics({
-            "shear_rate": self.shear_rate,
-            "uniformity_std": self.uniformity_std,
-        })
+        self.append_process_specifics(
+            {
+                "shear_rate": self.shear_rate,
+                "uniformity_std": self.uniformity_std,
+            }
+        )
 
     def validate_parameters(self, parameters: dict):
         return CoatingParameters(**parameters).validate_parameters()

@@ -1,6 +1,8 @@
+from simulation.process_parameters.Parameters import ElectrolyteFillingParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.RewindingModel import RewindingModel
 import numpy as np
+
 
 class ElectrolyteFillingModel(BaseModel):
     def __init__(self, rewinding_model: RewindingModel):
@@ -20,7 +22,7 @@ class ElectrolyteFillingModel(BaseModel):
         self.defect_risk = False
 
         # constant
-        self.rho_elec = 1.2 
+        self.rho_elec = 1.2
 
     def V_sep_calc(self):
         return 0.05 * self.length
@@ -29,17 +31,20 @@ class ElectrolyteFillingModel(BaseModel):
         return self.length * self.final_width * self.final_thickness
 
     def V_max_calc(self):
-        return (self.porosity * (self.V_elec + self.V_sep))
+        return self.porosity * (self.V_elec + self.V_sep)
 
     def eta_wetting_calc(self, t, soaking_time):
         return 1 - np.exp(-3 * (t / soaking_time))
 
-    def update_properties(self, params):
-        t = getattr(self, "current_time_step", 0)
+    def update_properties(
+        self,
+        machine_parameters: ElectrolyteFillingParameters,
+        current_time_step: int,
+    ):
         self.V_sep = self.V_sep_calc()
         self.V_elec = self.V_elec_calc()
         self.V_max = self.V_max_calc()
-        self.eta_wetting = self.eta_wetting_calc(t, params.Soaking_time)
+        self.eta_wetting = self.eta_wetting_calc(current_time_step, machine_parameters.soaking_time)
         self.V_elec_filling = self.eta_wetting * self.V_max
         self.defect_risk = self.V_elec_filling < 0.8 * self.V_max
 
@@ -55,5 +60,5 @@ class ElectrolyteFillingModel(BaseModel):
             "V_max": float(self.V_max),
             "eta_wetting": float(self.eta_wetting),
             "V_elec_filling": float(self.V_elec_filling),
-            "defect_risk": bool(self.defect_risk)
+            "defect_risk": bool(self.defect_risk),
         }

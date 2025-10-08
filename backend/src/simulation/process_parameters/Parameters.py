@@ -160,34 +160,34 @@ class RewindingParameters(BaseMachineParameters):
 
 @dataclass
 class ElectrolyteFillingParameters(BaseMachineParameters):
-    Vacuum_level: float
-    Vacuum_filling: float
-    Soaking_time: float
+    vacuum_level: float
+    vacuum_filling: float
+    soaking_time: float
 
     def validate_parameters(self):
-        if self.Vacuum_level <= 0:
+        if self.vacuum_level <= 0:
             raise ValueError("Vacuum level must be greater than 0")
-        if self.Vacuum_filling <= 0:
+        if self.vacuum_filling <= 0:
             raise ValueError("Vacuum filling must be greater than 0")
-        if self.Soaking_time <= 0:
+        if self.soaking_time <= 0:
             raise ValueError("Soaking time must be greater than 0")
 
 
 @dataclass
 class FormationCyclingParameters(BaseMachineParameters):
-    Charge_current_A: float
-    Charge_voltage_limit_V: float
-    Initial_Voltage: float
-    Formation_duration_s: int = 200  # can be adjusted based on real process time
+    charge_current_A: float
+    charge_voltage_limit_V: float
+    initial_voltage: float
+    formation_duration_s: int = 200  # can be adjusted based on real process time
 
     def validate_parameters(self):
-        if self.Charge_current_A <= 0:
+        if self.charge_current_A <= 0:
             raise ValueError("Charge current must be greater than 0")
-        if self.Charge_voltage_limit_V <= 0:
+        if self.charge_voltage_limit_V <= 0:
             raise ValueError("Charge voltage limit must be greater than 0")
-        if self.Voltage <= 0:
+        if self.initial_voltage <= 0:
             raise ValueError("Voltage must be greater than 0")
-        if self.Formation_duration_s <= 0:
+        if self.formation_duration_s <= 0:
             raise ValueError("Formation duration must be greater than 0")
 
 

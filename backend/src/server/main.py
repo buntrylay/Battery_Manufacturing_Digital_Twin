@@ -1,5 +1,7 @@
 import os
 import sys
+
+# for async tasks
 import asyncio
 
 # for simulation & concurrency
@@ -7,10 +9,8 @@ import threading
 
 # for API
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-import json
 
 # for generation of unique batch ID
 import uuid
@@ -23,16 +23,19 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from simulation.factory.Batch import Batch
 from simulation.factory.PlantSimulation import PlantSimulation
 
-# Import notification queue
-from .notification_queue import notification_queue, notify_machine_status
-from .WebSockerManager import manager
+# Import websocket manager
+from websocket_manager import websocket_manager
+
+# Import event handlers
+from event_handler import EventHandler
 
 # Import database engine & session
-from backend.src.server.db.db import engine, SessionLocal
+from backend.src.server.db.db import engine
 from backend.src.server.db.model_table import *
 from backend.src.server.db.db_helper import DBHelper
 import sqlalchemy
 
+# main FastAPI app
 app = FastAPI()
 
 # Add CORS middleware
@@ -44,18 +47,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# core plant simulation object
 battery_plant_simulation = PlantSimulation()
+# regarding the simulation thread
 factory_run_thread = None
 out_of_batch_event = threading.Event()
-
-
 # WebSocket connection management
-
 db_helper = DBHelper()
+# Initialise event handler
+event_handler = EventHandler()
+
 
 @app.get("/")
 def root():
     try:
+        # what is this for? Health check?
         with engine.connect() as conn:
             conn.execute(sqlalchemy.text("SELECT 1"))
     except Exception as e:
@@ -63,23 +69,18 @@ def root():
     return {"message": "This is the V2 API for the battery manufacturing digital twin!"}
 
 
-@app.get("/health")
-def health_check():
-    return {"status": "healthy", "timestamp": "2025-10-01T16:00:00Z"}
-
-
 @app.websocket("/ws/status")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time machine status updates."""
-    await manager.connect(websocket)
+    await websocket_manager.connect(websocket)
     try:
         while True:
             # Keep the connection alive and handle any incoming messages
             data = await websocket.receive_text()
             # Echo back any received messages (optional)
-            await manager.send_personal_message(f"Echo: {data}", websocket)
+            await websocket_manager.send_personal_message(f"Echo: {data}", websocket)
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        websocket_manager.disconnect(websocket)
 
 
 @app.get("/api/simulation/state")
@@ -88,6 +89,33 @@ def get_plant_state():
     # quite done, just some validation I think depending on my teammate's implementation of get_current_plant_state()
     global battery_plant_simulation
     return battery_plant_simulation.get_current_plant_state()
+
+
+@app.post("/api/simulation/start")
+def add_batch():
+    """Add a batch to the plant."""
+    global battery_plant_simulation
+    global factory_run_thread
+    global out_of_batch_event
+    batch = Batch(batch_id=str(uuid.uuid4()))
+    try:
+        battery_plant_simulation.add_batch(batch)
+    except ValueError as e:
+        # over limit of batches
+        raise HTTPException(status_code=400, detail=str(e))
+    if factory_run_thread is None:
+        factory_run_thread = threading.Thread(
+            target=battery_plant_simulation.run, args=(out_of_batch_event,)
+        )
+        factory_run_thread.start()
+    elif out_of_batch_event.is_set():
+        factory_run_thread = None
+        out_of_batch_event.clear()
+        factory_run_thread = threading.Thread(
+            target=battery_plant_simulation.run, args=(out_of_batch_event,)
+        )
+        factory_run_thread.start()
+        return {"message": "Plant started successfully"}
 
 
 @app.get("/api/machine/{line_type}/{machine_id}/status")
@@ -142,63 +170,31 @@ def reset_plant():
         out_of_batch_event.clear()
     return {"message": "Plant reset successfully"}
 
-def convert_numpy_types(obj):
-    import numpy as np
-    
-    if isinstance(obj, dict):
-        return {k: convert_numpy_types(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_numpy_types(v) for v in obj]
-    elif isinstance(obj, np.generic):
-        return obj.item()
-    else:
-        return obj
 
-# Background task to process notifications and broadcast to WebSocket clients
-async def process_notifications():
-    
-    """Background task to process machine notifications and broadcast to WebSocket clients."""
-    while True:
-        try:
-            # Get notification from queue
-            notification = await notification_queue.get_notification()
-            
-            # If this is a data notification, queue for DB writing
-            if notification.status == "data_generated":
-                # Merge notification fields with data
-                db_helper.queue_data(notification.data)
-                print("Generated data pushed to db helper queue!")
-                continue
-
-
-            # Convert to JSON and broadcast to all connected clients
-            message = json.dumps(notification.to_dict())
-            await manager.broadcast(message)
-            
-        except Exception as e:
-            print(f"Error processing notification: {e}")
-            # Small delay to prevent busy waiting
-            await asyncio.sleep(0.1)
-
-
-# Startup event to start the notification processor
+# Startup event to initialise event-driven architecture
 @app.on_event("startup")
 async def startup_event():
-    """Start the background task for processing notifications."""
-    asyncio.create_task(process_notifications())
-
+    """Initialise the event-driven architecture."""
+    try:
+        # Get event bus from plant simulation
+        event_bus = battery_plant_simulation.get_event_bus()
+        # Set up WebSocket manager to subscribe to events
+        websocket_manager.set_event_bus(event_bus, event_handler)
+        # Set up DB helper to subscribe to events
+        db_helper.set_event_bus(event_bus, event_handler)
+        print("Successfully initialized event-driven architecture!")
+    except Exception as e:
+        print(f"Error initializing event-driven architecture: {e}")
     try:
         create_tables()
         print(f"Successfully populated tables!")
     except Exception as e:
-            print(f"Error populating tables: {e}")
-    
+        print(f"Error populating tables: {e}")
     try:
         db_helper.start_worker(lambda msg: print(msg))
         print(f"Successfully created db helper!")
     except Exception as e:
-            print(f"Error creating db helper: {e}")
-    
+        print(f"Error creating db helper: {e}")
 
 
 if __name__ == "__main__":

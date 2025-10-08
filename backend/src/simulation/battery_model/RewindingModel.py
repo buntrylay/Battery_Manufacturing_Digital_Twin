@@ -1,3 +1,4 @@
+from simulation.process_parameters.Parameters import RewindingParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.ElectrodeInspectionModel import ElectrodeInspectionModel
 import numpy as np
@@ -49,11 +50,17 @@ class RewindingModel(BaseModel):
     def H_roll_calc(self, delta_sl, tau_rewind):
         return tau_rewind / delta_sl
 
-    def update_properties(self, params, interval=1):
-        self.L_wound += params.rewinding_speed * interval
+    def update_properties(
+        self, machine_parameters: RewindingParameters, current_time_step: int = None
+    ):
+        INTERVAL = 1
+        self.L_wound += machine_parameters.rewinding_speed * INTERVAL
         self.D_roll = self.D_roll_calc(self.L_wound, self.delta_sl, self.D_core)
         self.tau_rewind = self.tau_rewind_calc(
-            self.D_roll, params.initial_tension, params.tapering_steps, self.D_core
+            self.D_roll,
+            machine_parameters.initial_tension,
+            machine_parameters.tapering_steps,
+            self.D_core,
         )
         self.H_roll = self.H_roll_calc(self.delta_sl, self.tau_rewind)
 

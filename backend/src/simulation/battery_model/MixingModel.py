@@ -5,12 +5,6 @@ import numpy as np
 
 
 class MixingModel(BaseModel):
-    def update_temperature(self):
-        """
-        Update the temperature to simulate fluctuation (random between 24 and 26°C)
-        """
-        self.temperature = random.uniform(24, 26)
-
     """
     A class representing a battery slurry mixture containing active material (AM),
     conductive additive (CA), PVDF binder, and solvent (H2O or NMP).
@@ -22,7 +16,7 @@ class MixingModel(BaseModel):
             PVDF (float): Amount of PVDF binder in the slurry
             H2O (float): Amount of solvent for anode slurry
             NMP (float): Amount of solvent for cathode slurry
-        """
+    """
 
     def __init__(self, electrode_type):
         """
@@ -123,8 +117,11 @@ class MixingModel(BaseModel):
             + WEIGHTS["s"] * solvent_volume * RHO["solvent"]
         )
 
-    def update_properties(self, params: MixingParameters = None):
+    def update_properties(
+        self, machine_parameters: MixingParameters, current_time_step: int = None
+    ):
         """Update all computed properties and fluctuate temperature"""
+        # simulate changes in temperature
         self.update_temperature()
         self.density = self.calculate_density(
             self.AM, self.CA, self.PVDF, self.solvent, self.electrode_type
@@ -162,3 +159,9 @@ class MixingModel(BaseModel):
             "total_volume": sum([self.AM, self.CA, self.PVDF, self.solvent])
             * (1 + self.alpha * (self.temperature - 25)),
         }
+
+    def update_temperature(self):
+        """
+        Update the temperature to simulate fluctuation (random between 24 and 26°C)
+        """
+        self.temperature = random.uniform(24, 26)

@@ -127,9 +127,9 @@ def test_electrolyte_filling_parameters():
     print("\nTesting ElectrolyteFillingParameters...")
     
     elec_filling_params = ElectrolyteFillingParameters(
-        Vacuum_level=100,
-        Vacuum_filling=100,
-        Soaking_time=10
+        vacuum_level=100,
+        vacuum_filling=100,
+        soaking_time=10
     )
     elec_filling_params.validate_parameters()
     print("✓ Electrolyte filling parameters valid")
@@ -141,8 +141,8 @@ def test_formation_cycling_parameters():
     print("\nTesting FormationCyclingParameters...")
     
     formation_params = FormationCyclingParameters(
-        Charge_current_A=0.05,
-        Charge_voltage_limit_V=0.05,
+        charge_current_A=0.05,
+        charge_voltage_limit_V=0.05,
         Voltage=4
     )
     formation_params.validate_parameters()
