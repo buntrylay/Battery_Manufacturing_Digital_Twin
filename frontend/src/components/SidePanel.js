@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { inputsByStage, convertInputsToParameters } from "./constants";
-import { 
-  validateAllParameters, 
-  validateParameter, 
-  getParameterInfo, 
-  getDefaultParameters 
-} from "./parameterValidation";
+import { inputsByStage, stageDescriptions } from "./constants";
+import {
+  validateParameters,
+  updateParameters,
+  getCurrentParameters,
+} from "../services/api";
 
 const SidePanel = ({ selectedStage, onClose, isOpen }) => {
   const [inputValues, setInputValues] = useState({});
@@ -24,33 +23,50 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
 
   // Initialize input values when stage changes
   useEffect(() => {
+    if (!selectedStage) return;
+
+    // Try to load previously saved inputs (new format first, then legacy mixing format)
+    const savedInputs =
+      localStorage.getItem(`machineInputs_${selectedStage.id}`) ||
+      (isMixingStage
+        ? localStorage.getItem(`mixingInputs_${selectedStage.id}`)
+        : null);
     let initialValues = {};
 
-    if (isMixingStage) {
-      // Load mixing inputs
-      const savedInputs = localStorage.getItem(`mixingInputs_${selectedStage.id}`);
-      if (savedInputs) {
-        try {
-          const savedData = JSON.parse(savedInputs);
+    if (savedInputs) {
+      try {
+        const savedData = JSON.parse(savedInputs);
+
+        if (savedData.parameters) {
+          // New format - direct parameter mapping
+          Object.keys(savedData.parameters).forEach((field) => {
+            if (fields.includes(field)) {
+              initialValues[field] = savedData.parameters[field].toString();
+            }
+          });
+        } else if (isMixingStage && savedData.PVDF !== undefined) {
+          // Legacy mixing format
           const electrodeType = selectedStage.id.includes("Anode")
             ? "Anode"
             : "Cathode";
-
-          // Map saved data back to input field format
           initialValues = {
             [`${electrodeType} PVDF`]: savedData.PVDF || "",
             [`${electrodeType} CA`]: savedData.CA || "",
             [`${electrodeType} AM`]: savedData.AM || "",
             [`${electrodeType} Solvent`]: savedData.Solvent || "",
           };
-          setStatus("Previously saved inputs loaded");
-        } catch (error) {
-          console.error("Error loading saved mixing inputs:", error);
-          fields.forEach((field) => {
-            initialValues[field] = "";
-          });
         }
-      } else {
+
+        // Fill in any missing fields with empty values
+        fields.forEach((field) => {
+          if (!(field in initialValues)) {
+            initialValues[field] = "";
+          }
+        });
+
+        setStatus("Previously saved inputs loaded");
+      } catch (error) {
+        console.error("Error loading saved inputs:", error);
         fields.forEach((field) => {
           initialValues[field] = "";
         });
@@ -58,7 +74,9 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
       }
     } else {
       // Load inputs for other machine types
-      const savedInputs = localStorage.getItem(`machineInputs_${selectedStage.id}`);
+      const savedInputs = localStorage.getItem(
+        `machineInputs_${selectedStage.id}`
+      );
       if (savedInputs) {
         try {
           const savedData = JSON.parse(savedInputs);
@@ -93,7 +111,7 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
     if (selectedStage && value !== "") {
       let validation;
       if (selectedStage.id.includes("Mixing")) {
-        const paramName = field.split(' ')[1]; // Extract "AM" from "Anode AM"
+        const paramName = field.split(" ")[1]; // Extract "AM" from "Anode AM"
         validation = validateParameter(selectedStage.id, paramName, value);
       } else {
         validation = validateParameter(selectedStage.id, field, value);
@@ -112,59 +130,228 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
     }
   };
 
+  const hasRequiredInputs = () => {
+    // Check if at least some inputs are provided
+    return Object.values(inputValues).some(
+      (value) => value !== "" && !isNaN(parseFloat(value))
+    );
+  };
 
-
-  const handleSaveInputs = () => {
+  const handleValidateInputs = async () => {
     try {
-      // Validate all inputs before saving
-      const validation = validateAllParameters(selectedStage.id, inputValues);
-      
-      if (!validation.isValid) {
-        setValidationErrors(validation.errors);
-        setStatus("Please fix validation errors before saving");
+      setStatus("Validating parameters...");
+
+      // Convert input values to numbers for validation
+      const parametersToValidate = {};
+      Object.keys(inputValues).forEach((field) => {
+        if (inputValues[field] !== "") {
+          parametersToValidate[field] = parseFloat(inputValues[field]);
+        }
+      });
+
+      const response = await validateParameters(
+        selectedStage.id,
+        parametersToValidate
+      );
+
+      if (response.data.valid) {
+        setStatus("✓ Parameters are valid and ready to apply");
+      } else {
+        setStatus(`❌ Validation failed: ${response.data.error}`);
+      }
+    } catch (error) {
+      console.error("Parameter validation error:", error);
+      setStatus(
+        `❌ Validation error: ${error.response?.data?.detail || error.message}`
+      );
+    }
+  };
+
+  const handleSaveInputs = async () => {
+    // Validate mixing inputs if it's a mixing stage
+    if (isMixingStage && !validateMixingInputs()) {
+      setStatus("❌ Error: Mixing ratios must total exactly 1.00");
+      return;
+    }
+
+    // Check if we have any inputs to save
+    if (!hasRequiredInputs()) {
+      setStatus("❌ Please enter at least one parameter value");
+      return;
+    }
+
+    try {
+      setStatus("Updating machine parameters...");
+
+      // Convert input values to numbers
+      const parametersToUpdate = {};
+      Object.keys(inputValues).forEach((field) => {
+        if (
+          inputValues[field] !== "" &&
+          !isNaN(parseFloat(inputValues[field]))
+        ) {
+          parametersToUpdate[field] = parseFloat(inputValues[field]);
+        }
+      });
+
+      // First validate the parameters
+      const validationResponse = await validateParameters(
+        selectedStage.id,
+        parametersToUpdate
+      );
+
+      if (!validationResponse.data.valid) {
+        setStatus(`❌ Validation failed: ${validationResponse.data.error}`);
         return;
       }
 
+      // If validation passes, update the parameters
+      const updateResponse = await updateParameters(
+        selectedStage.id,
+        parametersToUpdate
+      );
+
+      if (updateResponse.data.message) {
+        setStatus(`✓ ${updateResponse.data.message}`);
+
+        // Save to localStorage for persistence
+        localStorage.setItem(
+          `machineInputs_${selectedStage.id}`,
+          JSON.stringify({
+            stage: selectedStage.id,
+            parameters: parametersToUpdate,
+            timestamp: new Date().toISOString(),
+          })
+        );
+
+        // Clear any previous mixing-specific saves
+        if (isMixingStage) {
+          localStorage.removeItem(`mixingInputs_${selectedStage.id}`);
+        }
+      }
+    } catch (error) {
+      console.error("Parameter update error:", error);
+      if (error.response?.status === 409) {
+        setStatus("❌ Machine is busy. Please try again later.");
+      } else if (error.response?.status === 400) {
+        setStatus(
+          `❌ Invalid parameters: ${
+            error.response?.data?.detail || error.message
+          }`
+        );
+      } else {
+        setStatus(
+          `❌ Update failed: ${error.response?.data?.detail || error.message}`
+        );
+      }
+    }
+  };
+
+  const handleLoadCurrentParameters = async () => {
+    try {
+      setStatus("Loading current parameters...");
+
+      const response = await getCurrentParameters(selectedStage.id);
+      const currentParams = response.data.parameters;
+
+      // Map backend parameters to frontend field names
+      const newInputValues = {};
+      fields.forEach((field) => {
+        newInputValues[field] = "";
+      });
+
+      // Create comprehensive parameter mapping
+      const mapParameters = (params, mappings) => {
+        Object.entries(mappings).forEach(([frontendField, backendField]) => {
+          if (params[backendField] !== undefined) {
+            newInputValues[frontendField] = params[backendField].toString();
+          }
+        });
+      };
+
+      // Define parameter mappings for each machine type
       if (isMixingStage) {
         const electrodeType = selectedStage.id.includes("Anode")
           ? "Anode"
           : "Cathode";
-
-        // Save mixing data
-        const savedData = {
-          stage: selectedStage.id,
-          electrode_type: electrodeType,
-          PVDF: parseFloat(inputValues[`${electrodeType} PVDF`] || 0),
-          CA: parseFloat(inputValues[`${electrodeType} CA`] || 0),
-          AM: parseFloat(inputValues[`${electrodeType} AM`] || 0),
-          Solvent: parseFloat(inputValues[`${electrodeType} Solvent`] || 0),
-          timestamp: new Date().toISOString(),
-        };
-
-        localStorage.setItem(
-          `mixingInputs_${selectedStage.id}`,
-          JSON.stringify(savedData)
-        );
-        setStatus(`Inputs saved for ${electrodeType} mixing`);
-      } else {
-        // Save inputs for other machine types
-        const savedData = {
-          stage: selectedStage.id,
-          inputValues: inputValues,
-          timestamp: new Date().toISOString(),
-        };
-
-        localStorage.setItem(
-          `machineInputs_${selectedStage.id}`,
-          JSON.stringify(savedData)
-        );
-        setStatus(`Inputs saved for ${selectedStage.id}`);
+        mapParameters(currentParams, {
+          [`${electrodeType} PVDF`]: "PVDF_ratio",
+          [`${electrodeType} CA`]: "CA_ratio",
+          [`${electrodeType} AM`]: "AM_ratio",
+          [`${electrodeType} Solvent`]: "solvent_ratio",
+        });
+      } else if (selectedStage.id.includes("Coating")) {
+        mapParameters(currentParams, {
+          "Coating Speed": "coating_speed",
+          "Gap Height": "gap_height",
+          "Flow Rate": "flow_rate",
+          "Coating Width": "coating_width",
+        });
+      } else if (selectedStage.id.includes("Drying")) {
+        mapParameters(currentParams, {
+          "Web Speed": "web_speed",
+        });
+      } else if (selectedStage.id.includes("Calendaring")) {
+        mapParameters(currentParams, {
+          "Roll Gap": "roll_gap",
+          "Roll Pressure": "roll_pressure",
+          Temperature: "temperature",
+          "Roll Speed": "roll_speed",
+          "Dry Thickness": "dry_thickness",
+          "Initial Porosity": "initial_porosity",
+        });
+      } else if (selectedStage.id.includes("Slitting")) {
+        mapParameters(currentParams, {
+          "Blade Sharpness": "blade_sharpness",
+          "Slitting Speed": "slitting_speed",
+          "Target Width": "target_width",
+          "Slitting Tension": "slitting_tension",
+        });
+      } else if (selectedStage.id.includes("Inspection")) {
+        mapParameters(currentParams, {
+          "Width Tolerance": "epsilon_width_max",
+          "Thickness Tolerance": "epsilon_thickness_max",
+          "B Max": "B_max",
+          "Defects Allowed": "D_surface_max",
+        });
+      } else if (selectedStage.id === "Rewinding") {
+        mapParameters(currentParams, {
+          "Rewinding Speed": "rewinding_speed",
+          "Initial Tension": "initial_tension",
+          "Tapering Steps": "tapering_steps",
+          "Environment Humidity": "environment_humidity",
+        });
+      } else if (selectedStage.id === "Electrolyte Filling") {
+        mapParameters(currentParams, {
+          "Vacuum Level": "vacuum_level",
+          "Vacuum Filling": "vacuum_filling",
+          "Soaking Time": "soaking_time",
+        });
+      } else if (selectedStage.id === "Formation Cycling") {
+        mapParameters(currentParams, {
+          "Charge Current": "charge_current_A",
+          Voltage: "charge_voltage_limit_V",
+          "Initial Voltage": "initial_voltage",
+        });
+      } else if (selectedStage.id === "Aging") {
+        mapParameters(currentParams, {
+          "Leak Rate": "k_leak",
+          Temperature: "temperature",
+          "Aging Days": "aging_time_days",
+        });
       }
 
-      // Clear validation errors after successful save
-      setValidationErrors({});
+      setInputValues(newInputValues);
+      setStatus(
+        `✓ Loaded current parameters (Machine state: ${response.data.machine_state})`
+      );
     } catch (error) {
-      setStatus("Error saving inputs: " + error.message);
+      console.error("Load parameters error:", error);
+      setStatus(
+        `❌ Failed to load parameters: ${
+          error.response?.data?.detail || error.message
+        }`
+      );
     }
   };
 
@@ -186,18 +373,25 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
   const saveAsPreset = () => {
     const presetName = prompt("Enter a name for this preset:");
     if (presetName && presetName.trim()) {
-      const presets = JSON.parse(localStorage.getItem(`presets_${selectedStage.id}`) || "{}");
+      const presets = JSON.parse(
+        localStorage.getItem(`presets_${selectedStage.id}`) || "{}"
+      );
       presets[presetName.trim()] = {
         inputValues: inputValues,
         timestamp: new Date().toISOString(),
       };
-      localStorage.setItem(`presets_${selectedStage.id}`, JSON.stringify(presets));
+      localStorage.setItem(
+        `presets_${selectedStage.id}`,
+        JSON.stringify(presets)
+      );
       setStatus(`Preset "${presetName}" saved`);
     }
   };
 
   const loadPreset = (presetName) => {
-    const presets = JSON.parse(localStorage.getItem(`presets_${selectedStage.id}`) || "{}");
+    const presets = JSON.parse(
+      localStorage.getItem(`presets_${selectedStage.id}`) || "{}"
+    );
     if (presets[presetName]) {
       setInputValues(presets[presetName].inputValues);
       setValidationErrors({});
@@ -207,126 +401,129 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
   };
 
   const getAvailablePresets = () => {
-    return JSON.parse(localStorage.getItem(`presets_${selectedStage.id}`) || "{}");
+    return JSON.parse(
+      localStorage.getItem(`presets_${selectedStage.id}`) || "{}"
+    );
   };
 
   const deletePreset = (presetName) => {
-    const presets = JSON.parse(localStorage.getItem(`presets_${selectedStage.id}`) || "{}");
+    const presets = JSON.parse(
+      localStorage.getItem(`presets_${selectedStage.id}`) || "{}"
+    );
     delete presets[presetName];
-    localStorage.setItem(`presets_${selectedStage.id}`, JSON.stringify(presets));
+    localStorage.setItem(
+      `presets_${selectedStage.id}`,
+      JSON.stringify(presets)
+    );
     setStatus(`Preset "${presetName}" deleted`);
   };
 
   return (
-    <div
-      className={`card side-panel${isOpen ? " open" : ""}${
-        !selectedStage ? " hidden" : ""
-      }`}
-    >
-      {selectedStage ? (
-        <>
-          <div className="side-panel-header">
-            <div className="side-title">{selectedStage.id}</div>
-            <button className="close-btn" onClick={onClose}>
-              ×
-            </button>
-          </div>
-          <div className="side-panel-content">
-            <div className="side-grid">
-            {fields.map((f) => {
-              const paramInfo = getParameterInfo(selectedStage.id, f);
-              const hasError = validationErrors[f];
-              
-              return (
-                <label key={f} className={`side-field ${hasError ? 'error' : ''}`}>
-                  <div className="field-header">
-                    <span className="field-name">{f}</span>
-                    {paramInfo?.unit && <span className="field-unit">({paramInfo.unit})</span>}
-                  </div>
-                  <input
-                    type="number"
-                    step={paramInfo?.step || "0.01"}
-                    min={paramInfo?.min || "0"}
-                    max={paramInfo?.max || (isMixingStage ? "1" : undefined)}
-                    placeholder={paramInfo ? `${paramInfo.min}-${paramInfo.max}` : "Enter value..."}
-                    value={inputValues[f] || ""}
-                    onChange={(e) => handleInputChange(f, e.target.value)}
-                    className={hasError ? 'input-error' : ''}
-                  />
-                  {hasError && <div className="error-message">{hasError}</div>}
-                  {paramInfo?.description && !hasError && (
-                    <div className="field-description">{paramInfo.description}</div>
-                  )}
-                </label>
-              );
-            })}
-          </div>
+    <div className="card side-panel">
+      <div className="side-panel-header">
+        <div className="side-title">{selectedStage.id}</div>
+        <button className="close-btn" onClick={onClose}>
+          ×
+        </button>
+      </div>
 
-          <div className="machine-controls">
-            {isMixingStage && (
-              <div className="ratio-sum">
-                <span>Total: {currentSum.toFixed(3)}</span>
-                {Math.abs(currentSum - 1) > 0.0001 && currentSum > 0 && (
-                  <span className="error-text"> (Must equal 1.00)</span>
-                )}
-              </div>
+      <div className="side-grid">
+        {fields.map((f) => {
+          // Determine input constraints based on field type
+          let inputProps = {
+            type: "number",
+            step: "0.01",
+            min: "0",
+            placeholder: "Enter value...",
+          };
+
+          // Set appropriate max values and steps for different parameter types
+          if (isMixingStage) {
+            inputProps.max = "1";
+            inputProps.step = "0.001";
+          } else if (f.includes("Temperature")) {
+            inputProps.max = "200";
+            inputProps.step = "1";
+          } else if (f.includes("Pressure")) {
+            inputProps.max = "10000000";
+            inputProps.step = "100000";
+          } else if (f.includes("Speed")) {
+            inputProps.max = "10";
+            inputProps.step = "0.01";
+          } else if (f.includes("Humidity")) {
+            inputProps.max = "100";
+            inputProps.step = "1";
+          } else if (f.includes("Voltage")) {
+            inputProps.max = "5";
+            inputProps.step = "0.1";
+          } else if (f.includes("Current")) {
+            inputProps.max = "1";
+            inputProps.step = "0.01";
+          } else {
+            // Remove max constraint for other parameters
+            delete inputProps.max;
+          }
+
+          return (
+            <label key={f} className="side-field">
+              <span>{f}</span>
+              <input
+                {...inputProps}
+                value={inputValues[f] || ""}
+                onChange={(e) => handleInputChange(f, e.target.value)}
+              />
+            </label>
+          );
+        })}
+      </div>
+
+      <div className="parameter-controls">
+        {isMixingStage && (
+          <div className="ratio-sum">
+            <span>Total: {currentSum.toFixed(3)}</span>
+            {Math.abs(currentSum - 1) > 0.0001 && currentSum > 0 && (
+              <span className="error-text"> (Must equal 1.00)</span>
             )}
-            
-            {/* Preset Management */}
-            <div className="preset-controls">
-              <div className="preset-buttons">
-                <button onClick={loadDefaultPreset} className="preset-btn default-btn">
-                  Defaults
-                </button>
-                <button onClick={saveAsPreset} className="preset-btn save-preset-btn">
-                  Save Preset
-                </button>
-                <button 
-                  onClick={() => setShowPresetMenu(!showPresetMenu)} 
-                  className="preset-btn load-preset-btn"
-                >
-                  Load Preset
-                </button>
-              </div>
-              
-              {showPresetMenu && (
-                <div className="preset-menu">
-                  {Object.keys(getAvailablePresets()).length === 0 ? (
-                    <div className="no-presets">No saved presets</div>
-                  ) : (
-                    Object.keys(getAvailablePresets()).map(presetName => (
-                      <div key={presetName} className="preset-item">
-                        <span onClick={() => loadPreset(presetName)} className="preset-name">
-                          {presetName}
-                        </span>
-                        <button 
-                          onClick={() => deletePreset(presetName)} 
-                          className="delete-preset-btn"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-            
-            <div className="control-buttons">
-              <button onClick={handleSaveInputs} className="save-inputs-btn">
-                Save Parameters
-              </button>
-            </div>
-            
-            <div className="simulation-info">
-              <small>Parameters saved! Use "Start Full Simulation" above to run the complete battery manufacturing process.</small>
-            </div>
-            
-            {status && <div className={`status-message ${status.includes('❌') ? 'error' : status.includes('✅') ? 'success' : ''}`}>{status}</div>}
           </div>
-          </div>
-        </>
-      ) : null}
+        )}
+
+        <div className="stage-info">
+          <small className="stage-description">
+            {stageDescriptions[selectedStage.id] ||
+              "Configure machine parameters"}
+          </small>
+        </div>
+
+        <div className="control-buttons">
+          <button
+            onClick={handleLoadCurrentParameters}
+            className="load-params-btn"
+            title="Load current machine parameters"
+          >
+            Load Current
+          </button>
+
+          <button
+            onClick={handleValidateInputs}
+            className="validate-btn"
+            title="Validate parameter values"
+            disabled={!hasRequiredInputs()}
+          >
+            Validate
+          </button>
+
+          <button
+            onClick={handleSaveInputs}
+            className="save-inputs-btn"
+            title="Apply changes to machine"
+            disabled={!hasRequiredInputs()}
+          >
+            Apply Changes
+          </button>
+        </div>
+
+        {status && <div className="status-message">{status}</div>}
+      </div>
     </div>
   );
 };

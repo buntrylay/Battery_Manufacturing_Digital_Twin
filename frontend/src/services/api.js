@@ -162,3 +162,33 @@ export const downloadFile = async (electrodeType) => {
     alert(`Failed to download file for ${electrodeType}. Check the console for details.`);
   }
 };
+
+/**
+ * Validate parameters for a specific stage using frontend field names.
+ */
+export const validateParameters = (stage, parameters) =>
+  axios.post(`${API_URL}/api/parameters/validate`, { stage, parameters });
+
+/**
+ * Update machine parameters using frontend field names.
+ */
+export const updateParameters = (stage, parameters) =>
+  axios.post(`${API_URL}/api/parameters/update`, { stage, parameters });
+
+/**
+ * Get current parameters for a machine stage.
+ */
+export const getCurrentParameters = (stage) =>
+  axios.get(`${API_URL}/api/parameters/current/${encodeURIComponent(stage)}`);
+
+/**
+ * Get the current state of the plant simulation.
+ */
+export const getPlantState = () =>
+  axios.get(`${API_URL}/api/simulation/state`);
+
+/**
+ * Reset the plant simulation.
+ */
+export const resetPlant = () =>
+  axios.post(`${API_URL}/api/simulation/reset`);

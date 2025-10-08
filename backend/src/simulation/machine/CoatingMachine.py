@@ -93,5 +93,10 @@ class CoatingMachine(BaseMachine):
             }
         )
 
-    def validate_parameters(self, parameters: dict):
-        return CoatingParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, CoatingParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return CoatingParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected CoatingParameters or dict, got {type(parameters)}")

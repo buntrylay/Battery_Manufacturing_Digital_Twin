@@ -22,7 +22,7 @@ services:
     depends_on:
       - fastapi
 
-  ##` Backend service
+  ## Backend service
   fastapi:
     build:
       context: ./backend
@@ -30,8 +30,10 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/workspaces/app
-    working_dir: /workspaces/app
+      - ./backend:/app
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
     depends_on:
       - db
     networks:

@@ -28,5 +28,10 @@ class DryingMachine(BaseMachine):
         )
         self.total_steps = int(residence_time / DELTA_T)
 
-    def validate_parameters(self, parameters: dict):
-        return DryingParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, DryingParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return DryingParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected DryingParameters or dict, got {type(parameters)}")

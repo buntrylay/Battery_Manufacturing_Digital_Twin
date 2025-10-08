@@ -27,5 +27,10 @@ class RewindingMachine(BaseMachine):
     def step_logic(self, t: int, verbose: bool):
         pass
 
-    def validate_parameters(self, parameters: dict):
-        return RewindingParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, RewindingParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return RewindingParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected RewindingParameters or dict, got {type(parameters)}")

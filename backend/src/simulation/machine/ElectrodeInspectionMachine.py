@@ -30,5 +30,10 @@ class ElectrodeInspectionMachine(BaseMachine):
     def step_logic(self, t: int, verbose: bool):
         pass
 
-    def validate_parameters(self, parameters: dict):
-        return ElectrodeInspectionParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, ElectrodeInspectionParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return ElectrodeInspectionParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected ElectrodeInspectionParameters or dict, got {type(parameters)}")
