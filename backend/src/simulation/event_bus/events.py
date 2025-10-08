@@ -5,6 +5,7 @@ Machines emit events, and other components can listen to these events.
 
 from dataclasses import dataclass
 from datetime import datetime
+from logging import error
 from typing import Dict, Any, Callable, List
 from enum import Enum
 
@@ -12,7 +13,6 @@ from enum import Enum
 class PlantSimulationEventType(Enum):
     """Types of events that machines can emit."""
 
-    # for machines
     # whenever a machine is turned on to process a batch
     MACHINE_TURNED_ON = "machine_turned_on"
     # whenever a machine is turned off to process a batch
@@ -30,7 +30,6 @@ class PlantSimulationEventType(Enum):
     BATCH_STARTED_CELL_LINE = "batch_started_cell_line"
     BATCH_COMPLETED_CELL_LINE = "batch_completed_cell_line"
     BATCH_COMPLETED = "batch_completed"
-    BATCH_ERROR = "batch_error"
 
 
 @dataclass
@@ -59,7 +58,7 @@ class EventBus:
             PlantSimulationEventType.BATCH_ERROR: [callback_c],
         }
         """
-        self._listeners: Dict[PlantSimulationEventType, List[Callable]] = {}
+        self.__listeners: Dict[PlantSimulationEventType, List[Callable]] = {}
 
     def subscribe(
         self,
@@ -74,10 +73,10 @@ class EventBus:
         }
         """
         # check if the event type is already in the listeners.
-        if event_type not in self._listeners:
-            self._listeners[event_type] = []
+        if event_type not in self.__listeners:
+            self.__listeners[event_type] = []
         # add the callback to the listeners. This callback will be executed when the event is emitted.
-        self._listeners[event_type].append(callback)
+        self.__listeners[event_type].append(callback)
 
     def unsubscribe(
         self,
@@ -85,24 +84,23 @@ class EventBus:
         callback: Callable[[PlantSimulationEvent], None],
     ):
         """Unsubscribe from events."""
-        if event_type in self._listeners:
+        if event_type in self.__listeners:
             try:
-                self._listeners[event_type].remove(callback)
+                self.__listeners[event_type].remove(callback)
             except ValueError:
                 pass
 
     def __emit(self, event: PlantSimulationEvent):
         """Emit an event to all subscribers."""
         # check the event type is in the listeners
-        if event.event_type in self._listeners:
+        if event.event_type in self.__listeners:
             # call all of the callbacks for the event type.
-            for callback in self._listeners[event.event_type]:
+            for callback in self.__listeners[event.event_type]:
                 try:
                     callback(event)
-                    # event.data["machine_state"]["battery_model"]
                 except Exception as e:
                     # general error handling for the event callback
-                    print(f"Error in event callback: {e}")
+                    error(f"Error in event callback: {e}")
 
     def emit_plant_simulation_event(
         self,

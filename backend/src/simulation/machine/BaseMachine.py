@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
+from logging import info, warning
 import time
 from simulation.event_bus.events import EventBus, PlantSimulationEventType
 from simulation.process_parameters import BaseMachineParameters
@@ -132,7 +133,7 @@ class BaseMachine(ABC):
             # turn on the machine
             self.turn_on()
             if verbose:
-                print(
+                info(
                     f"Machine {self.process_name} is going to be running for {self.total_steps} steps"
                 )
             for t in range(0, self.total_steps):
@@ -141,7 +142,7 @@ class BaseMachine(ABC):
                     self.step_logic(t, verbose)
                 except RuntimeError as rt:
                     if verbose:
-                        print("Plant Warning: Voltage exceeded! ", rt)
+                        warning("Plant Warning: Voltage exceeded! ", rt)
                     self.__emit_event(PlantSimulationEventType.MACHINE_SIMULATION_ERROR)
                     break
                 self.battery_model.update_properties(self.machine_parameters, t)
@@ -153,7 +154,7 @@ class BaseMachine(ABC):
                     },
                 )
                 if verbose:
-                    print("Current machine state: ", self.get_current_state())
+                    info("Current machine state: ", self.get_current_state())
                 time.sleep(0.1)
             self.turn_off()
 

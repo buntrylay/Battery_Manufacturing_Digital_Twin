@@ -1,9 +1,6 @@
 import os
 import sys
 
-# for async tasks
-import asyncio
-
 # for simulation & concurrency
 import threading
 
@@ -12,32 +9,27 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-# for generation of unique batch ID
-import uuid
-
 # --- Path and Simulation Module Imports ---
 # This points from `backend/src/server` up one level to `backend/src` so that `simulation` can be imported
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the core simulation class
-from simulation.factory.Batch import Batch
 from simulation.factory.PlantSimulation import PlantSimulation
 
-# Import websocket manager
+# Import websocket manager & database helper (singletons)
 from websocket_manager import websocket_manager
+from db.db_helper import database_helper
 
 # Import event handlers
 from event_handler import EventHandler
 
-# Import database engine & session
-from backend.src.server.db.db import engine
-from backend.src.server.db.model_table import *
-from backend.src.server.db.db_helper import DBHelper
-import sqlalchemy
+from logging_helper import configure_logging, get_logger
 
+# initialise logging once for the server process
+configure_logging()
+logger = get_logger("server")
 # main FastAPI app
 app = FastAPI()
-
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -46,26 +38,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # core plant simulation object
 battery_plant_simulation = PlantSimulation()
 # regarding the simulation thread
 factory_run_thread = None
 out_of_batch_event = threading.Event()
 # WebSocket connection management
-db_helper = DBHelper()
-# Initialise event handler
-event_handler = EventHandler()
+# Initialise event handler with shared dependencies
+event_handler = EventHandler(
+    plant_simulation=battery_plant_simulation,
+    websocket_manager=websocket_manager,
+    database_helper=database_helper,
+)
 
 
 @app.get("/")
 def root():
-    try:
-        # what is this for? Health check?
-        with engine.connect() as conn:
-            conn.execute(sqlalchemy.text("SELECT 1"))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
     return {"message": "This is the V2 API for the battery manufacturing digital twin!"}
 
 
@@ -97,9 +85,8 @@ def add_batch():
     global battery_plant_simulation
     global factory_run_thread
     global out_of_batch_event
-    batch = Batch(batch_id=str(uuid.uuid4()))
     try:
-        battery_plant_simulation.add_batch(batch)
+        battery_plant_simulation.add_batch()
     except ValueError as e:
         # over limit of batches
         raise HTTPException(status_code=400, detail=str(e))
@@ -176,25 +163,16 @@ def reset_plant():
 async def startup_event():
     """Initialise the event-driven architecture."""
     try:
-        # Get event bus from plant simulation
-        event_bus = battery_plant_simulation.get_event_bus()
-        # Set up WebSocket manager to subscribe to events
-        websocket_manager.set_event_bus(event_bus, event_handler)
-        # Set up DB helper to subscribe to events
-        db_helper.set_event_bus(event_bus, event_handler)
-        print("Successfully initialized event-driven architecture!")
+        event_handler.initialise_system_subscriptions()
+        logger.info("[startup] Successfully initialised event-driven architecture!")
     except Exception as e:
-        print(f"Error initializing event-driven architecture: {e}")
-    try:
-        create_tables()
-        print(f"Successfully populated tables!")
-    except Exception as e:
-        print(f"Error populating tables: {e}")
-    try:
-        db_helper.start_worker(lambda msg: print(msg))
-        print(f"Successfully created db helper!")
-    except Exception as e:
-        print(f"Error creating db helper: {e}")
+        logger.exception("[startup] Error initialising event-driven architecture")
+        raise
+    # try:
+    #     database_helper.start_worker(lambda msg: print(msg))
+    #     logger.info("Successfully created database helper!")
+    # except Exception as e:
+    #     logger.error(f"Error creating database helper: {e}")
 
 
 if __name__ == "__main__":

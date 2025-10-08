@@ -1,100 +1,160 @@
-"""
-Event handlers for converting machine events to WebSocket and database notifications.
-This module provides clean separation between event bus and external systems.
-"""
+"""Centralised event handling for WebSocket broadcasting and database storage."""
 
-import json
 import asyncio
-from typing import Dict, Any
-from simulation.event_bus.events import MachineEvent, PlantSimulationEventType
-from .WebSocketManager import websocket_manager
-from .db.db_helper import database_helper
+import json
+from logging import error, info, warning
+from typing import Any, Callable, Dict, Optional, TYPE_CHECKING
+
+from simulation.event_bus.events import PlantSimulationEvent, PlantSimulationEventType
+
+if TYPE_CHECKING:
+    from simulation.factory.PlantSimulation import PlantSimulation
+    from websocket_manager import ConnectionManager
+    from db.db_helper import DBHelper
 
 
 class EventHandler:
-    """Handles conversion of machine events to external system notifications."""
+    """Routes simulation events to external systems from a single place."""
 
-    def __init__(self):
-        pass
+    def __init__(
+        self,
+        plant_simulation: "PlantSimulation",
+        websocket_manager: "ConnectionManager",
+        database_helper: Optional["DBHelper"] = None,
+    ):
+        self.__plant_simulation = plant_simulation
+        self.__websocket_manager = websocket_manager
+        self.__database_helper = database_helper
+        self.__subscriptions_initialised = False
 
-    def handle_machine_event_for_websocket(self, event: MachineEvent):
-        """Convert machine event to WebSocket notification."""
-        # Map event types to notification statuses
-        status_mapping = {
-            PlantSimulationEventType.MACHINE_TURNED_ON: "running",
-            PlantSimulationEventType.MACHINE_TURNED_OFF: "idle",
-            PlantSimulationEventType.MACHINE_SIMULATION_ERROR: "error",
-            PlantSimulationEventType.MACHINE_DATA_GENERATED: "data_generated",
-            PlantSimulationEventType.BATCH_REQUESTED: "batch_requested",
-            PlantSimulationEventType.BATCH_STARTED_ANODE_LINE: "batch_started_anode_line",
-            PlantSimulationEventType.BATCH_STARTED_CATHODE_LINE: "batch_started_cathode_line",
-            PlantSimulationEventType.BATCH_ASSEMBLED: "batch_merged",
-            PlantSimulationEventType.BATCH_STARTED_CELL_LINE: "batch_started_cell_line",
-            PlantSimulationEventType.BATCH_COMPLETED: "batch_completed",
-            PlantSimulationEventType.BATCH_ERROR: "batch_error",
-        }
+    def initialise_system_subscriptions(self):
+        """Subscribe to all relevant simulation events once."""
+        if self.__subscriptions_initialised:
+            return
 
-        status = status_mapping.get(event.event_type, "unknown")
+        websocket_subscriptions: list[
+            tuple[
+                PlantSimulationEventType,
+                Callable[[PlantSimulationEvent], None],
+                bool,
+            ]
+        ] = [
+            (
+                event_type,
+                self.__broadcast_system_notification,
+                True,
+            )
+            for event_type in PlantSimulationEventType
+            if event_type != PlantSimulationEventType.MACHINE_DATA_GENERATED
+        ]
 
-        # Create notification payload
-        notification = {
-            "process_name": event.machine_id,
-            "status": status,
+        database_subscriptions: list[
+            tuple[
+                PlantSimulationEventType,
+                Callable[[PlantSimulationEvent], None],
+                bool,
+            ]
+        ] = []
+
+        if self.__database_helper is not None:
+            database_subscriptions = [
+                (
+                    PlantSimulationEventType.BATCH_REQUESTED,
+                    self.__queue_machine_data,
+                    False,
+                ),
+                (
+                    PlantSimulationEventType.MACHINE_DATA_GENERATED,
+                    self.__queue_machine_data,
+                    True,
+                ),
+            ]
+
+        all_subscriptions = websocket_subscriptions + database_subscriptions
+
+        for event_type, callback, include_batch in all_subscriptions:
+            self.__plant_simulation.subscribe_to_event(
+                event_type,
+                callback,
+                include_batch_context=include_batch,
+            )
+
+        self.__subscriptions_initialised = True
+
+    # ------------------------------------------------------------------
+    # Database helpers
+    # ------------------------------------------------------------------
+    def __queue_machine_data(self, event: PlantSimulationEvent):
+        if self.__database_helper is None or event.event_type not in [
+            PlantSimulationEventType.MACHINE_DATA_GENERATED,
+            PlantSimulationEventType.BATCH_REQUESTED,
+        ]:
+            return
+
+        payload: Dict[str, Any] = {
+            "event_type": event.event_type.value,
             "timestamp": event.timestamp,
-            "data": event.data or {},
+            **event.data,
         }
 
-        # Broadcast to WebSocket clients
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.create_task(self._broadcast_to_websocket(notification))
-            else:
-                loop.run_until_complete(self._broadcast_to_websocket(notification))
-        except RuntimeError:
-            # If no event loop is running, create a new one
-            asyncio.run(self._broadcast_to_websocket(notification))
+            # for the database team to work on
+            # self._database_helper.queue_data(payload)
+            pass
+            # info(
+            #     f"[{payload.get("timestamp")}] POSTGRESQL: Queued payload into database queue with event type: {payload.get('event_type')} for batch - id: {payload.get("batch_id")}"
+            # )
+        except Exception as exc:
+            error(
+                f"[{payload.get('timestamp', 'N/A Timestamp')}] POSTGRESQL - ERROR: Error enqueuing payload into database queue with event type: {payload.get('event_type')}"
+            )
 
-    async def _broadcast_to_websocket(self, notification: Dict[str, Any]):
-        """Broadcast notification to all WebSocket clients."""
-        try:
-            message = json.dumps(notification)
-            await websocket_manager.broadcast(message)
-        except Exception as e:
-            print(f"Error broadcasting to WebSocket: {e}")
+    # ------------------------------------------------------------------
+    # WebSocket helpers
+    # ------------------------------------------------------------------
+    def __broadcast_system_notification(self, event: PlantSimulationEvent):
+        """This method acts as the adapter to the prev. version of the websocket broadcast"""
+        # legacy structure from the prev. version
+        event_data = event.data or {}
 
-    def handle_machine_event_for_database(self, event: MachineEvent):
-        """Convert machine event to database record."""
-        # Only save data events to database
-        if event.event_type == PlantSimulationEventType.MACHINE_DATA_GENERATED:
-            try:
-                # Add event metadata to the data
-                db_payload = {
-                    "machine_id": event.machine_id,
-                    "event_type": event.event_type.value,
-                    "timestamp": event.timestamp,
-                    **event.data,
-                }
-                database_helper.queue_data(db_payload)
-            except Exception as e:
-                print(f"Error queuing data for database: {e}")
+        if "machine_id" in event_data:
+            process_name = event_data.get("machine_id")
+        else:
+            process_name = "battery_plant_simulation"
 
-    def handle_plant_simulation_event_for_websocket(self, event):
-        """Handle plant simulation events for WebSocket."""
-        # Create notification for plant-level events
-        notification = {
-            "process_name": "plant_simulation",
+        processed_notification = {
+            "process_name": process_name,
             "status": event.event_type.value,
             "timestamp": event.timestamp,
-            "data": event.data or {},
+            "data": event_data,
         }
 
-        # Broadcast to WebSocket clients
+        self.__schedule_websocket_broadcast(processed_notification)
+
+    def __schedule_websocket_broadcast(self, notification: Dict[str, Any]):
         try:
+            # get event loop
             loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.create_task(self._broadcast_to_websocket(notification))
-            else:
-                loop.run_until_complete(self._broadcast_to_websocket(notification))
         except RuntimeError:
-            asyncio.run(self._broadcast_to_websocket(notification))
+            loop = None
+        # if there is a current process in the loop create a task first
+        if loop and loop.is_running():
+            # __broadcast_to_websocket is async function
+            asyncio.create_task(self.__broadcast_to_websocket(notification))
+        else:
+            # otherwise, execute it
+            asyncio.run(self.__broadcast_to_websocket(notification))
+
+    async def __broadcast_to_websocket(self, notification: Dict[str, Any]):
+        try:
+            message = json.dumps(notification)
+            await self.__websocket_manager.broadcast(message)
+            # for testing only
+            # info(
+            #     (f"[{notification.get("timestamp")}] WEBSOCKET: Successfully broadcasting an event status: {notification.get("status")}",
+            #     f"from component {notification.get("process_name")} for batch - id: {notification.get("data").get("batch_id")}")
+            # )
+        except Exception as exc:
+            error(
+                f"[{notification.get("timestamp")}] WEBSOCKET: Error broadcasting an event status {notification.get("status")}: {exc}"
+            )

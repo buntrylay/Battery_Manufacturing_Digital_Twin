@@ -1,3 +1,4 @@
+from logging import info
 from simulation.event_bus.events import EventBus
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.process_parameters.Parameters import FormationCyclingParameters
@@ -28,7 +29,7 @@ class FormationCyclingMachine(BaseMachine):
     def step_logic(self, t: int, verbose: bool):
         if self.battery_model.voltage >= self.machine_parameters.charge_voltage_limit_V:
             if verbose: 
-                print(f"{self.process_name}: Voltage limit reached at step {t}")
+                info(f"{self.process_name}: Voltage limit reached at step {t}")
             raise RuntimeError("Voltage limit was reached")
 
     def validate_parameters(self, parameters: dict):
