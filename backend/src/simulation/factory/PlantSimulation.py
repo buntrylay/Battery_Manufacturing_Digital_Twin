@@ -1,5 +1,7 @@
-from threading import Event, Thread
-from typing import Union
+from logging import info
+from threading import Condition, Event, Thread, Lock
+from typing import Callable, Optional
+import uuid
 from simulation.machine import (
     MixingMachine,
     CoatingMachine,
@@ -12,14 +14,10 @@ from simulation.machine import (
     FormationCyclingMachine,
     AgingMachine,
 )
-
-# Mixing/Coating/Drying have their own files
-from simulation.process_parameters.MixingParameters import MixingParameters, MaterialRatios
-from simulation.process_parameters.CoatingParameters import CoatingParameters
-from simulation.process_parameters.DryingParameters import DryingParameters
-
-# All other process parameters come from Parameters.py (via __init__.py)
 from simulation.process_parameters import (
+    MixingParameters,
+    CoatingParameters,
+    DryingParameters,
     CalendaringParameters,
     SlittingParameters,
     ElectrodeInspectionParameters,
@@ -28,15 +26,31 @@ from simulation.process_parameters import (
     FormationCyclingParameters,
     AgingParameters,
 )
-
 from simulation.factory.Batch import Batch
+from simulation.event_bus.events import (
+    EventBus,
+    PlantSimulationEvent,
+    PlantSimulationEventType,
+)
 
 
 class PlantSimulation:
-    def __init__(self):
-        self.batch_requests: list[any] = []
-        self.running_batches: list[any] = []
-        self.factory_structure = {
+    """
+    This class is the main class for the plant simulation.
+    It is responsible for the overall simulation of the plant.
+    """
+
+    def __init__(self, listeners: list[Callable[[PlantSimulationEvent], None]] = None):
+        # array of batches requests (to be processed). PROTECTED by pipeline_condition.
+        self.__batch_request_list: list[Batch] = []
+        # array of batches that are CURRENTLY BEING processed. PROTECTED by pipeline_condition.
+        self.__running_batch_list: list[Batch] = []
+        # track worker threads handling batch requests so we can await graceful shutdowns.
+        # [str, Thread]: str refers to the batch id, Thread refers to the processing thread.
+        # PROTECTED by pipeline_condition.
+        self.__batch_worker_thread_list: dict[str, Thread] = {}
+        # structure of the factory (to be used to create the machines) - hardcoded design.
+        self.__factory_structure = {
             "anode": {
                 "mixing": None,
                 "coating": None,
@@ -60,17 +74,35 @@ class PlantSimulation:
                 "aging": None,
             },
         }
+        # the event bus for different components to interface with the other components.
+        self.__event_bus = EventBus()
+        # track the active batch associated with each machine
+        self.__machine_batch_context: dict[str, str] = {}
+        """ 
+            Condition object: initialises a shared Condition used in __process_batch_request 
+            to block batch-worker threads until they reach the queue front and both mixing machines are idle, 
+            and to wake waiting workers when slots free up. 
+            This object also prevents concurrent accesses to the batch_requests, running_batches, and batch_worker_threads.
+        """
+        self.__pipeline_condition = Condition()
+        self.__pipeline_is_ready = True
+        # initialise the factory structure with the default machines
         self.__initialise_default_factory_structure()
+        # machine-level locks to ensure only one batch uses a machine at a time
+        self.__machine_lock_structure = {
+            line_type: {stage: Lock() for stage in self.__factory_structure[line_type]}
+            for line_type in self.__factory_structure
+        }
+        # FOR TESTING ONLY
+        self.auto_generated_batch_id = 1
 
     def __initialise_default_factory_structure(self):
-        # ✅ Mixing uses MaterialRatios
         default_mixing_parameters_anode = MixingParameters(
-            material_ratios=MaterialRatios(AM=0.495, CA=0.045, PVDF=0.05, solvent=0.41)
+            AM_ratio=0.495, CA_ratio=0.045, PVDF_ratio=0.05, solvent_ratio=0.41
         )
         default_mixing_parameters_cathode = MixingParameters(
-            material_ratios=MaterialRatios(AM=0.513, CA=0.039, PVDF=0.098, solvent=0.35)
+            AM_ratio=0.513, CA_ratio=0.039, PVDF_ratio=0.098, solvent_ratio=0.35
         )
-
         default_coating_parameters = CoatingParameters(
             coating_speed=0.05, gap_height=200e-6, flow_rate=5e-6, coating_width=0.5
         )
@@ -102,264 +134,436 @@ class PlantSimulation:
             environment_humidity=30.0,
         )
         default_electrolyte_filling_parameters = ElectrolyteFillingParameters(
-            Vacuum_level=100,
-            Vacuum_filling=60,
-            Soaking_time=10,
+            vacuum_level=100,
+            vacuum_filling=60,
+            soaking_time=10,
         )
         default_formation_cycling_parameters = FormationCyclingParameters(
-            Charge_current_A=0.05, Charge_voltage_limit_V=4.2, Initial_Voltage=1
+            charge_current_A=0.05, charge_voltage_limit_V=4.2, initial_voltage=1
         )
         default_aging_parameters = AgingParameters(
             k_leak=1e-8, temperature=25, aging_time_days=10
         )
-
-        # ✅ Create and append machines to anode & cathode lines
+        # Create and append machines to anode & cathode lines
         for electrode_type in ["anode", "cathode"]:
-            self.factory_structure[electrode_type]["mixing"] = MixingMachine(
+            self.__factory_structure[electrode_type]["mixing"] = MixingMachine(
                 process_name=f"mixing_{electrode_type}",
                 mixing_parameters=(
                     default_mixing_parameters_anode
                     if electrode_type == "anode"
                     else default_mixing_parameters_cathode
                 ),
+                event_bus=self.__event_bus,
             )
-            self.factory_structure[electrode_type]["coating"] = CoatingMachine(
+            self.__factory_structure[electrode_type]["coating"] = CoatingMachine(
                 process_name=f"coating_{electrode_type}",
                 coating_parameters=default_coating_parameters,
+                event_bus=self.__event_bus,
             )
-            self.factory_structure[electrode_type]["drying"] = DryingMachine(
+            self.__factory_structure[electrode_type]["drying"] = DryingMachine(
                 process_name=f"drying_{electrode_type}",
                 drying_parameters=default_drying_parameters,
+                event_bus=self.__event_bus,
             )
-            self.factory_structure[electrode_type]["calendaring"] = CalendaringMachine(
-                process_name=f"calendaring_{electrode_type}",
-                calendaring_parameters=default_calendaring_parameters,
+            self.__factory_structure[electrode_type]["calendaring"] = (
+                CalendaringMachine(
+                    process_name=f"calendaring_{electrode_type}",
+                    calendaring_parameters=default_calendaring_parameters,
+                    event_bus=self.__event_bus,
+                )
             )
-            self.factory_structure[electrode_type]["slitting"] = SlittingMachine(
+            self.__factory_structure[electrode_type]["slitting"] = SlittingMachine(
                 process_name=f"slitting_{electrode_type}",
                 slitting_parameters=default_slitting_parameters,
+                event_bus=self.__event_bus,
             )
-            self.factory_structure[electrode_type]["inspection"] = (
+            self.__factory_structure[electrode_type]["inspection"] = (
                 ElectrodeInspectionMachine(
                     process_name=f"inspection_{electrode_type}",
                     electrode_inspection_parameters=default_electrode_inspection_parameters,
+                    event_bus=self.__event_bus,
                 )
             )
-
-        # ✅ Cell line machines
-        self.factory_structure["cell"]["rewinding"] = RewindingMachine(
+        # Create and append cell line machines
+        self.__factory_structure["cell"]["rewinding"] = RewindingMachine(
             process_name="rewinding_cell",
             rewinding_parameters=default_rewinding_parameters,
+            event_bus=self.__event_bus,
         )
-        self.factory_structure["cell"]["electrolyte_filling"] = (
+        self.__factory_structure["cell"]["electrolyte_filling"] = (
             ElectrolyteFillingMachine(
                 process_name="electrolyte_filling_cell",
                 electrolyte_filling_parameters=default_electrolyte_filling_parameters,
+                event_bus=self.__event_bus,
             )
         )
-        self.factory_structure["cell"]["formation_cycling"] = FormationCyclingMachine(
+        self.__factory_structure["cell"]["formation_cycling"] = FormationCyclingMachine(
             process_name="formation_cycling_cell",
             formation_cycling_parameters=default_formation_cycling_parameters,
+            event_bus=self.__event_bus,
         )
-        self.factory_structure["cell"]["aging"] = AgingMachine(
+        self.__factory_structure["cell"]["aging"] = AgingMachine(
             process_name="aging_cell",
             aging_parameters=default_aging_parameters,
+            event_bus=self.__event_bus,
         )
 
-    def __run_electrode_line(
-        self, electrode_type: Union["anode", "cathode"], batch: Batch  # type: ignore
-    ):
-        """this function is to run the electrode line for a specific batch (part of __run_pipeline_on_batch)
-        Needs further work to improve the efficiency of the simulation
-        """
-        model = getattr(batch, f"{electrode_type}_line_model")
-
-        for stage in [
-            "mixing",
-            "coating",
-            "drying",
-            "calendaring",
-            "slitting",
-            "inspection",
-        ]:
-            # (1) get the machine in order in the electrode line
-            running_machine = self.factory_structure[electrode_type][stage]
-            
-            # (2) For mixing stage, update machine parameters with batch-specific parameters
-            if stage == "mixing":
-                mixing_params = getattr(batch, f"{electrode_type}_mixing_params")
-                running_machine.update_machine_parameters(mixing_params)
-            
-            # (3) input into the machine (could be from the previous stage or from the initial mixing machine)
-            running_machine.receive_model_from_previous_process(model)
-            # (4) run the machine (start the simulation)
-            running_machine.run()
-            # (5) update the batch model (local)
-            model = running_machine.battery_model
-            # (6) clean up the machine (turn off the machine and empty the battery model (possibly for the next batch))
-            running_machine.clean_up()
-            # (7) update the batch model (global)
-            setattr(batch, f"{electrode_type}_line_model", model)
-
-    def __run_assembled_cell_line(
-        self,
-        batch: Batch,
-    ):
-        """this function is to run the assembled cell line for a specific batch (part of __run_pipeline_on_batch)
-        Needs further work to improve the efficiency of the simulation
-        """
-        model = batch.cell_line_model
-        for stage in ["rewinding", "electrolyte_filling", "formation_cycling", "aging"]:
-            # (1) get the machine in order in the cell line (which could be from the previous stage or from the initial rewinding machine)
-            running_machine = self.factory_structure["cell"][stage]
-            # (2) input into the machine (could be from the previous stage or from the initial rewinding machine)
-            running_machine.receive_model_from_previous_process(model)
-            # (3) run the machine (start the simulation)
-            running_machine.run()
-            # (4) update the batch model (local)
-            model = running_machine.battery_model
-            # (5) clean up the machine (turn off the machine and empty the battery model (possibly for the next batch))
-            running_machine.clean_up()
-            # (6) update the batch model (global)
-            setattr(batch, f"cell_line_model", model)
-
-    def __run_pipeline_on_batch(self, batch: Batch):
-        # Import notification functions
-        try:
-            from backend.src.server.notification_queue import notify_machine_status
-        except ImportError:
-            def notify_machine_status(*args, **kwargs):
-                pass
-        
-        # Notify batch processing start
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="batch_processing",
-            status="batch_started",
-            data={
-                "message": f"🚀 Starting full battery manufacturing process for batch {batch.batch_id}",
-                "batch_id": batch.batch_id,
-                "anode_params": batch.anode_mixing_params.get_parameters_dict(),
-                "cathode_params": batch.cathode_mixing_params.get_parameters_dict()
-            }
-        )
-        
-        # to simulate anode and cathode lines in parallel
-        run_anode_thread = Thread(
-            target=self.__run_electrode_line, args=("anode", batch)
-        )
-        run_cathode_thread = Thread(
-            target=self.__run_electrode_line, args=("cathode", batch)
-        )
-        
-        # Notify electrode line processing start
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="electrode_lines",
-            status="electrode_processing_started",
-            data={
-                "message": "Starting anode and cathode electrode lines in parallel",
-                "batch_id": batch.batch_id
-            }
-        )
-        
-        # start electrode lines' simulation in parallel
-        run_anode_thread.start()
-        run_cathode_thread.start()
-        # wait for the electrode lines' simulation to finish in parallel
-        run_anode_thread.join()
-        run_cathode_thread.join()
-        
-        # Notify electrode lines completion
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="electrode_lines",
-            status="electrode_processing_completed",
-            data={
-                "message": "✅ Anode and cathode electrode lines completed successfully",
-                "batch_id": batch.batch_id
-            }
-        )
-        
-        # assemble the cell line model
-        batch.assemble_cell_line_model()
-        
-        # Notify cell assembly start
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="cell_assembly",
-            status="cell_assembly_started",
-            data={
-                "message": "🔋 Starting cell assembly line (rewinding → electrolyte filling → formation cycling → aging)",
-                "batch_id": batch.batch_id
-            }
-        )
-        
-        # run the assembled cell line
-        self.__run_assembled_cell_line(batch)
-        
-        # Notify complete batch completion
-        notify_machine_status(
-            machine_id="plant_simulation",
-            line_type="factory",
-            process_name="batch_processing",
-            status="batch_completed",
-            data={
-                "message": f"🎉 BATCH COMPLETE: Battery manufacturing finished for batch {batch.batch_id}!",
-                "batch_id": batch.batch_id,
-                "manufacturing_complete": True
-            }
-        )
-        
-        return True
+    def __attach_batch_context(self, event: PlantSimulationEvent):
+        """Include batch information on machine events before dispatch."""
+        if not event.data or "batch_id" in event.data:
+            return
+        # should have the machine_id
+        if not "machine_id" in event.data:
+            raise
+        batch_id_from_machine_batch_list = self.__machine_batch_context[
+            event.data["machine_id"]
+        ]
+        event.data["batch_id"] = batch_id_from_machine_batch_list
 
     def __get_machine(self, line_type: str, machine_id: str):
-        if line_type not in self.factory_structure:
+        """gets the machine at a particular line, throws if none exists"""
+        if line_type not in self.__factory_structure:
             raise ValueError(f"Line type '{line_type}' is not found")
-        elif machine_id not in self.factory_structure[line_type]:
+        elif machine_id not in self.__factory_structure[line_type]:
             raise ValueError(f"Machine '{machine_id}' is not found")
         else:
-            return self.factory_structure[line_type][machine_id]
+            return self.__factory_structure[line_type][machine_id]
 
-    def add_batch(self, batch: Batch):
-        if len(self.batch_requests) >= 3:
-            raise ValueError("Maximum number of batches reached")
+    def __get_machine_lock(self, line_type: str, machine_id: str):
+        if line_type not in self.__factory_structure:
+            raise ValueError(f"Line type '{line_type}' is not found")
+        elif machine_id not in self.__factory_structure[line_type]:
+            raise ValueError(f"Machine '{machine_id}' is not found")
         else:
-            self.batch_requests.append(batch)
+            return self.__machine_lock_structure[line_type][machine_id]
 
-    def run(self, out_of_batch_event: Event = None):
-        """this function is to run the pipeline for a specific batch (part of __run_pipeline_on_batch)"""
-        while self.batch_requests:
-            # check the mixing machines
-            anode_mixing_machine = self.factory_structure["anode"]["mixing"].state
-            cathode_mixing_machine = self.factory_structure["cathode"]["mixing"].state
-            if not anode_mixing_machine and not cathode_mixing_machine:
-                batch = self.batch_requests.pop(0)
-                run_batch_thread = Thread(
-                    target=self.__run_pipeline_on_batch, args=(batch,)
+    def __run_batch_on_machines(
+        self,
+        line_type: str,
+        batch: Batch,
+        machine_list: Optional[list[str]],
+    ):
+        """runs the batch across a number of machines, fails if the machine is not found or the machine list is not in the correct order"""
+        model = batch.get_batch_model(line_type)
+        for machine_id in machine_list:
+            running_machine = self.__get_machine(line_type, machine_id)
+            machine_lock = self.__get_machine_lock(line_type, machine_id)
+            with machine_lock:
+                # attach batch information into machine-batch context
+                machine_name = running_machine.process_name
+                self.__machine_batch_context[machine_name] = batch.batch_id
+                try:
+                    running_machine.receive_model_from_previous_process(model)
+                    running_machine.run_simulation(verbose=False)
+                finally:
+                    # remove batch information from machine-batch context
+                    self.__machine_batch_context.pop(machine_name, None)
+                model = running_machine.empty_model()
+                batch.update_batch_model(line_type, model)
+
+    def __run_pipeline_on_batch(self, batch: Batch, verbose: bool = True):
+        """
+        wraps the initial notification phase in the condition so that the subsequent notify_all() is legal
+        (Python requires the condition to be held when calling notify_all).
+        This wake-up lets any batch thread waiting in the queue re-check availability as soon as mixing finishes.
+        """
+
+        def __notify_start_batch_processing(batch, verbose):
+            # Batch started processing
+            if verbose:
+                info(
+                    f"EMIT EVENT - BATCH_STARTED_PROCESSING: Batch processing started for batch {batch.batch_id}."
                 )
-                run_batch_thread.start()
-                self.running_batches.append(batch)
-                run_batch_thread.join()
-                self.running_batches.remove(batch)
-        if out_of_batch_event:
+            # emit batch started processing event
+            self.__event_bus.emit_plant_simulation_event(
+                PlantSimulationEventType.BATCH_STARTED_PROCESSING,
+                {"batch_id": batch.batch_id},
+            )
+
+        # NOTICE NOTICE NOTICE: CONDITION VARIABLE CHANGED HERE!
+        def __run_mixing_stages_on_batch(batch, verbose):
+            stages_to_run = ["mixing"]
+            # threads for concurrent-like simulation
+            run_anode_mixing_thread = Thread(
+                target=self.__run_batch_on_machines,
+                args=(
+                    "anode",
+                    batch,
+                    stages_to_run,
+                ),
+            )
+            run_cathode_mixing_thread = Thread(
+                target=self.__run_batch_on_machines,
+                args=(
+                    "cathode",
+                    batch,
+                    stages_to_run,
+                ),
+            )
+            # Batch started processing anode
+            if verbose:
+                info(
+                    f"EMIT EVENT - BATCH_STARTED_ANODE_LINE: Anode processing started for batch {batch.batch_id}."
+                )
+            # start anode thread
+            run_anode_mixing_thread.start()
+            # emit batch started processing anode event
+            self.__event_bus.emit_plant_simulation_event(
+                PlantSimulationEventType.BATCH_STARTED_ANODE_LINE,
+                {"batch_id": batch.batch_id},
+            )
+            # Batch started processing cathode
+            if verbose:
+                info(
+                    f"EMIT EVENT - BATCH_STARTED_CATHODE_LINE: Cathode processing started for batch {batch.batch_id}. Emitting event."
+                )
+            # start cathode thread
+            run_cathode_mixing_thread.start()
+            # emit batch started processing cathode event
+            self.__event_bus.emit_plant_simulation_event(
+                PlantSimulationEventType.BATCH_STARTED_CATHODE_LINE,
+                {"batch_id": batch.batch_id},
+            )
+            # Wait for anode & cathode processing finish
+            run_anode_mixing_thread.join()
+            if verbose:
+                info(
+                    f"NO EMIT: Anode mixing processing finished for batch {batch.batch_id}."
+                )
+            # no emit as still in anode processing
+            run_cathode_mixing_thread.join()
+            if verbose:
+                info(
+                    f"NO EMIT: Cathode mixing processing finished for batch {batch.batch_id}."
+                )
+            # no emit as still in anode processing
+            # This is necessary to allow other thread to be executed straight away when mixing machines are available
+            with self.__pipeline_condition:
+                self.__pipeline_is_ready = True
+                self.__pipeline_condition.notify_all()
+
+        def __run_remaining_stages_of_electrode_lines_on_batch(
+            batch: Batch, verbose: bool
+        ):
+            # Continue with the remaining electrode line stages in parallel
+            stages_to_run = [
+                "coating",
+                "drying",
+                "calendaring",
+                "slitting",
+                "inspection",
+            ]
+            # create threads for concurrent anode-cathode simulation
+            run_anode_thread = Thread(
+                target=self.__run_batch_on_machines,
+                args=("anode", batch, stages_to_run),
+            )
+            run_cathode_thread = Thread(
+                target=self.__run_batch_on_machines,
+                args=("cathode", batch, stages_to_run),
+            )
+            # run the remaining stages
+            run_anode_thread.start()
+            run_cathode_thread.start()
+            # finish anode processing
+            run_anode_thread.join()
+            # logging
+            if verbose:
+                info(
+                    f"EMIT EVENT - BATCH_COMPLETED_ANODE_LINE: Anode processing done for batch {batch.batch_id}."
+                )
+            # emit event - finish anode processing
+            self.__event_bus.emit_plant_simulation_event(
+                PlantSimulationEventType.BATCH_COMPLETED_ANODE_LINE,
+                {"batch_id": batch.batch_id},
+            )
+            run_cathode_thread.join()
+            # logging
+            if verbose:
+                info(
+                    f"EMIT EVENT - BATCH_COMPLETED_CATHODE_LINE: Cathode processing done for batch {batch.batch_id}."
+                )
+            # emit event - finish cathode processing
+            self.__event_bus.emit_plant_simulation_event(
+                PlantSimulationEventType.BATCH_COMPLETED_CATHODE_LINE,
+                {"batch_id": batch.batch_id},
+            )
+
+        def __assemble_batch_to_cell(batch, verbose):
+            # assemble anode-cathode
+            batch.assemble_cell_line_model()
+            if verbose:
+                info(
+                    f"EMIT EVENT - BATCH_ASSEMBLED: Assembled cell for batch {batch.batch_id}."
+                )
+            # emit event - batch assembled to cell
+            self.__event_bus.emit_plant_simulation_event(
+                PlantSimulationEventType.BATCH_ASSEMBLED, {"batch_id": batch.batch_id}
+            )
+
+        def __run_cell_line_on_batch(batch, verbose):
+            stages_to_run = [
+                "rewinding",
+                "electrolyte_filling",
+                "formation_cycling",
+                "aging",
+            ]
+            # Batch started processing cell line
+            if verbose:
+                info(
+                    f"EMIT EVENT - BATCH_STARTED_CELL_LINE: Cell processing started for batch {batch.batch_id}"
+                )
+            # emit event - start cell processing
+            self.__event_bus.emit_plant_simulation_event(
+                PlantSimulationEventType.BATCH_STARTED_CELL_LINE,
+                {"batch_id": batch.batch_id},
+            )
+            self.__run_batch_on_machines("cell", batch, stages_to_run)
+            # Batch finished processing cell line
+            if verbose:
+                info(
+                    f"EMIT EVENT - BATCH_COMPLETED_CELL_LINE: Cell processing finished for batch {batch.batch_id}"
+                )
+            # emait event - finish cell processing
+            self.__event_bus.emit_plant_simulation_event(
+                PlantSimulationEventType.BATCH_COMPLETED_CELL_LINE,
+                {"batch_id": batch.batch_id},
+            )
+
+        def __notify_finish__batch__processing(batch, verbose):
+            # Batch finished whole pipeline
+            if verbose:
+                info(
+                    f"EMIT EVENT - BATCH_COMPLETED: Finished pipeline processing for batch {batch.batch_id}"
+                )
+            # Emit event - finish batch processing
+            self.__event_bus.emit_plant_simulation_event(
+                PlantSimulationEventType.BATCH_COMPLETED, {"batch_id": batch.batch_id}
+            )
+
+        """
+        INFO: Main simulation logic here!!!
+        """
+        __notify_start_batch_processing(batch, verbose)
+        __run_mixing_stages_on_batch(batch, verbose)
+        __run_remaining_stages_of_electrode_lines_on_batch(batch, verbose)
+        __assemble_batch_to_cell(batch, verbose)
+        __run_cell_line_on_batch(batch, verbose)
+        __notify_finish__batch__processing(batch, verbose)
+        return True
+
+    def __process_batch_request(self, batch: Batch, verbose: bool = False):
+        """
+        An internal operation of a worker. Efficiently check for the availability of the mixing machines.
+        Then executes the pipeline operation and removes itself from the queue.
+        """
+        # acquire the condition's lock because of access to the list
+        while True:
+            with self.__pipeline_condition:
+                batch_is_at_front = (
+                    self.__batch_request_list[0].batch_id == batch.batch_id
+                )  # access to list
+                if batch_is_at_front and self.__pipeline_is_ready:
+                    # get the first batch in the queue
+                    self.__batch_request_list.pop(0)
+                    # append it to the running batches
+                    self.__running_batch_list.append(batch)
+                    # if the batch arrived first and the mixing machines are ready,
+                    self.__pipeline_is_ready = False
+                    break
+                else:
+                    # else: tell the thread to wait
+                    self.__pipeline_condition.wait()
+        try:
+            # start simulation
+            self.__run_pipeline_on_batch(batch, verbose=verbose)
+        finally:
+            # access queue/list
+            with self.__pipeline_condition:
+                if batch in self.__running_batch_list:
+                    self.__running_batch_list.remove(batch)
+                self.__batch_worker_thread_list.pop(batch.batch_id, None)
+                # notify that a batch has been finished to the other parked threads
+                # this is necessary for the other thread to be processed. The parked thread will execute the check again
+                # self.__pipeline_condition.notify_all()
+
+    def add_batch(self, batch: Batch = None, verbose: bool = False):
+        """
+        Adds a new batch to the plant simulation (maximum number of threads is 3).
+        This method performs the queue mutation under the same condition lock so no worker can read a half-updated queue.
+        The notify_all() here wakes any workers that might be idle, telling them a new batch has arrived.
+        """
+        # make sure batch_requests, batch_worker_threads are only accessed atomically
+        # wait to obtain the lock
+        with self.__pipeline_condition:
+            if batch is None:
+                batch = Batch(batch_id=str(self.auto_generated_batch_id))
+                # FOR TESTING ONLY
+                self.auto_generated_batch_id += 1
+            # only allows maximum 3 batches/threads at a time
+            if len(self.__batch_request_list) == 3:  # access queue list
+                raise ValueError("Maximum number of batches reached")
+            # add batch (information to the list)
+            self.__batch_request_list.append(batch)  # modify queue list
+            # wraps batch processing into a thread
+            batch_processing_worker = Thread(
+                target=self.__process_batch_request,
+                args=(batch,),
+                name=f"PlantBatchWorker-{batch.batch_id}",
+            )
+            # save batch processing thread to the thread list
+            self.__batch_worker_thread_list[batch.batch_id] = batch_processing_worker
+            # notify the other threads to use the resources of plant simulation (may need it?)
+            # self.__pipeline_condition.notify_all()
+            # batch arrived and submitted to queue
+            if verbose:
+                info(
+                    f"EMIT EVENT - BATCH_REQUESTED: Batch id: {batch.batch_id} has arrived."
+                )
+            # emit event - batch requested
+            self.__event_bus.emit_plant_simulation_event(
+                PlantSimulationEventType.BATCH_REQUESTED,
+                {
+                    "batch_id": batch.batch_id,
+                    "message": f"Batch id {batch.batch_id} has been requested and added to the processing queue.",
+                },
+            )
+        # start the batch processing request
+        batch_processing_worker.start()
+
+    def run(
+        self,
+        out_of_batch_event: Optional[Event] = None,
+        poll_interval: float = 0.1,
+    ) -> bool:
+        while True:
+            with self.__pipeline_condition:
+                if (
+                    not self.__batch_request_list
+                    and not self.__running_batch_list
+                    and not self.__batch_worker_thread_list
+                ):
+                    break
+                self.__pipeline_condition.wait(timeout=poll_interval)
+        if out_of_batch_event is not None:
             out_of_batch_event.set()
+        return True
 
     def get_machine_status(self, line_type: str, machine_id: str):
         machine = self.__get_machine(line_type, machine_id)
         return machine.get_current_state()
 
     def get_current_plant_state(self):
-        batch_requests = [batch.get_batch_state() for batch in self.batch_requests]
-        running_batches = [batch.get_batch_state() for batch in self.running_batches]
+        batch_requests = [
+            batch.get_batch_state() for batch in self.__batch_request_list
+        ]
+        running_batches = [
+            batch.get_batch_state() for batch in self.__running_batch_list
+        ]
         machine_statuses = [
-            self.factory_structure[line_type][machine_id].get_current_state()
-            for line_type in self.factory_structure
-            for machine_id in self.factory_structure[line_type]
+            self.__factory_structure[line_type][machine_id].get_current_state()
+            for line_type in self.__factory_structure
+            for machine_id in self.__factory_structure[line_type]
         ]
         return {
             "batch_requests": batch_requests,
@@ -368,9 +572,7 @@ class PlantSimulation:
         }
 
     def reset_plant(self):
-        self.batch_requests = []
-        self.running_batches = []
-        self.factory_structure = {
+        self.__factory_structure = {
             "anode": {
                 "mixing": None,
                 "coating": None,
@@ -395,13 +597,44 @@ class PlantSimulation:
             },
         }
         self.__initialise_default_factory_structure()
-        return True
+        self.__machine_lock_structure = None
+        self.__machine_lock_structure = {
+            line_type: {stage: Lock() for stage in self.__factory_structure[line_type]}
+            for line_type in self.__factory_structure
+        }
+        with self.__pipeline_condition:
+            self.__batch_request_list = []
+            self.__running_batch_list = []
+            self.__batch_worker_thread_list = {}
 
     def update_machine_parameters(self, line_type: str, machine_id: str, parameters):
         """Update parameters for a specific machine."""
-        machine = self.__get_machine(line_type, machine_id)
-        if machine.state:
-            raise ValueError("Machine is running, cannot update parameters")
-        machine.validate_parameters(parameters)
-        machine.update_machine_parameters(parameters)
-        return True
+        machine_lock = self.__get_machine_lock(line_type, machine_id)
+        if machine_lock.acquire(timeout=5):
+            machine = self.__get_machine(line_type, machine_id)
+            machine.validate_parameters(parameters)
+            machine.update_machine_parameters(parameters)
+            machine_lock.release()
+            return True
+        else:
+            raise RuntimeError(
+                "The machine is busy. Please change the parameters later."
+            )
+
+    def subscribe_to_event(
+        self,
+        event_type: PlantSimulationEventType,
+        callback: Callable[[PlantSimulationEvent], None],
+        *,  # Keyword-only arguments
+        include_batch_context: bool = False,
+    ):
+        """Expose event subscription with optional batch context enrichment."""
+        if include_batch_context:
+
+            def __callback_with_batch(event: PlantSimulationEvent):
+                self.__attach_batch_context(event)
+                callback(event)
+
+            self.__event_bus.subscribe(event_type, __callback_with_batch)
+        else:
+            self.__event_bus.subscribe(event_type, callback)
