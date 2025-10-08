@@ -8,21 +8,112 @@ export default API_URL;
 
 /**
  * Starts the full simulation on the backend with anode and cathode parameters.
- * Updated to use the new /api/simulation/start endpoint.
+ * Uses the unified /api/simulation/start endpoint with mode="full".
  */
-export const startSimulation = (data) =>
-  axios.post(`${API_URL}/api/simulation/start`, data);
+export const startSimulation = (data) => {
+  const payload = {
+    mode: "full",
+    ...data
+  };
+  return axios.post(`${API_URL}/api/simulation/start`, payload);
+};
 
 /**
- * Starts mixing simulation for a specific electrode type from flow page.
+ * Starts mixing simulation for a specific electrode type using unified endpoint.
  */
-export const startMixingSimulation = (data) =>
-  axios.post(`${API_URL}/api/simulation/mixing/start`, data);
+export const startMixingSimulation = (data) => {
+  const payload = {
+    mode: "individual",
+    stage: "mixing",
+    ...data
+  };
+  return axios.post(`${API_URL}/api/simulation/start`, payload);
+};
+
+/**
+ * Updates machine parameters via the generic parameter update endpoint.
+ */
+export const updateMachineParameters = (lineType, machineId, parameters) =>
+  axios.patch(`${API_URL}/api/machine/${lineType}/${machineId}/parameters`, parameters);
+
+/**
+ * Generic function to start any machine simulation based on stage name.
+ * Uses the unified /api/simulation/start endpoint.
+ */
+export const startMachineSimulation = async (stage, data) => {
+  // Extract electrode_type and parameters from data
+  const { electrode_type, ...parameters } = data;
+  
+  const payload = {
+    mode: "individual",
+    machine_type: stage,  // Backend expects machine_type, not stage
+    parameters: parameters,
+  };
+  
+  // Add electrode_type if provided
+  if (electrode_type) {
+    payload.electrode_type = electrode_type;
+  }
+  
+  return axios.post(`${API_URL}/api/simulation/start`, payload);
+};
+
+/**
+ * Start full factory simulation with all machine parameters using unified endpoint.
+ * This replaces the original startSimulation function with enhanced capabilities.
+ */
+export const startFullSimulationUnified = (allParameters) => {
+  const payload = {
+    mode: "full",
+    ...allParameters
+  };
+  
+  return axios.post(`${API_URL}/api/simulation/start`, payload);
+};
+
+/**
+ * Helper function to convert frontend form data to unified API format.
+ * Takes inputs from all machines and formats them for the unified endpoint.
+ */
+export const formatForUnifiedAPI = (formData) => {
+  const {
+    anode_mixing = {},
+    cathode_mixing = {},
+    coating = {},
+    drying = {},
+    calendaring = {},
+    slitting = {},
+    inspection = {},
+    rewinding = {},
+    electrolyte_filling = {},
+    formation_cycling = {},
+    aging = {}
+  } = formData;
+
+  const payload = {
+    mode: "full",
+    anode_params: anode_mixing,
+    cathode_params: cathode_mixing
+  };
+
+  // Add optional machine parameters if provided
+  if (Object.keys(coating).length > 0) payload.coating_params = coating;
+  if (Object.keys(drying).length > 0) payload.drying_params = drying;
+  if (Object.keys(calendaring).length > 0) payload.calendaring_params = calendaring;
+  if (Object.keys(slitting).length > 0) payload.slitting_params = slitting;
+  if (Object.keys(inspection).length > 0) payload.inspection_params = inspection;
+  if (Object.keys(rewinding).length > 0) payload.rewinding_params = rewinding;
+  if (Object.keys(electrolyte_filling).length > 0) payload.electrolyte_filling_params = electrolyte_filling;
+  if (Object.keys(formation_cycling).length > 0) payload.formation_cycling_params = formation_cycling;
+  if (Object.keys(aging).length > 0) payload.aging_params = aging;
+
+  return payload;
+};
 
 /**
  * Resets the simulation data on the backend.
  */
-export const resetSimulation = () => axios.post(`${API_URL}/reset`);
+export const resetSimulation = () => axios.post(`${API_URL}/api/simulation/reset`);
 
 /**
  * Returns the correct WebSocket URL for status updates.

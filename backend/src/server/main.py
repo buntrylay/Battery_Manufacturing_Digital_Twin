@@ -143,90 +143,542 @@ def update_machine_params(line_type: str, machine_id: str, parameters: dict):
 
 
 @app.post("/api/simulation/start")
-def start_full_simulation(simulation_data: dict):
-    """Start full simulation with anode and cathode mixing parameters."""
+def start_unified_simulation(simulation_data: dict):
+    """Start simulation with parameters for all machine types - unified endpoint."""
     global battery_plant_simulation
     global factory_run_thread
     global out_of_batch_event
     
     try:
-        # Extract anode and cathode parameters from the input
-        anode_params = simulation_data.get("anode_params")
-        cathode_params = simulation_data.get("cathode_params")
-        
-        if not anode_params or not cathode_params:
-            raise HTTPException(
-                status_code=400, 
-                detail="Both anode_params and cathode_params are required"
-            )
-        
-        # Validate required fields for both electrode types
-        required_fields = ["PVDF", "CA", "AM", "Solvent"]
-        
-        for field in required_fields:
-            if field not in anode_params:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Missing required anode field: {field}"
-                )
-            if field not in cathode_params:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Missing required cathode field: {field}"
-                )
-        
-        # Check if ratios sum to 1.0 for anode
-        anode_total = sum(anode_params[field] for field in required_fields)
-        if abs(anode_total - 1.0) > 0.0001:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Anode ratios must sum to 1.0, got {anode_total}"
-            )
-        
-        # Check if ratios sum to 1.0 for cathode
-        cathode_total = sum(cathode_params[field] for field in required_fields)
-        if abs(cathode_total - 1.0) > 0.0001:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Cathode ratios must sum to 1.0, got {cathode_total}"
-            )
-        
-        # Create batch with the provided parameters
-        batch = Batch(
-            batch_id=str(uuid.uuid4()),
-            anode_mixing_params=anode_params,
-            cathode_mixing_params=cathode_params
+        # Import all parameter classes
+        from simulation.process_parameters.Parameters import (
+            CoatingParameters, DryingParameters, CalendaringParameters, 
+            SlittingParameters, ElectrodeInspectionParameters, RewindingParameters,
+            ElectrolyteFillingParameters, FormationCyclingParameters, AgingParameters
         )
         
-        # Add batch to simulation
-        battery_plant_simulation.add_batch(batch)
+        # Determine simulation mode: 'full' (factory simulation) or 'individual' (single machine)
+        mode = simulation_data.get("mode", "full")
         
-        # Start or restart factory simulation thread
-        if factory_run_thread is None:
-            factory_run_thread = threading.Thread(
-                target=battery_plant_simulation.run, args=(out_of_batch_event,)
-            )
-            factory_run_thread.start()
-        elif out_of_batch_event.is_set():
-            factory_run_thread = None
-            out_of_batch_event.clear()
-            factory_run_thread = threading.Thread(
-                target=battery_plant_simulation.run, args=(out_of_batch_event,)
-            )
-            factory_run_thread.start()
+        if mode == "full":
+            # Full factory simulation (existing functionality)
+            return _start_full_factory_simulation(simulation_data)
         
-        return {
-            "message": "Full simulation started successfully",
-            "batch_id": batch.batch_id,
-            "anode_params": anode_params,
-            "cathode_params": cathode_params
-        }
+        elif mode == "individual":
+            # Individual machine simulation
+            return _start_individual_machine_simulation(simulation_data)
         
+        else:
+            raise HTTPException(status_code=400, detail="Mode must be 'full' or 'individual'")
+            
     except ValueError as e:
-        # over limit of batches or other validation errors
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+def _start_full_factory_simulation(simulation_data: dict):
+    """Start full factory simulation with all machine parameters."""
+    global battery_plant_simulation, factory_run_thread, out_of_batch_event
+    
+    # Import parameter classes
+    from simulation.process_parameters.Parameters import (
+        CoatingParameters, DryingParameters, CalendaringParameters, 
+        SlittingParameters, ElectrodeInspectionParameters, RewindingParameters,
+        ElectrolyteFillingParameters, FormationCyclingParameters, AgingParameters
+    )
+    
+    # Extract mixing parameters (required)
+    anode_params = simulation_data.get("anode_params")
+    cathode_params = simulation_data.get("cathode_params")
+    
+    if not anode_params or not cathode_params:
+        raise HTTPException(
+            status_code=400, 
+            detail="Both anode_params and cathode_params are required for full simulation"
+        )
+    
+    # Validate mixing parameters
+    required_mixing_fields = ["PVDF", "CA", "AM", "Solvent"]
+    for field in required_mixing_fields:
+        if field not in anode_params:
+            raise HTTPException(status_code=400, detail=f"Missing required anode mixing field: {field}")
+        if field not in cathode_params:
+            raise HTTPException(status_code=400, detail=f"Missing required cathode mixing field: {field}")
+    
+    # Check mixing ratios sum to 1.0
+    anode_total = sum(anode_params[field] for field in required_mixing_fields)
+    cathode_total = sum(cathode_params[field] for field in required_mixing_fields)
+    
+    if abs(anode_total - 1.0) > 0.0001:
+        raise HTTPException(status_code=400, detail=f"Anode mixing ratios must sum to 1.0, got {anode_total}")
+    if abs(cathode_total - 1.0) > 0.0001:
+        raise HTTPException(status_code=400, detail=f"Cathode mixing ratios must sum to 1.0, got {cathode_total}")
+    
+    # Update machine parameters if provided (optional for full simulation)
+    all_parameters = {}
+    
+    # Extract and validate all machine parameters if provided
+    machine_params = {
+        "coating_params": CoatingParameters,
+        "drying_params": DryingParameters, 
+        "calendaring_params": CalendaringParameters,
+        "slitting_params": SlittingParameters,
+        "inspection_params": ElectrodeInspectionParameters,
+        "rewinding_params": RewindingParameters,
+        "electrolyte_filling_params": ElectrolyteFillingParameters,
+        "formation_cycling_params": FormationCyclingParameters,
+        "aging_params": AgingParameters
+    }
+    
+    for param_key, param_class in machine_params.items():
+        if param_key in simulation_data:
+            try:
+                validated_params = param_class(**simulation_data[param_key])
+                validated_params.validate_parameters()
+                all_parameters[param_key] = simulation_data[param_key]
+            except (TypeError, ValueError) as e:
+                raise HTTPException(status_code=400, detail=f"Invalid {param_key}: {str(e)}")
+    
+    # Update machine parameters in plant simulation if provided
+    if all_parameters:
+        try:
+            _update_plant_machine_parameters(all_parameters)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to update machine parameters: {str(e)}")
+    
+    # Create batch and start factory simulation
+    batch = Batch(
+        batch_id=str(uuid.uuid4()),
+        anode_mixing_params=anode_params,
+        cathode_mixing_params=cathode_params
+    )
+    
+    battery_plant_simulation.add_batch(batch)
+    
+    # Start factory simulation thread
+    if factory_run_thread is None:
+        factory_run_thread = threading.Thread(target=battery_plant_simulation.run, args=(out_of_batch_event,))
+        factory_run_thread.start()
+    elif out_of_batch_event.is_set():
+        factory_run_thread = None
+        out_of_batch_event.clear()
+        factory_run_thread = threading.Thread(target=battery_plant_simulation.run, args=(out_of_batch_event,))
+        factory_run_thread.start()
+    
+    return {
+        "message": "Full factory simulation started successfully",
+        "mode": "full",
+        "batch_id": batch.batch_id,
+        "anode_params": anode_params,
+        "cathode_params": cathode_params,
+        "updated_machine_params": list(all_parameters.keys()) if all_parameters else []
+    }
+
+
+def _start_individual_machine_simulation(simulation_data: dict):
+    """Start individual machine simulation."""
+    machine_type = simulation_data.get("machine_type")
+    electrode_type = simulation_data.get("electrode_type")  # Optional for some machines
+    parameters = simulation_data.get("parameters", {})
+    
+    if not machine_type:
+        raise HTTPException(status_code=400, detail="machine_type is required for individual simulation")
+    
+    if not parameters:
+        raise HTTPException(status_code=400, detail="parameters are required for individual simulation")
+    
+    # Map machine types to their simulation functions
+    machine_simulators = {
+        "mixing": lambda: _run_individual_mixing(electrode_type, parameters),
+        "coating": lambda: _run_individual_coating(electrode_type, parameters),
+        "drying": lambda: _run_individual_drying(electrode_type, parameters),
+        "calendaring": lambda: _run_individual_calendaring(electrode_type, parameters),
+        "slitting": lambda: _run_individual_slitting(electrode_type, parameters),
+        "inspection": lambda: _run_individual_inspection(electrode_type, parameters),
+        "rewinding": lambda: _run_individual_rewinding(parameters),
+        "electrolyte_filling": lambda: _run_individual_electrolyte_filling(parameters),
+        "formation_cycling": lambda: _run_individual_formation_cycling(parameters),
+        "aging": lambda: _run_individual_aging(parameters),
+    }
+    
+    simulator = machine_simulators.get(machine_type)
+    if not simulator:
+        raise HTTPException(status_code=400, detail=f"Unknown machine_type: {machine_type}")
+    
+    # Start the individual simulation
+    result = simulator()
+    
+    return {
+        "message": f"Individual {machine_type} simulation started successfully",
+        "mode": "individual", 
+        "machine_type": machine_type,
+        "electrode_type": electrode_type,
+        "parameters": parameters,
+        **result
+    }
+
+
+def _update_plant_machine_parameters(all_parameters: dict):
+    """Update machine parameters in the plant simulation."""
+    global battery_plant_simulation
+    
+    # Map parameter keys to machine identifiers
+    param_to_machine_map = {
+        "coating_params": [("anode", "coating"), ("cathode", "coating")],
+        "drying_params": [("anode", "drying"), ("cathode", "drying")],
+        "calendaring_params": [("anode", "calendaring"), ("cathode", "calendaring")],
+        "slitting_params": [("anode", "slitting"), ("cathode", "slitting")],
+        "inspection_params": [("anode", "inspection"), ("cathode", "inspection")],
+        "rewinding_params": [("cell", "rewinding")],
+        "electrolyte_filling_params": [("cell", "electrolyte_filling")],
+        "formation_cycling_params": [("cell", "formation_cycling")],
+        "aging_params": [("cell", "aging")]
+    }
+    
+    for param_key, params in all_parameters.items():
+        machine_mappings = param_to_machine_map.get(param_key, [])
+        for line_type, machine_id in machine_mappings:
+            try:
+                battery_plant_simulation.update_machine_parameters(line_type, machine_id, params)
+            except Exception as e:
+                print(f"Warning: Could not update {line_type}/{machine_id}: {str(e)}")
+
+
+# Individual machine simulation helper functions
+def _run_individual_mixing(electrode_type, parameters):
+    """Run individual mixing simulation."""
+    if not electrode_type or electrode_type not in ["Anode", "Cathode"]:
+        raise HTTPException(status_code=400, detail="electrode_type must be 'Anode' or 'Cathode' for mixing")
+    
+    # Validate mixing parameters
+    required_fields = ["PVDF", "CA", "AM", "Solvent"]
+    for field in required_fields:
+        if field not in parameters:
+            raise HTTPException(status_code=400, detail=f"Missing required mixing field: {field}")
+    
+    total = sum(parameters[field] for field in required_fields)
+    if abs(total - 1.0) > 0.0001:
+        raise HTTPException(status_code=400, detail=f"Mixing ratios must sum to 1.0, got {total}")
+    
+    # Start mixing simulation in background (reuse existing logic)
+    def run_mixing():
+        try:
+            from simulation.machine.MixingMachine import MixingMachine
+            from simulation.battery_model.MixingModel import MixingModel
+            from simulation.process_parameters.MixingParameters import MixingParameters, MaterialRatios
+            
+            machine_id = f"{electrode_type.lower()}_mixing_01"
+            process_name = f"{electrode_type}_Mixing"
+            
+            notify_machine_status(machine_id=machine_id, line_type="mixing", process_name=process_name,
+                                status="running", data={"message": f"Starting {electrode_type} mixing", "parameters": parameters})
+            
+            mixing_model = MixingModel(electrode_type)
+            material_ratios = MaterialRatios(AM=parameters["AM"], CA=parameters["CA"], 
+                                           PVDF=parameters["PVDF"], solvent=parameters["Solvent"])
+            mixing_parameters = MixingParameters(material_ratios=material_ratios)
+            
+            mixing_machine = MixingMachine(process_name=process_name, mixing_model=mixing_model, mixing_parameters=mixing_parameters)
+            mixing_machine.receive_model_from_previous_process(mixing_model)
+            mixing_machine.run()
+            
+            notify_machine_status(machine_id=machine_id, line_type="mixing", process_name=process_name,
+                                status="completed", data={"message": f"{electrode_type} mixing completed", "results": mixing_machine.get_current_state()})
+        except Exception as e:
+            notify_machine_status(machine_id=machine_id, line_type="mixing", process_name=process_name,
+                                status="error", data={"message": f"Mixing failed: {str(e)}"})
+    
+    simulation_thread = threading.Thread(target=run_mixing)
+    simulation_thread.daemon = True
+    simulation_thread.start()
+    
+    return {"simulation_started": True}
+
+
+def _run_individual_coating(electrode_type, parameters):
+    """Run individual coating simulation."""
+    if not electrode_type or electrode_type not in ["Anode", "Cathode"]:
+        raise HTTPException(status_code=400, detail="electrode_type must be 'Anode' or 'Cathode' for coating")
+    
+    from simulation.process_parameters.Parameters import CoatingParameters
+    coating_params = CoatingParameters(**parameters)
+    coating_params.validate_parameters()
+    
+    def run_coating():
+        try:
+            from simulation.machine.CoatingMachine import CoatingMachine
+            machine_id = f"{electrode_type.lower()}_coating_01"
+            process_name = f"{electrode_type}_Coating"
+            
+            notify_machine_status(machine_id=machine_id, line_type="coating", process_name=process_name,
+                                status="running", data={"message": f"Starting {electrode_type} coating", "parameters": parameters})
+            
+            coating_machine = CoatingMachine(process_name=process_name, coating_parameters=coating_params)
+            coating_machine.run()
+            
+            notify_machine_status(machine_id=machine_id, line_type="coating", process_name=process_name,
+                                status="completed", data={"message": f"{electrode_type} coating completed", "results": coating_machine.get_current_state()})
+        except Exception as e:
+            notify_machine_status(machine_id=machine_id, line_type="coating", process_name=process_name,
+                                status="error", data={"message": f"Coating failed: {str(e)}"})
+    
+    simulation_thread = threading.Thread(target=run_coating)
+    simulation_thread.daemon = True
+    simulation_thread.start()
+    return {"simulation_started": True}
+
+
+def _run_individual_drying(electrode_type, parameters):
+    """Run individual drying simulation."""
+    if not electrode_type or electrode_type not in ["Anode", "Cathode"]:
+        raise HTTPException(status_code=400, detail="electrode_type must be 'Anode' or 'Cathode' for drying")
+    
+    from simulation.process_parameters.Parameters import DryingParameters
+    drying_params = DryingParameters(**parameters)
+    drying_params.validate_parameters()
+    
+    def run_drying():
+        try:
+            from simulation.machine.DryingMachine import DryingMachine
+            machine_id = f"{electrode_type.lower()}_drying_01"
+            process_name = f"{electrode_type}_Drying"
+            
+            notify_machine_status(machine_id=machine_id, line_type="drying", process_name=process_name,
+                                status="running", data={"message": f"Starting {electrode_type} drying", "parameters": parameters})
+            
+            drying_machine = DryingMachine(process_name=process_name, drying_parameters=drying_params)
+            drying_machine.run()
+            
+            notify_machine_status(machine_id=machine_id, line_type="drying", process_name=process_name,
+                                status="completed", data={"message": f"{electrode_type} drying completed", "results": drying_machine.get_current_state()})
+        except Exception as e:
+            notify_machine_status(machine_id=machine_id, line_type="drying", process_name=process_name,
+                                status="error", data={"message": f"Drying failed: {str(e)}"})
+    
+    simulation_thread = threading.Thread(target=run_drying)
+    simulation_thread.daemon = True
+    simulation_thread.start()
+    return {"simulation_started": True}
+
+
+def _run_individual_calendaring(electrode_type, parameters):
+    """Run individual calendaring simulation."""
+    if not electrode_type or electrode_type not in ["Anode", "Cathode"]:
+        raise HTTPException(status_code=400, detail="electrode_type must be 'Anode' or 'Cathode' for calendaring")
+    
+    from simulation.process_parameters.Parameters import CalendaringParameters
+    calendaring_params = CalendaringParameters(**parameters)
+    calendaring_params.validate_parameters()
+    
+    def run_calendaring():
+        try:
+            from simulation.machine.CalendaringMachine import CalendaringMachine
+            machine_id = f"{electrode_type.lower()}_calendaring_01"
+            process_name = f"{electrode_type}_Calendaring"
+            
+            notify_machine_status(machine_id=machine_id, line_type="calendaring", process_name=process_name,
+                                status="running", data={"message": f"Starting {electrode_type} calendaring", "parameters": parameters})
+            
+            calendaring_machine = CalendaringMachine(process_name=process_name, calendaring_parameters=calendaring_params)
+            calendaring_machine.run()
+            
+            notify_machine_status(machine_id=machine_id, line_type="calendaring", process_name=process_name,
+                                status="completed", data={"message": f"{electrode_type} calendaring completed", "results": calendaring_machine.get_current_state()})
+        except Exception as e:
+            notify_machine_status(machine_id=machine_id, line_type="calendaring", process_name=process_name,
+                                status="error", data={"message": f"Calendaring failed: {str(e)}"})
+    
+    simulation_thread = threading.Thread(target=run_calendaring)
+    simulation_thread.daemon = True
+    simulation_thread.start()
+    return {"simulation_started": True}
+
+
+def _run_individual_slitting(electrode_type, parameters):
+    """Run individual slitting simulation."""
+    if not electrode_type or electrode_type not in ["Anode", "Cathode"]:
+        raise HTTPException(status_code=400, detail="electrode_type must be 'Anode' or 'Cathode' for slitting")
+    
+    from simulation.process_parameters.Parameters import SlittingParameters
+    slitting_params = SlittingParameters(**parameters)
+    slitting_params.validate_parameters()
+    
+    def run_slitting():
+        try:
+            from simulation.machine.SlittingMachine import SlittingMachine
+            machine_id = f"{electrode_type.lower()}_slitting_01"
+            process_name = f"{electrode_type}_Slitting"
+            
+            notify_machine_status(machine_id=machine_id, line_type="slitting", process_name=process_name,
+                                status="running", data={"message": f"Starting {electrode_type} slitting", "parameters": parameters})
+            
+            slitting_machine = SlittingMachine(process_name=process_name, slitting_parameters=slitting_params)
+            slitting_machine.run()
+            
+            notify_machine_status(machine_id=machine_id, line_type="slitting", process_name=process_name,
+                                status="completed", data={"message": f"{electrode_type} slitting completed", "results": slitting_machine.get_current_state()})
+        except Exception as e:
+            notify_machine_status(machine_id=machine_id, line_type="slitting", process_name=process_name,
+                                status="error", data={"message": f"Slitting failed: {str(e)}"})
+    
+    simulation_thread = threading.Thread(target=run_slitting)
+    simulation_thread.daemon = True
+    simulation_thread.start()
+    return {"simulation_started": True}
+
+
+def _run_individual_inspection(electrode_type, parameters):
+    """Run individual inspection simulation."""
+    if not electrode_type or electrode_type not in ["Anode", "Cathode"]:
+        raise HTTPException(status_code=400, detail="electrode_type must be 'Anode' or 'Cathode' for inspection")
+    
+    from simulation.process_parameters.Parameters import ElectrodeInspectionParameters
+    inspection_params = ElectrodeInspectionParameters(**parameters)
+    inspection_params.validate_parameters()
+    
+    def run_inspection():
+        try:
+            from simulation.machine.ElectrodeInspectionMachine import ElectrodeInspectionMachine
+            machine_id = f"{electrode_type.lower()}_inspection_01"
+            process_name = f"{electrode_type}_Inspection"
+            
+            notify_machine_status(machine_id=machine_id, line_type="inspection", process_name=process_name,
+                                status="running", data={"message": f"Starting {electrode_type} inspection", "parameters": parameters})
+            
+            inspection_machine = ElectrodeInspectionMachine(process_name=process_name, electrode_inspection_parameters=inspection_params)
+            inspection_machine.run()
+            
+            notify_machine_status(machine_id=machine_id, line_type="inspection", process_name=process_name,
+                                status="completed", data={"message": f"{electrode_type} inspection completed", "results": inspection_machine.get_current_state()})
+        except Exception as e:
+            notify_machine_status(machine_id=machine_id, line_type="inspection", process_name=process_name,
+                                status="error", data={"message": f"Inspection failed: {str(e)}"})
+    
+    simulation_thread = threading.Thread(target=run_inspection)
+    simulation_thread.daemon = True
+    simulation_thread.start()
+    return {"simulation_started": True}
+
+
+def _run_individual_rewinding(parameters):
+    """Run individual rewinding simulation."""
+    from simulation.process_parameters.Parameters import RewindingParameters
+    rewinding_params = RewindingParameters(**parameters)
+    rewinding_params.validate_parameters()
+    
+    def run_rewinding():
+        try:
+            from simulation.machine.RewindingMachine import RewindingMachine
+            machine_id = "rewinding_01"
+            process_name = "Rewinding"
+            
+            notify_machine_status(machine_id=machine_id, line_type="rewinding", process_name=process_name,
+                                status="running", data={"message": "Starting rewinding", "parameters": parameters})
+            
+            rewinding_machine = RewindingMachine(process_name=process_name, rewinding_parameters=rewinding_params)
+            rewinding_machine.run()
+            
+            notify_machine_status(machine_id=machine_id, line_type="rewinding", process_name=process_name,
+                                status="completed", data={"message": "Rewinding completed", "results": rewinding_machine.get_current_state()})
+        except Exception as e:
+            notify_machine_status(machine_id=machine_id, line_type="rewinding", process_name=process_name,
+                                status="error", data={"message": f"Rewinding failed: {str(e)}"})
+    
+    simulation_thread = threading.Thread(target=run_rewinding)
+    simulation_thread.daemon = True
+    simulation_thread.start()
+    return {"simulation_started": True}
+
+
+def _run_individual_electrolyte_filling(parameters):
+    """Run individual electrolyte filling simulation."""
+    from simulation.process_parameters.Parameters import ElectrolyteFillingParameters
+    filling_params = ElectrolyteFillingParameters(**parameters)
+    filling_params.validate_parameters()
+    
+    def run_filling():
+        try:
+            from simulation.machine.ElectrolyteFillingMachine import ElectrolyteFillingMachine
+            machine_id = "electrolyte_filling_01"
+            process_name = "Electrolyte_Filling"
+            
+            notify_machine_status(machine_id=machine_id, line_type="electrolyte_filling", process_name=process_name,
+                                status="running", data={"message": "Starting electrolyte filling", "parameters": parameters})
+            
+            filling_machine = ElectrolyteFillingMachine(process_name=process_name, electrolyte_filling_parameters=filling_params)
+            filling_machine.run()
+            
+            notify_machine_status(machine_id=machine_id, line_type="electrolyte_filling", process_name=process_name,
+                                status="completed", data={"message": "Electrolyte filling completed", "results": filling_machine.get_current_state()})
+        except Exception as e:
+            notify_machine_status(machine_id=machine_id, line_type="electrolyte_filling", process_name=process_name,
+                                status="error", data={"message": f"Electrolyte filling failed: {str(e)}"})
+    
+    simulation_thread = threading.Thread(target=run_filling)
+    simulation_thread.daemon = True
+    simulation_thread.start()
+    return {"simulation_started": True}
+
+
+def _run_individual_formation_cycling(parameters):
+    """Run individual formation cycling simulation."""
+    from simulation.process_parameters.Parameters import FormationCyclingParameters
+    formation_params = FormationCyclingParameters(**parameters)
+    formation_params.validate_parameters()
+    
+    def run_formation():
+        try:
+            from simulation.machine.FormationCyclingMachine import FormationCyclingMachine
+            machine_id = "formation_cycling_01"
+            process_name = "Formation_Cycling"
+            
+            notify_machine_status(machine_id=machine_id, line_type="formation_cycling", process_name=process_name,
+                                status="running", data={"message": "Starting formation cycling", "parameters": parameters})
+            
+            formation_machine = FormationCyclingMachine(process_name=process_name, formation_cycling_parameters=formation_params)
+            formation_machine.run()
+            
+            notify_machine_status(machine_id=machine_id, line_type="formation_cycling", process_name=process_name,
+                                status="completed", data={"message": "Formation cycling completed", "results": formation_machine.get_current_state()})
+        except Exception as e:
+            notify_machine_status(machine_id=machine_id, line_type="formation_cycling", process_name=process_name,
+                                status="error", data={"message": f"Formation cycling failed: {str(e)}"})
+    
+    simulation_thread = threading.Thread(target=run_formation)
+    simulation_thread.daemon = True
+    simulation_thread.start()
+    return {"simulation_started": True}
+
+
+def _run_individual_aging(parameters):
+    """Run individual aging simulation."""
+    from simulation.process_parameters.Parameters import AgingParameters
+    aging_params = AgingParameters(**parameters)
+    aging_params.validate_parameters()
+    
+    def run_aging():
+        try:
+            from simulation.machine.AgingMachine import AgingMachine
+            machine_id = "aging_01"
+            process_name = "Aging"
+            
+            notify_machine_status(machine_id=machine_id, line_type="aging", process_name=process_name,
+                                status="running", data={"message": "Starting aging", "parameters": parameters})
+            
+            aging_machine = AgingMachine(process_name=process_name, aging_parameters=aging_params)
+            aging_machine.run()
+            
+            notify_machine_status(machine_id=machine_id, line_type="aging", process_name=process_name,
+                                status="completed", data={"message": "Aging completed", "results": aging_machine.get_current_state()})
+        except Exception as e:
+            notify_machine_status(machine_id=machine_id, line_type="aging", process_name=process_name,
+                                status="error", data={"message": f"Aging failed: {str(e)}"})
+    
+    simulation_thread = threading.Thread(target=run_aging)
+    simulation_thread.daemon = True
+    simulation_thread.start()
+    return {"simulation_started": True}
 
 
 @app.post("/api/simulation/mixing/start")

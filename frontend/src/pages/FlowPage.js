@@ -8,19 +8,23 @@ import { startSimulation } from "../services/api";
 import ToggleSwitch from "../components/ToggleSwitch";
 const FlowPage = () => {
   const { setSelectedId, selectedStage } = useFlowPage();
-  const { clearLogs, addLog } = useLogs();
+  const { clearLogs } = useLogs();
   const [simulationStatus, setSimulationStatus] = useState("");
   const [isRunning, setIsRunning] = useState(false);
-  const [animationTrigger, setAnimationTrigger] = useState(false);
+  const [animationTrigger, setAnimationTrigger] = useState(() => {
+    return localStorage.getItem("simulationRunning") === "true";
+  });
 
   const handleClearLogs = () => {
     clearLogs();
     setAnimationTrigger(false); // Reset animation when clearing logs
+    localStorage.removeItem("simulationRunning"); // Clear persisted state
   };
 
   const handleStartFullSimulation = async () => {
     setIsRunning(true);
     setAnimationTrigger(true);
+    localStorage.setItem("simulationRunning", "true"); // Persist animation state
     setSimulationStatus("Starting full simulation...");
     clearLogs();
 

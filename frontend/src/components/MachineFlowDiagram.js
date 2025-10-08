@@ -1,5 +1,5 @@
 // src/components/MachineFlowDiagram.js
-import React, { useMemo, useEffect, useState } from "react";
+import React, { useMemo, useEffect, useState, useCallback } from "react";
 import {
   ReactFlow,
   useNodesState,
@@ -127,7 +127,7 @@ const generateLayout = (machineData) => {
 
 const MachineFlowDiagram = ({ animationTrigger }) => {
   // Map backend process names to frontend machine IDs (defined at component top to avoid closure issues)
-  const processToMachineMap = {
+  const processToMachineMap = useMemo(() => ({
     // Mixing processes (exact backend names from PlantSimulation.py)
     'mixing_anode': 'Anode Mixing',
     'mixing_cathode': 'Cathode Mixing',
@@ -163,7 +163,7 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
     'electrolyte_filling': 'Electrolyte Filling',
     'formation_cycling': 'Formation Cycling',
     'aging': 'Aging'
-  };
+  }), []);
 
   const { MACHINE_FLOW, setSelectedId } = useFlowPage();
   const { stageLog } = useLogs();
@@ -175,10 +175,20 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
   //Setting states for Node edge and stage completion
   const [nodes, setNodes, onNodesChange] = useNodesState(defaultNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(defaultEdges);
-  const [machineStatus, setMachineStatus] = useState({});
-  const [simulationStarted, setSimulationStarted] = useState(false);
+  const [machineStatus, setMachineStatus] = useState(() => {
+    const saved = localStorage.getItem("machineStatus");
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [simulationStarted, setSimulationStarted] = useState(() => {
+    return localStorage.getItem("simulationRunning") === "true";
+  });
   // eslint-disable-next-line no-unused-vars
   const [lastProcessSeen, setLastProcessSeen] = useState({});
+  
+  // Persist machine status to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("machineStatus", JSON.stringify(machineStatus));
+  }, [machineStatus]);
   
   useEffect(() => {
     console.log("Updating nodes with status:", machineStatus, "simulationStarted:", simulationStarted);
@@ -192,7 +202,7 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
         },
       }))
     );
-  }, [machineStatus, simulationStarted, setNodes]);
+  }, [machineStatus, simulationStarted]);
 
   // Handle animation trigger from parent component
   useEffect(() => {
@@ -248,6 +258,7 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
         });
       } else {
         setMachineStatus({});
+        localStorage.removeItem("machineStatus"); // Clear persisted state
       }
       return;
     }
@@ -256,7 +267,6 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
     console.log("=== PROCESSING LATEST LOG ===");
     console.log("Raw log:", latestLog);
     console.log("All available machine IDs:", MACHINE_FLOW.map(m => m.id));
-    console.log("Current machine status:", machineStatus);
     console.log("Process mapping available:", Object.keys(processToMachineMap));
 
     // NEW APPROACH: Direct completion detection from backend status messages
@@ -321,7 +331,7 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
     if (!detectedMachine) {
       const structuredMatch = latestLog.match(/\[(.*?)\]\s+([^:]+):\s+([^-]+)\s*-\s*(.*)/);
       if (structuredMatch) {
-        const [, timestamp, processOrMachine, status, message] = structuredMatch;
+        const [, , processOrMachine, status, message] = structuredMatch;
         console.log("📡 Structured message detected:", { processOrMachine, status, message });
         
         // Try to map the process/machine name
@@ -360,6 +370,11 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
             allCompleted[machine.id] = 'completed';
           });
           console.log("🎊 Final state: All machines completed:", allCompleted);
+          // Clear persisted simulation state since simulation is complete
+          setTimeout(() => {
+            localStorage.removeItem("simulationRunning");
+            localStorage.removeItem("machineStatus");
+          }, 2000); // Wait 2 seconds to show final completed state
           return allCompleted;
         });
         return;
@@ -433,7 +448,7 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
       
       return; // Exit early since we handled the status update
     }
-  }, [stageLog, MACHINE_FLOW, simulationStarted]);
+  }, [stageLog, MACHINE_FLOW, simulationStarted, processToMachineMap]);
 
   // Update edge animations based on machine status
   useEffect(() => {
@@ -483,9 +498,9 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
         }
       })
     );
-  }, [machineStatus, simulationStarted, setEdges]);
+  }, [machineStatus, simulationStarted]);
 
-  const onNodeClick = (_, node) => setSelectedId(node.id);
+  const onNodeClick = useCallback((_, node) => setSelectedId(node.id), [setSelectedId]);
 
   return (
     <ReactFlow

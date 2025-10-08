@@ -1,5 +1,5 @@
-import React, { useContext } from "react";
-import { WebSocketContext, useLogs } from "../contexts/WebSocketContext";
+import React from "react";
+import { useLogs } from "../contexts/WebSocketContext";
 import WebSocketControls from "../components/ResetButton";
 
 function LogsPage() {
