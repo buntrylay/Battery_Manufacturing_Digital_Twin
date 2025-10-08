@@ -47,22 +47,18 @@ class MixingMachine(BaseMachine):
             process_name, mixing_model, mixing_parameters, connection_string
         )
         self.mixing_tank_volume = 200
+        self.pause_secs = 0.1  
+        self.duration_secs = {
+            "PVDF": 8,
+            "CA": 8,
+            "AM": 10
+        }
 
     def receive_model_from_previous_process(self, initial_mixing_model: MixingModel):
         self.battery_model = initial_mixing_model
 
-    def calculate_total_steps(self, interval=0.1):
-        self.solvent_step = 0
-        self.pvdf_step = 100
-        self.ca_step = 100
-        self.am_step = 100
-
-        self.total_steps = (
-            self.solvent_step + 
-            self.pvdf_step + 
-            self.ca_step + 
-            self.am_step
-        )
+    def calculate_total_steps(self):
+        self.total_steps = len(self.duration_secs.values())
 
     def step_logic(self, t: int):
         solvent_volume = self.mixing_tank_volume * self.machine_parameters.solvent_ratio
