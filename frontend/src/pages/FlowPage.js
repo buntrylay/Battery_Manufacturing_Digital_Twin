@@ -77,6 +77,9 @@ const FlowPage = () => {
   return (
     <div className={`flow-layout ${selectedStage ? "with-panel" : "full"}`}>
       <div className="main-content">
+        <h2 className="page-title">
+          Lithium-Ion Battery Manufacturing Simulation
+        </h2>
         <ToggleSwitch
           label="Quick Tips"
           infoContent={
@@ -91,8 +94,6 @@ const FlowPage = () => {
             </div>
           }
         />
-
-        <h2 className="page-title">Battery Manufacturing Flow</h2>
         <div className="controls">
           <button onClick={handleClearLogs} className="clear-logs-button">
             Clear Logs
@@ -118,7 +119,7 @@ const FlowPage = () => {
                   )}
                   {animationTrigger && (
                     <p style={{ color: "green", fontWeight: "bold" }}>
-                      Animation Active - Machines are pulsing!
+                      Animations Active
                     </p>
                   )}
                 </div>
@@ -139,6 +140,7 @@ const FlowPage = () => {
         <SidePanel
           selectedStage={selectedStage}
           onClose={() => setSelectedId(null)}
+          isOpen={!!selectedStage}
         />
       )}
     </div>

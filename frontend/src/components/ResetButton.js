@@ -6,7 +6,9 @@ export default function WebSocketControls() {
 
   return (
     <div>
-      <button onClick={clearLogs}>Clear Logs</button>
+      <button onClick={clearLogs} className="clear-logs-button">
+        Clear Logs
+      </button>
     </div>
   );
 }

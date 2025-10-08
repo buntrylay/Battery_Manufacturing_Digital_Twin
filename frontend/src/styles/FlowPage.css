@@ -19,9 +19,8 @@ body {
 .flow-layout {
   display: grid;
   grid-template-rows: 1fr;
-
-  padding: 20px;
-  gap: 40px;
+  gap: 10px;
+  padding: 0 20px;
   box-sizing: border-box;
   overflow: hidden;
   transition: grid-template-columns 0.3s ease;
@@ -48,7 +47,6 @@ body {
   flex-direction: column; /* Stack children vertically */
   flex-grow: 1;
   height: 100%;
-  margin-top: 80px;
 }
 
 .controls {
@@ -106,8 +104,6 @@ body {
   font-weight: 500;
 }
 
-/* This is the most important part:
-   Make the canvas grow to fill all remaining vertical space */
 .flow-canvas {
   flex-grow: 1;
   width: 100%;
@@ -116,7 +112,6 @@ body {
 .flow-canvas {
   display: flex;
   flex-direction: column;
-  gap: 40px;
   justify-content: flex-start;
   align-items: center;
   background: var(--bg);
@@ -128,7 +123,6 @@ body {
   min-height: auto;
   height: auto;
   box-sizing: border-box;
-
   border-top: 1px solid #ddd;
   border-radius: 0%;
 }
@@ -222,27 +216,36 @@ body {
 /* ===================== */
 /* Side Panel Styling    */
 /* ===================== */
+/* .side-panel {
+  
+} */
+
 .side-panel {
+  z-index: 9999;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 350px;
   background: #f9fafb;
   border-radius: 16px;
-  padding: 24px;
+  padding: 34px;
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   gap: 20px;
-  height: calc(100vh - 40px);
-  overflow-y: auto;
-
-  /* start hidden offscreen */
-  transform: translateX(100%);
   opacity: 0;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transform: translateX(100%);
+  pointer-events: none;
+  transition: opacity 0.5s, transform 2s;
 }
-
-/* slide in when visible */
-.flow-layout.with-panel .side-panel {
-  transform: translateX(0);
+.side-panel.open {
   opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+.side-panel.hidden {
+  display: none;
 }
 
 /* Panel header */
@@ -307,54 +310,6 @@ body {
 .side-field input[type="number"]:focus {
   border-color: var(--ring);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
-}
-
-/* Mixing controls */
-.mixing-controls {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-
-.ratio-sum {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.error-text {
-  color: #dc3545;
-  font-size: 12px;
-}
-
-.save-inputs-btn {
-  width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.save-inputs-btn:hover {
-  background: #0056b3;
-}
-
-.status-message {
-  margin-top: 8px;
-  padding: 8px;
-  border-radius: 6px;
-  font-size: 13px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  color: #495057;
 }
 
 /* Mixing controls */

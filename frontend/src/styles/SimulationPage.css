@@ -60,30 +60,3 @@
   font-weight: bold;
   color: #333;
 }
-
-.stage-log {
-  margin-top: 20px;
-  padding: 15px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  background-color: #f9f9f9;
-  max-height: 200px;
-  overflow-y: auto;
-  font-family: monospace;
-  font-size: 14px;
-}
-
-.stage-log h4 {
-  margin-bottom: 10px;
-  color: #333;
-}
-
-.stage-log ul {
-  list-style-type: "👉 ";
-  padding-left: 20px;
-}
-
-.stage-log li {
-  margin-bottom: 5px;
-  line-height: 1.4;
-}

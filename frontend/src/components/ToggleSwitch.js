@@ -4,9 +4,7 @@ import "../styles/ToggleSwitch.css";
 function ToggleSwitch({ label, infoContent }) {
   const [isToggled, setIsToggled] = useState(false);
 
-  const handleToggle = () => {
-    setIsToggled(!isToggled);
-  };
+  const handleToggle = () => setIsToggled(!isToggled);
 
   return (
     <div className="toggle-container">
@@ -16,16 +14,19 @@ function ToggleSwitch({ label, infoContent }) {
           onClick={handleToggle}
           aria-label={label}
         >
-          {isToggled ? (
-            <span className="mdi--information-outline"></span>
-          ) : (
-            <span className="mdi--information"></span>
-          )}
+          <span
+            className={
+              isToggled ? "mdi--information" : "mdi--information-outline"
+            }
+          />
         </button>
         <span className="toggle-text">{label}</span>
       </div>
-      {isToggled && <div className="info-content">{infoContent}</div>}
+      <div className={`info-content${isToggled ? " visible" : ""}`}>
+        {infoContent}
+      </div>
     </div>
   );
 }
+
 export default ToggleSwitch;

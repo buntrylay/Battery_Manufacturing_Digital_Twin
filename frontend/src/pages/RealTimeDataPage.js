@@ -25,6 +25,7 @@ function RealTimeDataPage() {
 
   return (
     <div className="realtime-page">
+      <h2 className="page-title">Real-Time Data</h2>
       <ToggleSwitch
         label="Quick Tips"
         infoContent={
@@ -42,8 +43,6 @@ function RealTimeDataPage() {
           </>
         }
       />
-      <h2 className="page-title">Real-Time Data</h2>
-
       <div className="machine-select">
         <label htmlFor="machine">Select a Machine:</label>
         <select

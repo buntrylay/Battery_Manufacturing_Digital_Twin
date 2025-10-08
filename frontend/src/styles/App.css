@@ -9,20 +9,11 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  margin-top: 100px;
 }
 
 .App-main {
   min-height: calc(100vh - 80px);
-}
-
-/* optional: center main container */
-.container {
-  max-width: 900px;
-  margin: 40px auto;
-  padding: 20px;
-  background-color: white;
-  border-radius: 16px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
 }
 
 h2 {

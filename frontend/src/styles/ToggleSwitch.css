@@ -27,25 +27,23 @@
   font-weight: 500;
 }
 .info-content {
-  margin-top: 0.5rem;
-  padding: 10px;
-  font-size: 1rem;
-  color: #b8bbbe;
-  box-shadow: rgba(182, 180, 180, 0.072) 0px 3px 6px,
-    rgba(142, 140, 140, 0.23) 0px 3px 6px;
-  background-color: #72727214;
-  border-radius: 8px;
-  transition: all 0.2s ease-in-out;
-}
-.info-content:hover {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.5s, max-height 0.5s;
   margin-top: 0.5rem;
   padding: 10px;
   font-size: 1rem;
   color: #333;
   box-shadow: rgba(182, 180, 180, 0.072) 0px 3px 6px,
     rgba(142, 140, 140, 0.23) 0px 3px 6px;
-  background-color: #b1b1b114;
+  background-color: #72727214;
   border-radius: 8px;
+}
+
+.info-content.visible {
+  opacity: 1;
+  max-height: 100px; /* or whatever fits your content */
 }
 
 /* Info Icon */
