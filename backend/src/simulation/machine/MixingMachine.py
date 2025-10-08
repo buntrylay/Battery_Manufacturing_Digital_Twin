@@ -2,6 +2,7 @@ from simulation.event_bus.events import EventBus
 from simulation.process_parameters.Parameters import MixingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.BaseMachine import BaseMachine
+from simulation.event_bus.events import PlantSimulationEventType
 from dataclasses import asdict
 import numpy as np
 
@@ -17,7 +18,7 @@ class MixingMachine(BaseMachine):
     ):
         super().__init__(process_name, mixing_model, mixing_parameters, event_bus)
         self.mixing_tank_volume = 200
-        self.pause_secs = 0.1  
+        self.pause_secs = 0.1 
         self.duration_secs = {
             "PVDF": 8,
             "CA": 8,
@@ -38,50 +39,74 @@ class MixingMachine(BaseMachine):
         )
 
     def step_logic(self, t: int, verbose: bool = False):
+
+        # Ensure total steps are calculated
+        if not hasattr(self, "total_steps") or self.total_steps is None:
+            self.calculate_total_steps()
+
+        # ratios from parameters
         solvent_ratio = self.machine_parameters.solvent_ratio
         pvdf_ratio = self.machine_parameters.PVDF_ratio
         ca_ratio = self.machine_parameters.CA_ratio
         am_ratio = self.machine_parameters.AM_ratio
 
+        # total volume to add
         total_solvent = self.mixing_tank_volume * solvent_ratio
         total_pvdf = self.mixing_tank_volume * pvdf_ratio
         total_ca = self.mixing_tank_volume * ca_ratio
         total_am = self.mixing_tank_volume * am_ratio
 
+        # amounts to add per step
         pvdf_per_step = total_pvdf / max(1, self.pvdf_step)
         ca_per_step = total_ca / max(1, self.ca_step)
         am_per_step = total_am / max(1, self.am_step)
 
-        # Add solvent at the start
         if t == 0:
             self.battery_model.add("solvent", total_solvent)
             if verbose:
-                print(f"[{self.process_name}] Added solvent {total_solvent:.2f}L")
-        # Add pvdf
+                print(f"[{self.process_name}] Added solvent: {total_solvent:.2f} L")
+
         elif 1 <= t <= self.pvdf_step:
             self.battery_model.add("PVDF", pvdf_per_step)
-            self.battery_model.update_properties()
+            self.battery_model.update_properties(self.machine_parameters)
             if verbose and t % 10 == 0:
-                print(f"[{self.process_name}] Mixing PVDF: step {t}/{self.pvdf_step}")
-        # Add ca
+                print(f"[{self.process_name}] Mixing PVDF ({t}/{self.pvdf_step})")
+
         elif self.pvdf_step < t <= self.pvdf_step + self.ca_step:
             self.battery_model.add("CA", ca_per_step)
-            self.battery_model.update_properties()
-            if verbose and t % 10 == 0:
-                print(f"[{self.process_name}] Mixing CA: step {t - self.pvdf_step}/{self.ca_step}")
-        # Add am
+            self.battery_model.update_properties(self.machine_parameters)
+            if verbose and (t - self.pvdf_step) % 10 == 0:
+                print(f"[{self.process_name}] Mixing CA ({t - self.pvdf_step}/{self.ca_step})")
+
         elif self.pvdf_step + self.ca_step < t <= self.total_steps:
             self.battery_model.add("AM", am_per_step)
-            self.battery_model.update_properties()
-            if verbose and t % 10 == 0:
-                print(f"[{self.process_name}] Mixing AM: step {t - self.pvdf_step - self.ca_step}/{self.am_step}")
+            self.battery_model.update_properties(self.machine_parameters)
+            if verbose and (t - self.pvdf_step - self.ca_step) % 10 == 0:
+                print(f"[{self.process_name}] Mixing AM ({t - self.pvdf_step - self.ca_step}/{self.am_step})")
 
         if t == self.total_steps - 1:
-            result = asdict(self.get_current_state())
-            if self.event_bus:
-                self.event_bus.publish("mixing_completed", result)
-            if verbose:
-                print(f"[{self.process_name}] Mixing completed")
+            try:
+                state = self.get_current_state()
+                if not isinstance(state, dict):
+                    try:
+                        state = asdict(state)
+                    except Exception:
+                        state = state.__dict__
 
+                if self.event_bus:
+                    self.event_bus.emit_plant_simulation_event(
+                        PlantSimulationEventType.MACHINE_TURNED_OFF,
+                        {
+                            "machine": self.process_name,
+                            "message": "Mixing completed successfully",
+                            "state": state,
+                        },
+                    )
+                    if verbose:
+                        print(f"[{self.process_name}] Mixing completed and event emitted")
+
+            except Exception as e:
+                print(f"[{self.process_name}] Error emitting completion event: {e}")
+                
     def validate_parameters(self, parameters: dict):
         return MixingParameters(**parameters).validate_parameters()
