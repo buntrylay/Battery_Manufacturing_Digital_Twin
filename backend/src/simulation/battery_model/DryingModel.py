@@ -1,3 +1,4 @@
+from simulation.process_parameters.Parameters import DryingParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.CoatingModel import CoatingModel
 
@@ -40,18 +41,16 @@ class DryingModel(BaseModel):
         residence_time = self.drying_length / web_speed
         return int(residence_time / delta_t)
 
-    def update_properties(self, params):
+    def update_properties(
+        self, machine_parameters: DryingParameters, current_time_step: int = None
+    ):
         evap_rate = self.evaporation_rate()
-
         if self.M_solvent == 0:
-            self.M_solvent = self.calculate_initial_solvent_mass()        
-
+            self.M_solvent = self.calculate_initial_solvent_mass()
         self.M_solvent -= (evap_rate / self.AREA) * self.DELTA_T
         self.M_solvent = max(self.M_solvent, 0)
-
         self.dry_thickness = self.calculate_dry_thickness()
         self.defect_risk = abs(evap_rate / self.AREA) > self.MAX_SAFE_EVAP_RATE
-
 
     def get_properties(self):
         return {
