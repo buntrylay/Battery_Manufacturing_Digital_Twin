@@ -11,6 +11,7 @@ from enum import Enum
 
 class PlantSimulationEventType(Enum):
     """Types of events that machines can emit."""
+
     # for machines
     # whenever a machine is turned on to process a batch
     MACHINE_TURNED_ON = "machine_turned_on"

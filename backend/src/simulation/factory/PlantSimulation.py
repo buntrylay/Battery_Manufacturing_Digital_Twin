@@ -77,7 +77,9 @@ class PlantSimulation:
             },
         }
         # the event bus for different components to interface with the other components.
-        self.event_bus = EventBus()
+        self.__event_bus = EventBus()
+        # track the active batch associated with each machine
+        self.__machine_batch_context: dict[str, str] = {}
         """ 
             Condition object: initialises a shared Condition used in __process_batch_request 
             to block batch-worker threads until they reach the queue front and both mixing machines are idle, 
@@ -151,60 +153,77 @@ class PlantSimulation:
                     if electrode_type == "anode"
                     else default_mixing_parameters_cathode
                 ),
-                event_bus=self.event_bus,
+                event_bus=self.__event_bus,
             )
             self.__factory_structure[electrode_type]["coating"] = CoatingMachine(
                 process_name=f"coating_{electrode_type}",
                 coating_parameters=default_coating_parameters,
-                event_bus=self.event_bus,
+                event_bus=self.__event_bus,
             )
             self.__factory_structure[electrode_type]["drying"] = DryingMachine(
                 process_name=f"drying_{electrode_type}",
                 drying_parameters=default_drying_parameters,
-                event_bus=self.event_bus,
+                event_bus=self.__event_bus,
             )
             self.__factory_structure[electrode_type]["calendaring"] = (
                 CalendaringMachine(
                     process_name=f"calendaring_{electrode_type}",
                     calendaring_parameters=default_calendaring_parameters,
-                    event_bus=self.event_bus,
+                    event_bus=self.__event_bus,
                 )
             )
             self.__factory_structure[electrode_type]["slitting"] = SlittingMachine(
                 process_name=f"slitting_{electrode_type}",
                 slitting_parameters=default_slitting_parameters,
-                event_bus=self.event_bus,
+                event_bus=self.__event_bus,
             )
             self.__factory_structure[electrode_type]["inspection"] = (
                 ElectrodeInspectionMachine(
                     process_name=f"inspection_{electrode_type}",
                     electrode_inspection_parameters=default_electrode_inspection_parameters,
-                    event_bus=self.event_bus,
+                    event_bus=self.__event_bus,
                 )
             )
         # Create and append cell line machines
         self.__factory_structure["cell"]["rewinding"] = RewindingMachine(
             process_name="rewinding_cell",
             rewinding_parameters=default_rewinding_parameters,
-            event_bus=self.event_bus,
+            event_bus=self.__event_bus,
         )
         self.__factory_structure["cell"]["electrolyte_filling"] = (
             ElectrolyteFillingMachine(
                 process_name="electrolyte_filling_cell",
                 electrolyte_filling_parameters=default_electrolyte_filling_parameters,
-                event_bus=self.event_bus,
+                event_bus=self.__event_bus,
             )
         )
         self.__factory_structure["cell"]["formation_cycling"] = FormationCyclingMachine(
             process_name="formation_cycling_cell",
             formation_cycling_parameters=default_formation_cycling_parameters,
-            event_bus=self.event_bus,
+            event_bus=self.__event_bus,
         )
         self.__factory_structure["cell"]["aging"] = AgingMachine(
             process_name="aging_cell",
             aging_parameters=default_aging_parameters,
-            event_bus=self.event_bus,
+            event_bus=self.__event_bus,
         )
+
+    def __attach_batch_context(self, event: PlantSimulationEvent):
+        """Include batch information on machine events before dispatch."""
+        machine_id = event.data.get("machine_state").get("process")
+        if not machine_id:
+            return
+
+        batch_id = self.__machine_batch_context.get(machine_id)
+        if not batch_id:
+            return
+
+        if "batch_id" not in event.data:
+            event.data["batch_id"] = batch_id
+
+        machine_state = event.data.get("machine_state")
+        if isinstance(machine_state, dict) and "batch_id" not in machine_state:
+            machine_state["batch_id"] = batch_id
 
     def __get_machine(self, line_type: str, machine_id: str):
         """gets the machine at a particular line, throws if none exists"""
@@ -235,8 +254,15 @@ class PlantSimulation:
             running_machine = self.__get_machine(line_type, machine_id)
             machine_lock = self.__get_machine_lock(line_type, machine_id)
             with machine_lock:
-                running_machine.receive_model_from_previous_process(model)
-                running_machine.run_simulation(verbose=False)
+                # attach batch information into machine-batch context
+                machine_name = running_machine.process_name
+                self.__machine_batch_context[machine_name] = batch.batch_id
+                try:
+                    running_machine.receive_model_from_previous_process(model)
+                    running_machine.run_simulation(verbose=False)
+                finally:
+                    # remove batch information from machine-batch context
+                    self.__machine_batch_context.pop(machine_name, None)
                 model = running_machine.empty_model()
                 batch.update_batch_model(line_type, model)
 
@@ -254,7 +280,7 @@ class PlantSimulation:
                     f"EMIT EVENT - BATCH_STARTED_PROCESSING: Batch processing started for batch {batch.batch_id}."
                 )
             # emit batch started processing event
-            self.event_bus.emit_plant_simulation_event(
+            self.__event_bus.emit_plant_simulation_event(
                 PlantSimulationEventType.BATCH_STARTED_PROCESSING,
                 {"batch_id": batch.batch_id},
             )
@@ -287,7 +313,7 @@ class PlantSimulation:
             # start anode thread
             run_anode_mixing_thread.start()
             # emit batch started processing anode event
-            self.event_bus.emit_plant_simulation_event(
+            self.__event_bus.emit_plant_simulation_event(
                 PlantSimulationEventType.BATCH_STARTED_ANODE_LINE,
                 {"batch_id": batch.batch_id},
             )
@@ -299,18 +325,22 @@ class PlantSimulation:
             # start cathode thread
             run_cathode_mixing_thread.start()
             # emit batch started processing cathode event
-            self.event_bus.emit_plant_simulation_event(
+            self.__event_bus.emit_plant_simulation_event(
                 PlantSimulationEventType.BATCH_STARTED_CATHODE_LINE,
                 {"batch_id": batch.batch_id},
             )
             # Wait for anode & cathode processing finish
             run_anode_mixing_thread.join()
             if verbose:
-                print(f"NO EMIT: Anode mixing processing finished for batch {batch.batch_id}.")
+                print(
+                    f"NO EMIT: Anode mixing processing finished for batch {batch.batch_id}."
+                )
             # no emit as still in anode processing
             run_cathode_mixing_thread.join()
             if verbose:
-                print(f"NO EMIT: Cathode mixing processing finished for batch {batch.batch_id}.")
+                print(
+                    f"NO EMIT: Cathode mixing processing finished for batch {batch.batch_id}."
+                )
             # no emit as still in anode processing
             # This is necessary to allow other thread to be executed straight away when mixing machines are available
             with self.__pipeline_condition:
@@ -348,7 +378,7 @@ class PlantSimulation:
                     f"EMIT EVENT - BATCH_COMPLETED_ANODE_LINE: Anode processing done for batch {batch.batch_id}."
                 )
             # emit event - finish anode processing
-            self.event_bus.emit_plant_simulation_event(
+            self.__event_bus.emit_plant_simulation_event(
                 PlantSimulationEventType.BATCH_COMPLETED_ANODE_LINE,
                 {"batch_id": batch.batch_id},
             )
@@ -359,7 +389,7 @@ class PlantSimulation:
                     f"EMIT EVENT - BATCH_COMPLETED_CATHODE_LINE: Cathode processing done for batch {batch.batch_id}."
                 )
             # emit event - finish cathode processing
-            self.event_bus.emit_plant_simulation_event(
+            self.__event_bus.emit_plant_simulation_event(
                 PlantSimulationEventType.BATCH_COMPLETED_CATHODE_LINE,
                 {"batch_id": batch.batch_id},
             )
@@ -368,9 +398,11 @@ class PlantSimulation:
             # assemble anode-cathode
             batch.assemble_cell_line_model()
             if verbose:
-                print(f"EMIT EVENT - BATCH_ASSEMBLED: Assembled cell for batch {batch.batch_id}.")
+                print(
+                    f"EMIT EVENT - BATCH_ASSEMBLED: Assembled cell for batch {batch.batch_id}."
+                )
             # emit event - batch assembled to cell
-            self.event_bus.emit_plant_simulation_event(
+            self.__event_bus.emit_plant_simulation_event(
                 PlantSimulationEventType.BATCH_ASSEMBLED, {"batch_id": batch.batch_id}
             )
 
@@ -383,18 +415,22 @@ class PlantSimulation:
             ]
             # Batch started processing cell line
             if verbose:
-                print(f"EMIT EVENT - BATCH_STARTED_CELL_LINE: Cell processing started for batch {batch.batch_id}")
+                print(
+                    f"EMIT EVENT - BATCH_STARTED_CELL_LINE: Cell processing started for batch {batch.batch_id}"
+                )
             # emit event - start cell processing
-            self.event_bus.emit_plant_simulation_event(
+            self.__event_bus.emit_plant_simulation_event(
                 PlantSimulationEventType.BATCH_STARTED_CELL_LINE,
                 {"batch_id": batch.batch_id},
             )
             self.__run_batch_on_machines("cell", batch, stages_to_run)
             # Batch finished processing cell line
             if verbose:
-                print(f"EMIT EVENT - BATCH_COMPLETED_CELL_LINE: Cell processing finished for batch {batch.batch_id}")
+                print(
+                    f"EMIT EVENT - BATCH_COMPLETED_CELL_LINE: Cell processing finished for batch {batch.batch_id}"
+                )
             # emait event - finish cell processing
-            self.event_bus.emit_plant_simulation_event(
+            self.__event_bus.emit_plant_simulation_event(
                 PlantSimulationEventType.BATCH_COMPLETED_CELL_LINE,
                 {"batch_id": batch.batch_id},
             )
@@ -402,9 +438,11 @@ class PlantSimulation:
         def __notify_finish__batch__processing(batch, verbose):
             # Batch finished whole pipeline
             if verbose:
-                print(f"EMIT EVENT - BATCH_COMPLETED: Finished pipeline processing for batch {batch.batch_id}")
+                print(
+                    f"EMIT EVENT - BATCH_COMPLETED: Finished pipeline processing for batch {batch.batch_id}"
+                )
             # Emit event - finish batch processing
-            self.event_bus.emit_plant_simulation_event(
+            self.__event_bus.emit_plant_simulation_event(
                 PlantSimulationEventType.BATCH_COMPLETED, {"batch_id": batch.batch_id}
             )
 
@@ -480,9 +518,11 @@ class PlantSimulation:
             # self.__pipeline_condition.notify_all()
             # batch arrived and submitted to queue
             if verbose:
-                print(f"EMIT EVENT - BATCH_REQUESTED: Batch id: {batch.batch_id} has arrived.")
+                print(
+                    f"EMIT EVENT - BATCH_REQUESTED: Batch id: {batch.batch_id} has arrived."
+                )
             # emit event - batch requested
-            self.event_bus.emit_plant_simulation_event(
+            self.__event_bus.emit_plant_simulation_event(
                 PlantSimulationEventType.BATCH_REQUESTED,
                 {
                     "message": f"Batch id {batch.batch_id} has been requested and added to the processing queue."
@@ -577,8 +617,28 @@ class PlantSimulation:
             machine_lock.release()
             return True
         else:
-            raise RuntimeError("The machine is busy. Please change the parameters later.")
+            raise RuntimeError(
+                "The machine is busy. Please change the parameters later."
+            )
 
     def get_event_bus(self):
         """Get the event bus instance."""
-        return self.event_bus
+        return self.__event_bus
+
+    def subscribe_to_event(
+        self,
+        event_type: PlantSimulationEventType,
+        callback: Callable[[PlantSimulationEvent], None],
+        *,
+        include_batch_context: bool = False,
+    ):
+        """Expose event subscription with optional batch context enrichment."""
+        if include_batch_context:
+
+            def __callback_with_batch(event: PlantSimulationEvent):
+                self.__attach_batch_context(event)
+                callback(event)
+
+            self.__event_bus.subscribe(event_type, __callback_with_batch)
+        else:
+            self.__event_bus.subscribe(event_type, callback)

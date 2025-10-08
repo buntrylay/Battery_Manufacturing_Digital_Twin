@@ -27,8 +27,6 @@ class BaseMachine(ABC):
         self.current_time_step = 0
         # Event bus related
         self.event_bus = event_bus
-        # temporary fix
-        self.batch_id = None
         # simulation-related
         self.total_steps = None  # required
 
