@@ -1,7 +1,5 @@
 import os
 import sys
-from typing import Any
-
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -15,7 +13,7 @@ from .event_handler import EventHandler
 
 # Import helpers
 from .logging_helper import configure_logging, get_logger
-from .format_helper import create_success_response
+from .format_helper import create_error_response, create_success_response
 
 # --- Path and Simulation Module Imports ---
 # This points from `backend/src/server` up one level to `backend/src` so that `simulation` can be imported
@@ -49,6 +47,7 @@ event_handler = EventHandler(
 
 @app.get("/")
 def root():
+    """Entry of the web server"""
     return create_success_response(
         "This is the V2 API for the battery manufacturing digital twin!"
     )
@@ -74,20 +73,23 @@ def get_plant_state():
     # quite done, just some validation I think depending on my teammate's implementation of get_current_plant_state()
     global battery_plant_simulation
     plant_state = battery_plant_simulation.get_current_plant_state()
-    return create_success_response("Plant state retrieved", data=plant_state)
+    return create_success_response("Plant state is retrieved.", data=plant_state)
 
 
 @app.post("/api/simulation/start")
 def add_batch():
-    """Add a batch to the plant."""
+    """Add a batch to the plant. Returns the generated batch ID to the requester."""
     global battery_plant_simulation
     try:
         batch_id = battery_plant_simulation.add_batch()
     except ValueError as e:
         # over limit of batches
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(str(e), error_code="BATCH_LIMIT"),
+        )
     return create_success_response(
-        "A new batch was received and added to processing queue",
+        "A new batch was received and added to processing queue.",
         batch_id=batch_id,
     )
 
@@ -100,15 +102,21 @@ def get_machine_status(line_type: str, machine_id: str):
     try:
         status = battery_plant_simulation.get_machine_status(line_type, machine_id)
         return create_success_response(
-            "Machine status retrieved",
+            f"Machine {line_type} {machine_id}'s status was successfully retrieved.",
             line_type=line_type,
             machine_id=machine_id,
             data=status,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(
+                str(e),
+                error_code="MACHINE_NOT_FOUND",
+                line_type=line_type,
+                machine_id=machine_id,
+            ),
+        )
 
 
 @app.patch("/api/machine/{line_type}/{machine_id}/parameters")
@@ -121,16 +129,30 @@ def update_machine_params(line_type: str, machine_id: str, parameters: dict):
             line_type, machine_id, parameters
         ):
             return create_success_response(
-                f"Machine {machine_id} parameters updated successfully",
+                f"Machine {machine_id}'s parameters were updated successfully",
                 line_type=line_type,
                 machine_id=machine_id,
             )
     except TypeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(
+                str(e),
+                error_code="MACHINE_PARAMETER_TYPE_ERROR",
+                line_type=line_type,
+                machine_id=machine_id,
+            ),
+        )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(
+                str(e),
+                error_code="MACHINE_PARAMETER_VALIDATION_ERROR",
+                line_type=line_type,
+                machine_id=machine_id,
+            ),
+        )
 
 
 @app.post("/api/simulation/reset")
@@ -139,9 +161,12 @@ def reset_plant():
     global battery_plant_simulation
     try:
         battery_plant_simulation.reset_plant()
-        return create_success_response("Plant was reset successfully!")
+        return create_success_response("Plant was reset successfully.")
     except TimeoutError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(str(e), error_code="RESET_TIMEOUT"),
+        )
 
 
 # Startup event to initialise event-driven architecture

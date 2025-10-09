@@ -522,10 +522,13 @@ class PlantSimulation:
                     daemon=True,
                 )
                 self.__runner_thread.start()
-                print("There is a monitoring thread creating")
+                # debug
+                # print("There is a monitoring thread creating")
             # otherwise, just know that there is a running thread
             else:
-                print("There is a monitoring thread running")
+                # debug
+                # print("There is a monitoring thread running")
+                pass
 
     def __monitoring_loop(self, poll_interval: float = 0.5):
         """

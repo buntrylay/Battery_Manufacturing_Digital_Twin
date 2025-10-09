@@ -29,6 +29,7 @@ class BaseMachine(ABC):
         self.event_bus = event_bus
         # simulation-related
         self.total_steps = None  # required
+        self.pause_between_steps = 0.1
 
     @abstractmethod
     def receive_model_from_previous_process(self, previous_model: BaseModel):
@@ -72,9 +73,9 @@ class BaseMachine(ABC):
     def pre_run_check(self):
         """Pre-run check for the machine."""
         if self.battery_model is None:
-            raise ValueError("Battery model is not set")
+            return False
         if self.machine_parameters is None:
-            raise ValueError("Machine parameters are not set")
+            return False
         if self.total_steps is None:
             self.calculate_total_steps()
         return True
@@ -144,7 +145,9 @@ class BaseMachine(ABC):
                         print("Plant Warning: Voltage exceeded! ", rte)
                     self.__emit_event(
                         PlantSimulationEventType.MACHINE_SIMULATION_ERROR,
-                        {"error": "Plant Warning: Voltage exceeded! in Formation Cycling"},
+                        {
+                            "error": "Plant Warning: Voltage exceeded! in Formation Cycling"
+                        },
                     )
                     break
                 self.battery_model.update_properties(self.machine_parameters, t)
@@ -157,8 +160,10 @@ class BaseMachine(ABC):
                 )
                 if verbose:
                     print("Current machine state: ", self.get_current_state())
-                time.sleep(0.1)
+                time.sleep(self.pause_between_steps)
             self.turn_off()
+        else:
+            raise Exception("Implementation error!")
 
     def __emit_event(self, event_type: PlantSimulationEventType, data: dict = None):
         """Emit an event to the event bus."""
