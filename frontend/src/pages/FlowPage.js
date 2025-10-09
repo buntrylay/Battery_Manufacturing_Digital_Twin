@@ -118,8 +118,7 @@ function FlowPage() {
                 simulation.
               </p>
               <p>
-                4. Use "Refresh State" to check plant status and "Reset Plant"
-                to stop all simulations.
+                4. Use "Reset Plant" to stop all simulations.
               </p>
             </div>
           }
@@ -138,24 +137,12 @@ function FlowPage() {
           >
             {isRunning ? "Adding Batch..." : "Add Batch"}
           </button>
-          <button
-            onClick={handleRefreshPlantState}
-            className="refresh-state-btn"
-          >
-            Refresh State
-          </button>
           <button onClick={handleResetPlant} className="reset-plant-btn">
             Reset Plant
           </button>
           <div className="status-display">
             {simulationStatus && (
               <p className="simulation-status">{simulationStatus}</p>
-            )}
-            {plantState && (
-              <div className="plant-state">
-                <strong>Plant Status:</strong>{" "}
-                {JSON.stringify(plantState, null, 2)}
-              </div>
             )}
           </div>
         </div>
