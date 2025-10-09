@@ -64,5 +64,5 @@ class DryingModel(BaseModel):
             "solid_content": float(self.solid_content),
             "temperature": float(self.temperature),
             # newly added to the model properties
-            "evaporation_rate": float(self.calculate_evaporation_rate)
+            "evaporation_rate": float(self.evap_rate)
         }

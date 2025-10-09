@@ -152,9 +152,9 @@ class EventHandler:
             await self.__websocket_manager.broadcast(message)
             # for testing only
             info(
-                f"WEBSOCKET: Batch ({notification.get("data").get("batch_id")}) Successfully broadcasting an event - {notification.get("status")} from {notification.get("process_name")}",
+                f'WEBSOCKET: Batch ({notification.get("data").get("batch_id")}) Successfully broadcasting an event - {notification.get("status")} from {notification.get("process_name")}',
             )
         except Exception as exc:
             error(
-                f"WEBSOCKET: Error broadcasting an event status {notification.get("status")}: {exc}"
+                f'WEBSOCKET: Error broadcasting an event status {notification.get("status")}: {exc}'
             )
