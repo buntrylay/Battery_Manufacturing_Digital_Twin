@@ -1,50 +1,34 @@
-import os
-import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Dict, Any
+from fastapi.testclient import TestClient
 import uvicorn
 
-# Import websocket manager & database helper (singletons)
-from .websocket_manager import websocket_manager
-from .db.db_helper import database_helper
-
-# Import event handlers
-from .event_handler import EventHandler
-
-# Import helpers
-from .logging_helper import configure_logging, get_logger
-from .format_helper import create_error_response, create_success_response
-
-# --- Path and Simulation Module Imports ---
-# This points from `backend/src/server` up one level to `backend/src` so that `simulation` can be imported
-
 # Import the core simulation class
+
 from simulation.factory.PlantSimulation import PlantSimulation
 
 # Import websocket manager & database helper (singletons)
 from server.websocket_manager import websocket_manager
 from server.db.db_helper import database_helper
-from server.db.db import engine, SessionLocal
+from server.db.db import SessionLocal
 from server.db.model_table import *
 
 # Import event handlers
 from server.event_handler import EventHandler
 
 # Import parameter mapping utilities
-from server.parameter_mapper import ParameterMapper
-
 from server.logging_helper import configure_logging, get_logger
 
-# initialise logging once for the server process
+# import format utilities
+from server.format_helper import create_error_response, create_success_response
 
+# Initialise logging once for the server process
 configure_logging()
 logger = get_logger("server")
 
-# core plant simulation object
+# Core plant simulation object
 battery_plant_simulation = PlantSimulation()
 # Initialise event handler with shared dependencies
 event_handler = EventHandler(
@@ -60,14 +44,20 @@ async def lifespan(app: FastAPI):
     try:
         event_handler.initialise_system_subscriptions()
         logger.info("[startup] Successfully initialised event-driven architecture!")
-        # try:
-        #     database_helper.start_worker(lambda msg: print(msg))
-        #     logger.info("Successfully created database helper!")
-        # except Exception as db_exc:
-        #     logger.error(f"Error creating database helper: {db_exc}")
     except Exception:
         logger.exception("[startup] Error initialising event-driven architecture")
-        raise
+        raise SystemError()
+    try:
+        database_helper.start_worker(lambda msg: print(msg))
+        logger.info("[startup] Successfully created database helper!")
+    except Exception as db_exc:
+        logger.error(f"[startup] Error creating database helper: {db_exc}")
+    # try: maybe some check to WebSocket server
+    #     logger.info("[startup] Successfully created WebSocket server!")
+    # except Exception as websocket_exc:
+    #     logger.error(
+    #         f"[startup] Error setting up WebSocket server: {websocket_exc}"
+    #     )
     try:
         yield
     finally:
@@ -105,9 +95,11 @@ TABLE_MAP = {
     "aging": Aging,
 }
 
+
 def serialize_row(row):
     """Serialize a SQLAlchemy row to a dict."""
     return {c.name: getattr(row, c.name) for c in row.__table__.columns}
+
 
 @app.get("/")
 def root():
@@ -232,6 +224,7 @@ def reset_plant():
             detail=create_error_response(str(e), error_code="RESET_TIMEOUT"),
         )
 
+
 @app.get("/api/db/{table_name}")
 def get_table_entries(table_name: str):
     """Return all entries from the specified table."""
@@ -247,6 +240,7 @@ def get_table_entries(table_name: str):
         return {"data": [serialize_row(row) for row in rows]}
     except Exception as e:
         return {"error": f"Failed to fetch entries from {table_name}: {str(e)}"}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

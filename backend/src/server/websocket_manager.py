@@ -1,6 +1,4 @@
 from fastapi import WebSocket
-from typing import Optional
-from simulation.event_bus.events import EventBus, PlantSimulationEventType
 
 
 class ConnectionManager:
