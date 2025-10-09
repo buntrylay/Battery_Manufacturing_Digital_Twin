@@ -36,5 +36,10 @@ class AgingMachine(BaseMachine):
         if t == self.total_steps - 1:
             pass
 
-    def validate_parameters(self, parameters: dict):
-        return AgingParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, AgingParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return AgingParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected AgingParameters or dict, got {type(parameters)}")

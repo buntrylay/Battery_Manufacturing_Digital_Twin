@@ -5,13 +5,14 @@ import MachineFlowDiagram from "../components/MachineFlowDiagram";
 import "../styles/FlowPage.css";
 import { useLogs } from "../contexts/WebSocketContext";
 import ToggleSwitch from "../components/ToggleSwitch";
-import { startSimulation } from "../services/api";
+import { startSimulation, getPlantState, resetPlant } from "../services/api";
 
 function FlowPage() {
   const { setSelectedId, selectedStage } = useFlowPage();
   const { clearLogs } = useLogs();
   const [simulationStatus, setSimulationStatus] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [plantState, setPlantState] = useState(null);
   const [animationTrigger, setAnimationTrigger] = useState(false);
   const [plantState, setPlantState] = useState(null);
 
@@ -30,13 +31,10 @@ function FlowPage() {
 
   const handleStartFullSimulation = async () => {
     setIsRunning(true);
-    setAnimationTrigger(true);
-    localStorage.setItem("simulationRunning", "true"); // Persist animation state
     setSimulationStatus("Starting full plant simulation...");
-    clearLogs();
 
     try {
-      // This API call aligns with adding a batch to a continuous simulation
+      // Use the new continuous batch simulation API from your team lead's backend
       const response = await startSimulation();
 
       if (response.data && response.data.message) {
@@ -45,14 +43,60 @@ function FlowPage() {
         setSimulationStatus("✓ Plant simulation started successfully!");
       }
 
-      // Refresh plant state after starting
+      // Trigger animation for the new batch
+      setAnimationTrigger(true);
+
+      // Refresh plant state
+      handleRefreshPlantState();
     } catch (error) {
+      console.error("Simulation start error:", error);
+      setSimulationStatus(
+        `❌ Error: ${error.response?.data?.detail || error.message}`
+      );
       console.error("Simulation start error:", error);
       setSimulationStatus(
         `❌ Error: ${error.response?.data?.detail || error.message}`
       );
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  const handleRefreshPlantState = async () => {
+    try {
+      const response = await getPlantState();
+      setPlantState(response.data);
+    } catch (error) {
+      console.error("Plant state error:", error);
+    }
+  };
+
+  const handleResetPlant = async () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to reset the plant? This will stop all running simulations."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setSimulationStatus("Resetting plant...");
+      const response = await resetPlant();
+
+      if (response.data && response.data.message) {
+        setSimulationStatus(`✓ ${response.data.message}`);
+      } else {
+        setSimulationStatus("✓ Plant reset successfully!");
+      }
+
+      setPlantState(null);
+      clearLogs();
+    } catch (error) {
+      console.error("Plant reset error:", error);
+      setSimulationStatus(
+        `❌ Reset error: ${error.response?.data?.detail || error.message}`
+      );
     }
   };
 
@@ -95,21 +139,37 @@ function FlowPage() {
           >
             {isRunning ? "Adding Batch..." : "Add Batch"}
           </button>
+          <button
+            onClick={handleRefreshPlantState}
+            className="refresh-state-btn"
+          >
+            Refresh State
+          </button>
+          <button onClick={handleResetPlant} className="reset-plant-btn">
+            Reset Plant
+          </button>
+          <div className="instructions">
+            <p>1. Click on any machine to configure its parameters</p>
+            <p>2. Use "Load Current" → "Validate" → "Apply Changes" workflow</p>
+            <p>
+              3. Click "Add Batch" to add a batch to the continuous plant
+              simulation
+            </p>
+            <p>
+              4. Use "Refresh State" to check plant status and "Reset Plant" to
+              stop all simulations
+            </p>
+            {simulationStatus && (
+              <p className="simulation-status">{simulationStatus}</p>
+            )}
+            {plantState && (
+              <div className="plant-state">
+                <strong>Plant Status:</strong>{" "}
+                {JSON.stringify(plantState, null, 2)}
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* This wrapper for status and plant state matches your CSS structure */}
-        <div className="status-messages">
-          {simulationStatus && (
-            <p className="simulation-status">{simulationStatus}</p>
-          )}
-          {plantState && (
-            <div className="plant-state">
-              <strong>Plant Status:</strong>{" "}
-              <pre>{JSON.stringify(plantState, null, 2)}</pre>
-            </div>
-          )}
-        </div>
-
         <div
           className={`flow-canvas ${
             animationTrigger ? "simulation-started" : ""

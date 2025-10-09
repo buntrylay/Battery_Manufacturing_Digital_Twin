@@ -16,7 +16,6 @@ class CalendaringMachine(BaseMachine):
         super().__init__(
             process_name, calendaring_model, calendaring_parameters, event_bus
         )
-        # self.total_steps = 60
 
     def receive_model_from_previous_process(self, previous_model: DryingModel):
         self.battery_model = CalendaringModel(
@@ -25,10 +24,15 @@ class CalendaringMachine(BaseMachine):
         )
 
     def calculate_total_steps(self):
-        self.total_steps = 10  # default placeholder
+        self.total_steps = 60 # placeholder for a fixed number of steps
 
     def step_logic(self, t: int, verbose: bool):
         pass
 
-    def validate_parameters(self, parameters: dict):
-        return CalendaringParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, CalendaringParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return CalendaringParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected CalendaringParameters or dict, got {type(parameters)}")

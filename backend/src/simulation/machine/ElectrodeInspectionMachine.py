@@ -22,7 +22,7 @@ class ElectrodeInspectionMachine(BaseMachine):
         )
 
     def calculate_total_steps(self):
-        self.total_steps = 10
+        self.total_steps = 10 # placeholder for a fixed number of steps
 
     def receive_model_from_previous_process(self, previous_model: SlittingModel):
         self.battery_model = ElectrodeInspectionModel(previous_model)
@@ -30,5 +30,10 @@ class ElectrodeInspectionMachine(BaseMachine):
     def step_logic(self, t: int, verbose: bool):
         pass
 
-    def validate_parameters(self, parameters: dict):
-        return ElectrodeInspectionParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, ElectrodeInspectionParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return ElectrodeInspectionParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected ElectrodeInspectionParameters or dict, got {type(parameters)}")

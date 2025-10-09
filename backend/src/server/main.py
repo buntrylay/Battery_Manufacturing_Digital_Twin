@@ -1,48 +1,34 @@
-import os
-import sys
+from contextlib import asynccontextmanager
 
-# for simulation & concurrency
-import threading
-
-# for API
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-# --- Path and Simulation Module Imports ---
-# This points from `backend/src/server` up one level to `backend/src` so that `simulation` can be imported
-
 # Import the core simulation class
+
 from simulation.factory.PlantSimulation import PlantSimulation
 
 # Import websocket manager & database helper (singletons)
 from server.websocket_manager import websocket_manager
 from server.db.db_helper import database_helper
+from server.db.db import SessionLocal
+from server.db.model_table import *
 
 # Import event handlers
 from server.event_handler import EventHandler
 
+# Import parameter mapping utilities
 from server.logging_helper import configure_logging, get_logger
 
-# initialise logging once for the server process
+# import format utilities
+from server.format_helper import create_error_response, create_success_response
+
+# Initialise logging once for the server process
 configure_logging()
 logger = get_logger("server")
-# main FastAPI app
-app = FastAPI()
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-# core plant simulation object
+
+# Core plant simulation object
 battery_plant_simulation = PlantSimulation()
-# regarding the simulation thread
-factory_run_thread = None
-out_of_batch_event = threading.Event()
-# WebSocket connection management
 # Initialise event handler with shared dependencies
 event_handler = EventHandler(
     plant_simulation=battery_plant_simulation,
@@ -51,9 +37,75 @@ event_handler = EventHandler(
 )
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage startup and shutdown tasks for the FastAPI application."""
+    try:
+        event_handler.initialise_system_subscriptions()
+        logger.info("[startup] Successfully initialised event-driven architecture!")
+    except Exception:
+        logger.exception("[startup] Error initialising event-driven architecture")
+        raise SystemError()
+    try:
+        database_helper.start_worker(lambda msg: print(msg))
+        logger.info("[startup] Successfully created database helper!")
+    except Exception as db_exc:
+        logger.error(f"[startup] Error creating database helper: {db_exc}")
+    # try: maybe some check to WebSocket server
+    #     logger.info("[startup] Successfully created WebSocket server!")
+    # except Exception as websocket_exc:
+    #     logger.error(
+    #         f"[startup] Error setting up WebSocket server: {websocket_exc}"
+    #     )
+    try:
+        yield
+    finally:
+        # Placeholder for future shutdown/cleanup logic.
+        pass
+
+
+# main FastAPI app
+app = FastAPI(lifespan=lifespan)
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+TABLE_MAP = {
+    "anode_mixing": AnodeMixing,
+    "cathode_mixing": CathodeMixing,
+    "anode_coating": AnodeCoating,
+    "cathode_coating": CathodeCoating,
+    "anode_drying": AnodeDrying,
+    "cathode_drying": CathodeDrying,
+    "anode_calendaring": AnodeCalendaring,
+    "cathode_calendaring": CathodeCalendaring,
+    "anode_slitting": AnodeSlitting,
+    "cathode_slitting": CathodeSlitting,
+    "anode_inspection": AnodeInspection,
+    "cathode_inspection": CathodeInspection,
+    "rewinding": Rewinding,
+    "electrolyte_filling": ElectrolyteFilling,
+    "formation_cycling": FormationCycling,
+    "aging": Aging,
+}
+
+
+def serialize_row(row):
+    """Serialize a SQLAlchemy row to a dict."""
+    return {c.name: getattr(row, c.name) for c in row.__table__.columns}
+
+
 @app.get("/")
 def root():
-    return {"message": "This is the V2 API for the battery manufacturing digital twin!"}
+    """Entry of the web server"""
+    return create_success_response(
+        "This is the V2 API for the battery manufacturing digital twin!"
+    )
 
 
 @app.websocket("/ws/status")
@@ -75,33 +127,26 @@ def get_plant_state():
     """Get the current state of the plant. Returns a dictionary with the current state of the plant."""
     # quite done, just some validation I think depending on my teammate's implementation of get_current_plant_state()
     global battery_plant_simulation
-    return battery_plant_simulation.get_current_plant_state()
+    plant_state = battery_plant_simulation.get_current_plant_state()
+    return create_success_response("Plant state is retrieved.", data=plant_state)
 
 
 @app.post("/api/simulation/start")
 def add_batch():
-    """Add a batch to the plant."""
+    """Add a batch to the plant. Returns the generated batch ID to the requester."""
     global battery_plant_simulation
-    global factory_run_thread
-    global out_of_batch_event
     try:
-        battery_plant_simulation.add_batch()
+        batch_id = battery_plant_simulation.add_batch()
     except ValueError as e:
         # over limit of batches
-        raise HTTPException(status_code=400, detail=str(e))
-    if factory_run_thread is None:
-        factory_run_thread = threading.Thread(
-            target=battery_plant_simulation.run, args=(out_of_batch_event,)
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(str(e), error_code="BATCH_LIMIT"),
         )
-        factory_run_thread.start()
-    elif out_of_batch_event.is_set():
-        factory_run_thread = None
-        out_of_batch_event.clear()
-        factory_run_thread = threading.Thread(
-            target=battery_plant_simulation.run, args=(out_of_batch_event,)
-        )
-        factory_run_thread.start()
-        return {"message": "Plant started successfully"}
+    return create_success_response(
+        "A new batch was received and added to processing queue.",
+        batch_id=batch_id,
+    )
 
 
 @app.get("/api/machine/{line_type}/{machine_id}/status")
@@ -110,11 +155,23 @@ def get_machine_status(line_type: str, machine_id: str):
     # quite done, just some validation I think depending on my teammate's implementation of get_machine_status()
     global battery_plant_simulation
     try:
-        return battery_plant_simulation.get_machine_status(line_type, machine_id)
+        status = battery_plant_simulation.get_machine_status(line_type, machine_id)
+        return create_success_response(
+            f"Machine {line_type} {machine_id}'s status was successfully retrieved.",
+            line_type=line_type,
+            machine_id=machine_id,
+            data=status,
+        )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(
+                str(e),
+                error_code="MACHINE_NOT_FOUND",
+                line_type=line_type,
+                machine_id=machine_id,
+            ),
+        )
 
 
 @app.patch("/api/machine/{line_type}/{machine_id}/parameters")
@@ -126,53 +183,62 @@ def update_machine_params(line_type: str, machine_id: str, parameters: dict):
         if battery_plant_simulation.update_machine_parameters(
             line_type, machine_id, parameters
         ):
-            return {
-                "message": f"Machine {machine_id} parameters updated successfully",
-                "line_type": line_type,
-                "machine_id": machine_id,
-            }
+            return create_success_response(
+                f"Machine {machine_id}'s parameters were updated successfully",
+                line_type=line_type,
+                machine_id=machine_id,
+            )
     except TypeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(
+                str(e),
+                error_code="MACHINE_PARAMETER_TYPE_ERROR",
+                line_type=line_type,
+                machine_id=machine_id,
+            ),
+        )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(
+                str(e),
+                error_code="MACHINE_PARAMETER_VALIDATION_ERROR",
+                line_type=line_type,
+                machine_id=machine_id,
+            ),
+        )
 
 
 @app.post("/api/simulation/reset")
 def reset_plant():
     """Reset the plant."""
     global battery_plant_simulation
-    global factory_run_thread
-    global out_of_batch_event
-    # reset the factory run thread
-    if factory_run_thread:
-        factory_run_thread.join()
-        factory_run_thread = None
-    # reset the plant simulation object
-    battery_plant_simulation.reset_plant()
-    # reset the event
-    if out_of_batch_event.is_set():
-        out_of_batch_event.clear()
-    return {"message": "Plant reset successfully"}
+    try:
+        battery_plant_simulation.reset_plant()
+        return create_success_response("Plant was reset successfully.")
+    except TimeoutError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(str(e), error_code="RESET_TIMEOUT"),
+        )
 
 
-# Startup event to initialise event-driven architecture
-@app.on_event("startup")
-async def startup_event():
-    """Initialise the event-driven architecture."""
+@app.get("/api/db/{table_name}")
+def get_table_entries(table_name: str):
+    """Return all entries from the specified table."""
+    table_class = TABLE_MAP.get(table_name)
+    if not table_class:
+        return {"error": f"Table '{table_name}' not found."}
     try:
-        event_handler.initialise_system_subscriptions()
-        logger.info("[startup] Successfully initialised event-driven architecture!")
+        db = SessionLocal()
+        rows = db.query(table_class).all()
+        db.close()
+        if not rows:
+            return {"message": f"No entries found in {table_name} table.", "data": []}
+        return {"data": [serialize_row(row) for row in rows]}
     except Exception as e:
-        logger.exception("[startup] Error initialising event-driven architecture")
-        raise
-    
-    try:
-         database_helper.start_worker(lambda msg: print(msg))
-         logger.info("Successfully created database helper!")
-    except Exception as e:
-         logger.error(f"Error creating database helper: {e}")
+        return {"error": f"Failed to fetch entries from {table_name}: {str(e)}"}
 
 
 if __name__ == "__main__":

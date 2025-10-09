@@ -28,9 +28,12 @@ class FormationCyclingMachine(BaseMachine):
 
     def step_logic(self, t: int, verbose: bool):
         if self.battery_model.voltage >= self.machine_parameters.charge_voltage_limit_V:
-            if verbose: 
-                info(f"{self.process_name}: Voltage limit reached at step {t}")
             raise RuntimeError("Voltage limit was reached")
 
-    def validate_parameters(self, parameters: dict):
-        return FormationCyclingParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, FormationCyclingParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return FormationCyclingParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected FormationCyclingParameters or dict, got {type(parameters)}")

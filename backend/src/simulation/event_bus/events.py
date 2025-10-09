@@ -5,7 +5,6 @@ Machines emit events, and other components can listen to these events.
 
 from dataclasses import dataclass
 from datetime import datetime
-from logging import error
 from typing import Dict, Any, Callable, List
 from enum import Enum
 
@@ -100,7 +99,7 @@ class EventBus:
                     callback(event)
                 except Exception as e:
                     # general error handling for the event callback
-                    error(f"Error in event callback: {e}")
+                    print(f"Error in event callback: {e}")
 
     def emit_plant_simulation_event(
         self,

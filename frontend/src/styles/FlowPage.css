@@ -9,6 +9,19 @@
   --radius: 12px;
 }
 
+/* Animation keyframes for machine status */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 25px rgba(40, 167, 69, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(40, 167, 69, 1);
+  }
+  100% {
+    box-shadow: 0 0 25px rgba(40, 167, 69, 0.8);
+  }
+}
+
 body {
   margin: 0;
   font-family: Inter, system-ui, sans-serif;
@@ -71,6 +84,48 @@ body {
 .start-full-simulation-btn:disabled {
   background: #6c757d;
   cursor: not-allowed;
+}
+
+.refresh-state-btn {
+  padding: 8px 16px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.refresh-state-btn:hover {
+  background: #138496;
+}
+
+.reset-plant-btn {
+  padding: 8px 16px;
+  background: #ffc107;
+  color: #212529;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.reset-plant-btn:hover {
+  background: #e0a800;
+}
+
+.plant-state {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 12px;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 .refresh-state-btn {
@@ -625,7 +680,7 @@ body {
 .control-buttons {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-top: 12px;
 }
 
 .save-inputs-btn {
@@ -635,7 +690,14 @@ body {
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
+}
+
+.load-params-btn, .validate-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -644,11 +706,26 @@ body {
 
 .save-inputs-btn:hover {
   background: #218838;
+.load-params-btn:hover {
+  background: #e9ecef;
+  border-color: #6c757d;
+}
+
+.validate-btn {
+  background: #ffc107;
+  color: #212529;
+  border-color: #ffc107;
+}
+
+.validate-btn:hover {
+  background: #e0a800;
+  border-color: #d39e00;
 }
 
 .run-simulation-btn {
   flex: 1;
   padding: 12px;
+  background: #28a745;
   background: #28a745;
   color: white;
   border: none;
@@ -657,6 +734,7 @@ body {
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
+  margin-top: 8px;
 }
 
 .run-simulation-btn:hover {
@@ -723,15 +801,47 @@ body {
 }
 
 /* Status message improvements */
+.load-params-btn:disabled:hover,
+.validate-btn:disabled:hover,
+.save-inputs-btn:disabled:hover {
+  background: #e9ecef;
+  border-color: #ced4da;
+}
+
+/* Status message improvements */
 .status-message {
+  margin-top: 12px;
+  padding: 10px;
   margin-top: 12px;
   padding: 10px;
   border-radius: 6px;
   font-size: 13px;
   line-height: 1.4;
+  line-height: 1.4;
   background: #f8f9fa;
   border: 1px solid #dee2e6;
   color: #495057;
+  word-wrap: break-word;
+}
+
+/* Success status (contains checkmark) */
+.status-message {
+  background: #f8f9fa;
+  border-color: #dee2e6;
+  color: #495057;
+}
+
+.status-message:contains("✓") {
+  background: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+/* Error status (contains X mark) */
+.status-message:contains("❌") {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
   word-wrap: break-word;
 }
 

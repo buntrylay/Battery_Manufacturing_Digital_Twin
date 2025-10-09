@@ -84,7 +84,6 @@ def test_run_simulation():
     plant_simulation.reset_plant()
     batch_1 = Batch(batch_id="Batch_1")
     plant_simulation.add_batch(batch_1)
-    plant_simulation.run()
 
 
 def test_get_plant_state():
@@ -116,7 +115,7 @@ def test_two_batches():
     plant_simulation.add_batch(batch_1)
     time.sleep(2)  # wait for the first batch to run for some time
     plant_simulation.add_batch(batch_2)
-    plant_simulation.run()
+
 
 def test_four_batches_staggered():
     plant_simulation.reset_plant()
@@ -134,10 +133,18 @@ def test_four_batches_staggered():
         if delay > elapsed:
             time.sleep(delay - elapsed)
         try:
-            plant_simulation.add_batch(Batch(batch_id=batch_id))
+            plant_simulation.add_batch(Batch(batch_id=batch_id), verbose=True)
         except:
             print("maximum three batch requests in the queue. Please slow down.")
-    plant_simulation.run()
+    plant_simulation.wait_until_plant_simulation_is_idle()
+    print("Simulation finished!")
+
+
+def server_thread():
+    while True:
+        pass
+
 
 if __name__ == "__main__":
     test_four_batches_staggered()
+    server_thread()

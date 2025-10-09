@@ -12,6 +12,8 @@ const ImageNode = ({ data }) => {
         return "3px solid #28a745"; // Green
       case "completed":
         return "3px solid #007bff"; // Blue
+      case "idle":
+        return "3px solid #6c757d"; // Gray - ready for next batch
       case "off":
         return "3px solid #337ec0ff";
       default:
@@ -47,6 +49,16 @@ const ImageNode = ({ data }) => {
         ...baseStyle,
         boxShadow: "0 0 15px rgba(0, 123, 255, 0.5)",
         border: "3px solid #007bff"
+      };
+    }
+
+    if (status === "idle") {
+      return {
+        ...baseStyle,
+        border: "3px solid #6c757d",
+        opacity: 0.8,
+        transform: "scale(1.0)",
+        boxShadow: "0 0 10px rgba(108, 117, 125, 0.3)"
       };
     }
 
