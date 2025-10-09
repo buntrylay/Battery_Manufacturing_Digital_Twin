@@ -1,5 +1,5 @@
 // src/components/MachineFlowDiagram.js
-import React, { useMemo, useEffect, useState } from "react";
+import React, { useMemo, useEffect, useState, useCallback } from "react";
 import {
   ReactFlow,
   useNodesState,
@@ -78,6 +78,7 @@ const generateLayout = (machineData) => {
         id: `${cathodeStages[i - 1].id}->${stage.id}`,
         source: cathodeStages[i - 1].id,
         target: stage.id,
+        type: "animated",
       });
     }
   });
@@ -91,6 +92,7 @@ const generateLayout = (machineData) => {
         id: `${anodeStages[i - 1].id}->${stage.id}`,
         source: anodeStages[i - 1].id,
         target: stage.id,
+        type: "animated",
       });
     }
   });
@@ -106,6 +108,7 @@ const generateLayout = (machineData) => {
         id: `${sharedStages[i - 1].id}->${stage.id}`,
         source: sharedStages[i - 1].id,
         target: stage.id,
+        type: "animated",
       });
     }
   });
@@ -115,71 +118,67 @@ const generateLayout = (machineData) => {
     id: "Cathode Inspection->Rewinding",
     source: "Cathode Inspection",
     target: "Rewinding",
+    type: "animated",
   });
   edges.push({
     id: "Anode Inspection->Rewinding",
     source: "Anode Inspection",
     target: "Rewinding",
+    type: "animated",
   });
 
   return { defaultNodes: nodes, defaultEdges: edges };
 };
 
 const MachineFlowDiagram = ({ animationTrigger }) => {
-  // Map backend process names to frontend machine IDs (defined at component top to avoid closure issues)
-  const processToMachineMap = {
-    // Mixing processes (exact backend names from PlantSimulation.py)
+  // Map backend process names to frontend machine IDs
+  const processToMachineMap = useMemo(() => ({
     'mixing_anode': 'Anode Mixing',
     'mixing_cathode': 'Cathode Mixing',
-    
-    // Coating processes (exact backend names from PlantSimulation.py)
     'coating_anode': 'Anode Coating',
     'coating_cathode': 'Cathode Coating',
-    
-    // Drying processes (exact backend names from PlantSimulation.py)
     'drying_anode': 'Anode Drying',
     'drying_cathode': 'Cathode Drying',
-    
-    // Calendaring processes (exact backend names from PlantSimulation.py)
     'calendaring_anode': 'Anode Calendaring',
     'calendaring_cathode': 'Cathode Calendaring',
-    
-    // Slitting processes (exact backend names from PlantSimulation.py)
     'slitting_anode': 'Anode Slitting',
     'slitting_cathode': 'Cathode Slitting',
-    
-    // Inspection processes (exact backend names from PlantSimulation.py)
     'inspection_anode': 'Anode Inspection',
     'inspection_cathode': 'Cathode Inspection',
-    
-    // Cell line processes (exact backend names from PlantSimulation.py)
     'rewinding_cell': 'Rewinding',
     'electrolyte_filling_cell': 'Electrolyte Filling',
     'formation_cycling_cell': 'Formation Cycling',
     'aging_cell': 'Aging',
-    
-    // Legacy/alternative names for backward compatibility
-    'rewinding': 'Rewinding',
-    'electrolyte_filling': 'Electrolyte Filling',
-    'formation_cycling': 'Formation Cycling',
-    'aging': 'Aging'
-  };
+  }), []);
 
   const { MACHINE_FLOW, setSelectedId } = useFlowPage();
   const { stageLog } = useLogs();
+  
   // Generate default layout only once
   const { defaultNodes, defaultEdges } = useMemo(
     () => generateLayout(MACHINE_FLOW),
     [MACHINE_FLOW]
   );
+  
   //Setting states for Node edge and stage completion
   const [nodes, setNodes, onNodesChange] = useNodesState(defaultNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(defaultEdges);
-  const [machineStatus, setMachineStatus] = useState({});
-  const [simulationStarted, setSimulationStarted] = useState(false);
-  // eslint-disable-next-line no-unused-vars
-  const [lastProcessSeen, setLastProcessSeen] = useState({});
-  
+  const [machineStatus, setMachineStatus] = useState(() => {
+    const saved = localStorage.getItem("machineStatus");
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [simulationStarted, setSimulationStarted] = useState(() => {
+    return localStorage.getItem("simulationRunning") === "true";
+  });
+  const [activeBatches, setActiveBatches] = useState(new Set()); // Track active batch IDs
+  const [activeFlows, setActiveFlows] = useState(new Set()); // Track active package flows between machines
+
+  // Persist machine status to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("machineStatus", JSON.stringify(machineStatus));
+  }, [machineStatus]);
+
+  // Update nodes with machine status
   useEffect(() => {
     console.log("Updating nodes with status:", machineStatus, "simulationStarted:", simulationStarted);
     setNodes((nds) =>
@@ -198,11 +197,9 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
   useEffect(() => {
     if (animationTrigger) {
       setSimulationStarted(true);
+      localStorage.setItem("simulationRunning", "true");
       
-      // Reset process tracking
-      setLastProcessSeen({});
-      
-      // Reset and start with first machines (Anode and Cathode Mixing)
+      // Start with mixing machines
       const initialStatus = {
         "Anode Mixing": "running",
         "Cathode Mixing": "running"
@@ -211,36 +208,23 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
       setMachineStatus(initialStatus);
       console.log("Animation triggered - Starting simulation with first machines:", initialStatus);
       
-      // Force immediate node update
-      setTimeout(() => {
-        setNodes((nds) =>
-          nds.map((node) => ({
-            ...node,
-            data: { 
-              ...node.data, 
-              status: initialStatus[node.id] || null,
-              simulationStarted: true
-            },
-          }))
-        );
-      }, 100);
-      
-      // Add progressive startup animation for all edges
+      // Activate edges for running flow
       setEdges((eds) =>
         eds.map((edge) => ({
           ...edge,
-          animated: true,
-          style: { stroke: '#007bff', strokeWidth: 2 }
+          data: { 
+            ...edge.data, 
+            isActive: true 
+          }
         }))
       );
     }
-  }, [animationTrigger, setEdges, setNodes]);
+  }, [animationTrigger, setEdges]);
 
-  // TODO: This listens for WebSocket logs and updates state
+  // WebSocket message processing for animations
   useEffect(() => {
     if (stageLog.length === 0) {
-      // Reset machine status when logs are cleared, but keep initial running state if simulation started
-      setLastProcessSeen({}); // Reset process tracking
+      // Reset when logs are cleared
       if (simulationStarted) {
         setMachineStatus({
           "Anode Mixing": "running",
@@ -248,6 +232,8 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
         });
       } else {
         setMachineStatus({});
+        localStorage.removeItem("machineStatus");
+        localStorage.removeItem("simulationRunning");
       }
       return;
     }
@@ -255,253 +241,298 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
     const latestLog = stageLog[stageLog.length - 1];
     console.log("=== PROCESSING LATEST LOG ===");
     console.log("Raw log:", latestLog);
-    console.log("All available machine IDs:", MACHINE_FLOW.map(m => m.id));
-    console.log("Current machine status:", machineStatus);
-    console.log("Process mapping available:", Object.keys(processToMachineMap));
-
-    // NEW APPROACH: Direct completion detection from backend status messages
-    // Based on actual WebSocket messages from the live logs
-    const completionStatuses = [
-      'mixing_completed', 'coating_completed', 'drying_completed', 
-      'calendaring_completed', 'slitting_completed', 'inspection_completed',
-      'rewinding_completed', 'electrolyte_filling_completed', 
-      'formation_cycling_completed', 'aging_completed',
-      'simulation_completed', 'completed', 'finished', 'done'
-    ];
-    
-    const runningStatuses = [
-      'mixing_started', 'coating_started', 'drying_started',
-      'calendaring_started', 'slitting_started', 'inspection_started', 
-      'rewinding_started', 'electrolyte_filling_started',
-      'formation_cycling_started', 'aging_started',
-      'running', 'simulation_started', 'simulation_progress'
-    ];
 
     let detectedMachine = null;
     let detectedStatus = null;
+    let batchId = null;
 
-    // SIMPLIFIED APPROACH: Only focus on machine completion (when turned off)
-    // Check for "idle" status which indicates machine finished and turned off
-    if (latestLog.includes(': idle -') && latestLog.includes('turned off')) {
-      console.log("🛑 MACHINE TURNED OFF - Process completed");
-      
-      // Try to extract machine/process name from the message
+    // Extract batch ID from log message (format: [time] (Batch X) machine: status)
+    const batchMatch = latestLog.match(/\(Batch (\d+)\)/);
+    if (batchMatch) {
+      batchId = batchMatch[1];
+    }
+
+    // Look for machine turned off messages - these indicate BATCH processing completion
+    if (latestLog.includes('machine_turned_off')) {
+      // Extract machine name from the log
       for (const [processName, machineName] of Object.entries(processToMachineMap)) {
         if (latestLog.includes(processName)) {
           detectedMachine = machineName;
-          detectedStatus = 'completed';
-          console.log("🎯 Machine completed and turned off:", processName, "->", machineName);
+          detectedStatus = 'running'; // Turn machine green when it turns off (completes processing)
+          console.log("� BATCH COMPLETED - Machine turning green:", processName, "->", machineName, "Batch:", batchId);
           break;
         }
       }
     }
 
-    // Also check for explicit completion messages
-    if (!detectedMachine) {
-      for (const status of completionStatuses) {
-        if (latestLog.includes(status)) {
-          console.log("🏁 EXPLICIT COMPLETION DETECTED:", status);
+    // SPECIAL HANDLING: Detect batch completion events
+    if (latestLog.includes('batch_completed') && !latestLog.includes('batch_completed_anode_line') && !latestLog.includes('batch_completed_cathode_line') && !latestLog.includes('batch_completed_cell_line')) {
+      console.log("🎉 FULL BATCH COMPLETED:", batchId);
+      
+      // Remove completed batch from active tracking
+      if (batchId) {
+        setActiveBatches(prev => {
+          const updated = new Set(prev);
+          updated.delete(batchId);
           
-          // Try to extract machine/process name from the message
-          for (const [processName, machineName] of Object.entries(processToMachineMap)) {
-            if (latestLog.includes(processName)) {
-              detectedMachine = machineName;
-              detectedStatus = 'completed';
-              console.log("🎯 Explicit completion for:", processName, "->", machineName);
-              break;
-            }
+          // If no more active batches, show completion celebration
+          if (updated.size === 0) {
+            console.log("🏆 ALL BATCHES COMPLETED - Showing blue completion state!");
+            setTimeout(() => {
+              setMachineStatus(prevStatus => {
+                const allCompleted = {};
+                MACHINE_FLOW.forEach(machine => {
+                  allCompleted[machine.id] = 'completed';
+                });
+                console.log("🔵 All machines now blue (completed state):", allCompleted);
+                return allCompleted;
+              });
+              
+              // Also clear active flows for clean completion state
+              setActiveFlows(new Set());
+            }, 500); // Quick transition to blue
           }
           
-          if (detectedMachine) break;
-        }
+          return updated;
+        });
       }
+      return; // Exit early
     }
 
-    // Also check for structured WebSocket message format: [timestamp] process_name: status - message
-    if (!detectedMachine) {
-      const structuredMatch = latestLog.match(/\[(.*?)\]\s+([^:]+):\s+([^-]+)\s*-\s*(.*)/);
-      if (structuredMatch) {
-        const [, timestamp, processOrMachine, status, message] = structuredMatch;
-        console.log("📡 Structured message detected:", { processOrMachine, status, message });
-        
-        // Try to map the process/machine name
-        const trimmedProcess = processOrMachine.trim();
-        detectedMachine = processToMachineMap[trimmedProcess] || 
-                         (MACHINE_FLOW.find(m => m.id.toLowerCase() === trimmedProcess.toLowerCase())?.id);
-        
-        if (detectedMachine) {
-          // Check for exact backend status values
-          const statusTrimmed = status.trim();
-          
-          if (completionStatuses.includes(statusTrimmed) || statusTrimmed === 'idle') {
-            detectedStatus = 'completed';
-          } else if (runningStatuses.includes(statusTrimmed) || statusTrimmed === 'running') {
-            detectedStatus = 'running';
-          }
-          
-          if (detectedStatus) {
-            console.log("📡 Structured detection result:", trimmedProcess, "->", detectedMachine, "->", detectedStatus);
-          }
-        }
+    // SPECIAL HANDLING: Detect new batches starting (batch_requested events)
+    if (latestLog.includes('batch_requested') || latestLog.includes('batch_started_processing')) {
+      console.log("🎯 NEW BATCH DETECTED - Reactivating mixing machines for batch:", batchId);
+      
+      // Track this batch
+      if (batchId) {
+        setActiveBatches(prev => new Set([...prev, batchId]));
       }
+      
+      // Reactivate mixing machines for new batch (keeping other machines in their current states)
+      setMachineStatus(prevStatus => {
+        const updatedStatus = { ...prevStatus };
+        
+        // Reactivate mixing machines from any state (idle, completed, or off)
+        updatedStatus["Anode Mixing"] = "running";
+        updatedStatus["Cathode Mixing"] = "running";
+        
+        console.log("� New batch - mixing machines reactivated, other machines continue:", updatedStatus);
+        return updatedStatus;
+      });
+      
+      return; // Exit early to avoid other processing
     }
 
     // Apply the detected status change
     if (detectedMachine && detectedStatus) {
-      console.log("📢 APPLYING STATUS CHANGE:", detectedMachine, "->", detectedStatus);
+      console.log("📢 APPLYING STATUS CHANGE:", detectedMachine, "->", detectedStatus, "Batch:", batchId);
       
-      // Check for aging completion - marks ALL machines as completed
-      if (latestLog.includes('aging_completed') || latestLog.includes('Battery manufacturing finished!') || 
-          (detectedMachine === 'Aging' && detectedStatus === 'completed')) {
-        console.log("🎉 AGING COMPLETED - Marking all machines as completed (final state)");
-        setMachineStatus(prevStatus => {
-          const allCompleted = {};
-          MACHINE_FLOW.forEach(machine => {
-            allCompleted[machine.id] = 'completed';
-          });
-          console.log("🎊 Final state: All machines completed:", allCompleted);
-          return allCompleted;
-        });
-        return;
-      }
+      setMachineStatus(prevStatus => {
+        const newStatus = { ...prevStatus };
+        
+        // For continuous batches: machines can be 'running' multiple times
+        if (detectedStatus === 'running') {
+          newStatus[detectedMachine] = 'running';
+          console.log("🔥 Machine activated for batch:", detectedMachine, "Batch:", batchId);
+        } else if (detectedStatus === 'idle') {
+          // Mark as idle and prepare for next stage
+          newStatus[detectedMachine] = 'idle';
+          console.log("💤 Machine finished batch:", detectedMachine, "Batch:", batchId);
+          
+          // Auto-transition back to ready state after brief delay
+          setTimeout(() => {
+            setMachineStatus(prev => {
+              const updated = { ...prev };
+              if (updated[detectedMachine] === 'idle') {
+                delete updated[detectedMachine]; // Clear to ready state
+                console.log("🔄 Machine ready:", detectedMachine);
+              }
+              return updated;
+            });
+          }, 1000); // Shorter delay
+          
+          // SEQUENTIAL PROGRESSION: Only start next stage when current finishes
+          // Max 2 green lights (anode + cathode pair) until inspection, then single progression
+          const activateFlow = (fromMachine, toMachine, edgeId) => {
+            console.log("📦 Package flowing:", fromMachine, "→", toMachine);
+            
+            // Small delay before showing package to prevent visual clutter
+            setTimeout(() => {
+              setActiveFlows(prev => new Set([...prev, edgeId]));
+              
+              // Remove package animation after 2 seconds
+              setTimeout(() => {
+                setActiveFlows(prev => {
+                  const updated = new Set(prev);
+                  updated.delete(edgeId);
+                  return updated;
+                });
+              }, 2000);
+            }, 300); // 300ms delay before package appears
+          };
 
-      // Handle machine completion and auto-progression
-      if (detectedStatus === 'completed') {
-        setMachineStatus(prevStatus => {
-          const newStatus = { ...prevStatus };
-          
-          // Mark current machine as completed (blue)
-          newStatus[detectedMachine] = 'completed';
-          console.log("✅ Machine completed:", detectedMachine);
-          
-          // AUTO-PROGRESSION LOGIC: Start the next appropriate machine
+          // ELECTRODE LINE PROGRESSION (Anode + Cathode pairs)
           if (detectedMachine === 'Anode Mixing') {
+            // Clear previous anode stages and start coating
+            Object.keys(newStatus).forEach(key => {
+              if (key.startsWith('Anode') && key !== 'Anode Mixing') {
+                delete newStatus[key];
+              }
+            });
             newStatus['Anode Coating'] = 'running';
-            console.log("⏭️ Anode Mixing done → Starting Anode Coating");
+            activateFlow('Anode Mixing', 'Anode Coating', 'Anode Mixing->Anode Coating');
+            console.log("⏭️ Anode: Mixing → Coating");
+            
           } else if (detectedMachine === 'Cathode Mixing') {
+            // Clear previous cathode stages and start coating
+            Object.keys(newStatus).forEach(key => {
+              if (key.startsWith('Cathode') && key !== 'Cathode Mixing') {
+                delete newStatus[key];
+              }
+            });
             newStatus['Cathode Coating'] = 'running';
-            console.log("⏭️ Cathode Mixing done → Starting Cathode Coating");
+            activateFlow('Cathode Mixing', 'Cathode Coating', 'Cathode Mixing->Cathode Coating');
+            console.log("⏭️ Cathode: Mixing → Coating");
+            
           } else if (detectedMachine === 'Anode Coating') {
             newStatus['Anode Drying'] = 'running';
-            console.log("⏭️ Anode Coating done → Starting Anode Drying");
+            activateFlow('Anode Coating', 'Anode Drying', 'Anode Coating->Anode Drying');
+            console.log("⏭️ Anode: Coating → Drying");
+            
           } else if (detectedMachine === 'Cathode Coating') {
             newStatus['Cathode Drying'] = 'running';
-            console.log("⏭️ Cathode Coating done → Starting Cathode Drying");
+            activateFlow('Cathode Coating', 'Cathode Drying', 'Cathode Coating->Cathode Drying');
+            console.log("⏭️ Cathode: Coating → Drying");
+            
           } else if (detectedMachine === 'Anode Drying') {
             newStatus['Anode Calendaring'] = 'running';
-            console.log("⏭️ Anode Drying done → Starting Anode Calendaring");
+            activateFlow('Anode Drying', 'Anode Calendaring', 'Anode Drying->Anode Calendaring');
+            console.log("⏭️ Anode: Drying → Calendaring");
+            
           } else if (detectedMachine === 'Cathode Drying') {
             newStatus['Cathode Calendaring'] = 'running';
-            console.log("⏭️ Cathode Drying done → Starting Cathode Calendaring");
+            activateFlow('Cathode Drying', 'Cathode Calendaring', 'Cathode Drying->Cathode Calendaring');
+            console.log("⏭️ Cathode: Drying → Calendaring");
+            
           } else if (detectedMachine === 'Anode Calendaring') {
             newStatus['Anode Slitting'] = 'running';
-            console.log("⏭️ Anode Calendaring done → Starting Anode Slitting");
+            activateFlow('Anode Calendaring', 'Anode Slitting', 'Anode Calendaring->Anode Slitting');
+            console.log("⏭️ Anode: Calendaring → Slitting");
+            
           } else if (detectedMachine === 'Cathode Calendaring') {
             newStatus['Cathode Slitting'] = 'running';
-            console.log("⏭️ Cathode Calendaring done → Starting Cathode Slitting");
+            activateFlow('Cathode Calendaring', 'Cathode Slitting', 'Cathode Calendaring->Cathode Slitting');
+            console.log("⏭️ Cathode: Calendaring → Slitting");
+            
           } else if (detectedMachine === 'Anode Slitting') {
             newStatus['Anode Inspection'] = 'running';
-            console.log("⏭️ Anode Slitting done → Starting Anode Inspection");
+            activateFlow('Anode Slitting', 'Anode Inspection', 'Anode Slitting->Anode Inspection');
+            console.log("⏭️ Anode: Slitting → Inspection");
+            
           } else if (detectedMachine === 'Cathode Slitting') {
             newStatus['Cathode Inspection'] = 'running';
-            console.log("⏭️ Cathode Slitting done → Starting Cathode Inspection");
-          } else if (detectedMachine === 'Anode Inspection' || detectedMachine === 'Cathode Inspection') {
-            // Check if BOTH inspections are complete before starting Rewinding
-            const anodeComplete = (detectedMachine === 'Anode Inspection') || newStatus['Anode Inspection'] === 'completed';
-            const cathodeComplete = (detectedMachine === 'Cathode Inspection') || newStatus['Cathode Inspection'] === 'completed';
+            activateFlow('Cathode Slitting', 'Cathode Inspection', 'Cathode Slitting->Cathode Inspection');
+            console.log("⏭️ Cathode: Slitting → Inspection");
             
-            if (anodeComplete && cathodeComplete) {
+          } else if (detectedMachine === 'Anode Inspection' || detectedMachine === 'Cathode Inspection') {
+            // Check if this completes both electrode lines
+            const updatedStatusWithCurrent = { ...newStatus, [detectedMachine]: 'idle' };
+            const anodeInspectionDone = updatedStatusWithCurrent['Anode Inspection'] === 'idle';
+            const cathodeInspectionDone = updatedStatusWithCurrent['Cathode Inspection'] === 'idle';
+            
+            if (anodeInspectionDone && cathodeInspectionDone && !newStatus['Rewinding']) {
+              // Both electrode lines complete - merge to single cell line
+              console.log("🔀 Both electrode inspections complete → Starting Rewinding");
+              
+              // Clear all electrode line statuses
+              Object.keys(newStatus).forEach(key => {
+                if (key.startsWith('Anode') || key.startsWith('Cathode')) {
+                  delete newStatus[key];
+                }
+              });
+              
+              // Start single cell line progression
               newStatus['Rewinding'] = 'running';
-              console.log("🔗 Both inspections done → Starting Rewinding");
+              activateFlow(detectedMachine, 'Rewinding', `${detectedMachine}->Rewinding`);
+              console.log("🔀 ELECTRODE LINES MERGED → Single cell line starts");
+            } else {
+              console.log("⏳ Waiting for both electrode lines to complete inspection...");
             }
+            
+          // SINGLE LINE PROGRESSION (Cell line - one at a time)
           } else if (detectedMachine === 'Rewinding') {
+            // Clear all other cell line stages
+            ['Electrolyte Filling', 'Formation Cycling', 'Aging'].forEach(stage => {
+              delete newStatus[stage];
+            });
             newStatus['Electrolyte Filling'] = 'running';
-            console.log("⏭️ Rewinding done → Starting Electrolyte Filling");
+            activateFlow('Rewinding', 'Electrolyte Filling', 'Rewinding->Electrolyte Filling');
+            console.log("⏭️ Cell: Rewinding → Electrolyte Filling");
+            
           } else if (detectedMachine === 'Electrolyte Filling') {
+            delete newStatus['Formation Cycling'];
+            delete newStatus['Aging'];
             newStatus['Formation Cycling'] = 'running';
-            console.log("⏭️ Electrolyte Filling done → Starting Formation Cycling");
+            activateFlow('Electrolyte Filling', 'Formation Cycling', 'Electrolyte Filling->Formation Cycling');
+            console.log("⏭️ Cell: Electrolyte Filling → Formation Cycling");
+            
           } else if (detectedMachine === 'Formation Cycling') {
+            delete newStatus['Aging'];
             newStatus['Aging'] = 'running';
-            console.log("⏭️ Formation Cycling done → Starting Aging");
+            activateFlow('Formation Cycling', 'Aging', 'Formation Cycling->Aging');
+            console.log("⏭️ Cell: Formation Cycling → Aging");
+          } else if (detectedMachine === 'Aging') {
+            // One batch completed aging - this is the final step!
+            console.log("🎉 Batch completed final aging stage! Batch:", batchId);
+            
+            // Don't automatically remove batch here - let batch_completed event handle it
+            // This prevents premature completion detection
+            console.log("� Aging complete, waiting for batch_completed event...");
           }
-          // Aging completion is handled above to mark all machines as completed
-          
-          console.log("📊 Updated machine status:", newStatus);
-          return newStatus;
-        });
-      }
-      
-      return; // Exit early since we handled the status update
+        }
+        
+        console.log("Updated machine status for continuous batches:", newStatus);
+        return newStatus;
+      });
     }
-  }, [stageLog, MACHINE_FLOW, simulationStarted]);
+  }, [stageLog, processToMachineMap, simulationStarted]);
 
-  // Update edge animations based on machine status
+  // Update edges with active flow animations
   useEffect(() => {
     setEdges((eds) =>
-      eds.map((edge) => {
-        const sourceStatus = machineStatus[edge.source];
-        const targetStatus = machineStatus[edge.target];
-
-        // ACTIVE ANIMATION: Source completed → Target running (package moving)
-        if (sourceStatus === "completed" && targetStatus === "running") {
-          return { 
-            ...edge, 
-            type: "animated", 
-            animated: true,
-            data: { isActive: true, showProgress: true },
-            style: { stroke: '#28a745', strokeWidth: 3 }
-          };
-        } 
-        // STOP ANIMATION: Both machines completed (no more packages)
-        else if (sourceStatus === "completed" && targetStatus === "completed") {
-          return { 
-            ...edge, 
-            type: "default", 
-            animated: false,
-            data: { isActive: false, showProgress: false },
-            style: { stroke: '#6c757d', strokeWidth: 2 } // Gray for completed path
-          };
+      eds.map((edge) => ({
+        ...edge,
+        data: {
+          ...edge.data,
+          isActive: activeFlows.has(edge.id),
+          showProgress: activeFlows.has(edge.id)
         }
-        // DEFAULT: Simulation running but no active transfer
-        else if (simulationStarted) {
-          return { 
-            ...edge, 
-            type: "default", 
-            animated: false,
-            data: { isActive: false, showProgress: false },
-            style: { stroke: '#007bff', strokeWidth: 2 }
-          };
-        } 
-        // IDLE: Simulation not started
-        else {
-          return { 
-            ...edge, 
-            type: "default", 
-            animated: false,
-            data: { isActive: false, showProgress: false }
-          };
-        }
-      })
+      }))
     );
-  }, [machineStatus, simulationStarted, setEdges]);
+  }, [activeFlows, setEdges]);
 
-  const onNodeClick = (_, node) => setSelectedId(node.id);
+  const onNodeClick = useCallback((event, node) => {
+    console.log("Node clicked:", node.id);
+    setSelectedId(node.id);
+  }, [setSelectedId]);
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onNodeClick={onNodeClick}
-      edgeTypes={edgeTypes}
-      fitView
-      nodeTypes={nodeTypes}
-    >
-      <MiniMap/>
-      <Controls />
-      <Background color="#e6e3e3ff"  />
-    </ReactFlow>
+    <div style={{ width: "100%", height: "600px" }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onNodeClick={onNodeClick}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        fitView
+      >
+        <Background variant="dots" gap={12} size={1} />
+        <MiniMap />
+        <Controls />
+      </ReactFlow>
+    </div>
   );
 };
 

@@ -23,7 +23,6 @@ const FlowPage = () => {
   const handleStartFullSimulation = async () => {
     setIsRunning(true);
     setSimulationStatus("Starting full plant simulation...");
-    clearLogs();
 
     try {
       // Use the new continuous batch simulation API from your team lead's backend
