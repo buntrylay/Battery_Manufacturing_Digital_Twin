@@ -42,7 +42,7 @@ class EventHandler:
             (
                 event_type,
                 self.__broadcast_system_notification,
-                True,
+                True,  # Enable batch context for all events
             )
             for event_type in PlantSimulationEventType
             if event_type != PlantSimulationEventType.MACHINE_DATA_GENERATED

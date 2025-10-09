@@ -210,15 +210,18 @@ class PlantSimulation:
 
     def __attach_batch_context(self, event: PlantSimulationEvent):
         """Include batch information on machine events before dispatch."""
+        # If event already has batch_id or no data, skip
         if not event.data or "batch_id" in event.data:
             return
         # should have the machine_id
-        if not "machine_id" in event.data:
-            raise
-        batch_id_from_machine_batch_list = self.__machine_batch_context[
-            event.data["machine_id"]
-        ]
-        event.data["batch_id"] = batch_id_from_machine_batch_list
+        if "machine_id" not in event.data:
+            return  # Changed from raise to return for graceful handling
+        # Only attach if we have batch context for this machine
+        if event.data["machine_id"] in self.__machine_batch_context:
+            batch_id_from_machine_batch_list = self.__machine_batch_context[
+                event.data["machine_id"]
+            ]
+            event.data["batch_id"] = batch_id_from_machine_batch_list
 
     def __get_machine(self, line_type: str, machine_id: str):
         """gets the machine at a particular line, throws if none exists"""
@@ -606,6 +609,7 @@ class PlantSimulation:
             self.__batch_request_list = []
             self.__running_batch_list = []
             self.__batch_worker_thread_list = {}
+            self.__machine_batch_context = {}  # Clear machine batch context on reset
 
     def update_machine_parameters(self, line_type: str, machine_id: str, parameters):
         """Update parameters for a specific machine."""

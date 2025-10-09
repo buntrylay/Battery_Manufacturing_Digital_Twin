@@ -9,6 +9,19 @@
   --radius: 12px;
 }
 
+/* Animation keyframes for machine status */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 25px rgba(40, 167, 69, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(40, 167, 69, 1);
+  }
+  100% {
+    box-shadow: 0 0 25px rgba(40, 167, 69, 0.8);
+  }
+}
+
 body {
   margin: 0;
   font-family: Inter, system-ui, sans-serif;
