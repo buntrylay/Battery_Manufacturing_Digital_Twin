@@ -13,7 +13,6 @@ import uvicorn
 
 # --- Path and Simulation Module Imports ---
 # This points from `backend/src/server` up one level to `backend/src` so that `simulation` can be imported
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the core simulation class
 from simulation.factory.PlantSimulation import PlantSimulation
@@ -969,11 +968,12 @@ async def startup_event():
     except Exception as e:
         logger.exception("[startup] Error initialising event-driven architecture")
         raise
-    # try:
-    #     database_helper.start_worker(lambda msg: print(msg))
-    #     logger.info("Successfully created database helper!")
-    # except Exception as e:
-    #     logger.error(f"Error creating database helper: {e}")
+    
+    try:
+         database_helper.start_worker(lambda msg: print(msg))
+         logger.info("Successfully created database helper!")
+    except Exception as e:
+         logger.error(f"Error creating database helper: {e}")
 
 
 if __name__ == "__main__":

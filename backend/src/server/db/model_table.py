@@ -1,4 +1,4 @@
-from .db import engine, Base
+from server.db.db import engine, Base
 from sqlalchemy import Column, Integer, Float, String, DateTime, Boolean
 from datetime import datetime
 
@@ -441,6 +441,10 @@ def create_tables():
     Base.metadata.create_all(bind=engine)
 
     # Setup read-only user for Grafana
-    from backend.src.server.db.db import user_connection
+    from server.db.db import user_connection
 
     user_connection()
+
+if __name__ == "__main__":
+    create_tables()
+    print("Tables created.")

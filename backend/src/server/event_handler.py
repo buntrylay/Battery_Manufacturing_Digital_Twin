@@ -98,8 +98,9 @@ class EventHandler:
         }
 
         try:
-            # for the database team to work on
-            # self._database_helper.queue_data(payload)
+            machine_state = payload.get("machine_state")
+            if machine_state:
+                self.__database_helper.queue_data(machine_state)
             pass
             # info(
             #     f"[{payload.get("timestamp")}] POSTGRESQL: Queued payload into database queue with event type: {payload.get('event_type')} for batch - id: {payload.get("batch_id")}"
