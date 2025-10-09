@@ -34,6 +34,7 @@ services:
     working_dir: /workspaces/app
     depends_on:
       - db
+      - db-init
     networks:
       - app-net
 
@@ -52,6 +53,16 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-net
+  
+  db-init:
+    build:
+      context: ./backend
+    command: python src/server/db/model_table.py
+    depends_on:
+      - db
+    networks:
+      - app-net
+  
   ## Grafana service
   grafana:
     image: grafana/grafana
