@@ -8,14 +8,17 @@ import { startSimulation, getPlantState, resetPlant } from "../services/api";
 
 const FlowPage = () => {
   const { setSelectedId, selectedStage } = useFlowPage();
-  const { clearLogs } = useLogs();
+  const { clearLogs, addLog } = useLogs();
   const [simulationStatus, setSimulationStatus] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [plantState, setPlantState] = useState(null);
 
   const handleClearLogs = () => {
     clearLogs();
+    setAnimationTrigger(false); // Reset animation when clearing logs
   };
+
+
 
   const handleStartFullSimulation = async () => {
     setIsRunning(true);
@@ -83,7 +86,7 @@ const FlowPage = () => {
           </button>
           <button 
             onClick={handleStartFullSimulation} 
-            className="start-full-simulation-btn"
+            className={`start-full-simulation-btn ${isRunning ? 'running' : ''}`}
             disabled={isRunning}
           >
             {isRunning ? "Adding Batch..." : "Add Batch"}
@@ -113,8 +116,8 @@ const FlowPage = () => {
             )}
           </div>
         </div>
-        <div className="flow-canvas">
-          <MachineFlowDiagram />
+        <div className={`flow-canvas ${animationTrigger ? 'simulation-started' : ''}`}>
+          <MachineFlowDiagram animationTrigger={animationTrigger} />
         </div>
       </div>
 

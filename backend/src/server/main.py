@@ -13,7 +13,6 @@ import uvicorn
 
 # --- Path and Simulation Module Imports ---
 # This points from `backend/src/server` up one level to `backend/src` so that `simulation` can be imported
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the core simulation class
 from simulation.factory.PlantSimulation import PlantSimulation
@@ -21,6 +20,8 @@ from simulation.factory.PlantSimulation import PlantSimulation
 # Import websocket manager & database helper (singletons)
 from server.websocket_manager import websocket_manager
 from server.db.db_helper import database_helper
+from server.db.db import engine, SessionLocal
+from server.db.model_table import *
 
 # Import event handlers
 from server.event_handler import EventHandler
@@ -62,6 +63,28 @@ event_handler = EventHandler(
     database_helper=database_helper,
 )
 
+TABLE_MAP = {
+    "anode_mixing": AnodeMixing,
+    "cathode_mixing": CathodeMixing,
+    "anode_coating": AnodeCoating,
+    "cathode_coating": CathodeCoating,
+    "anode_drying": AnodeDrying,
+    "cathode_drying": CathodeDrying,
+    "anode_calendaring": AnodeCalendaring,
+    "cathode_calendaring": CathodeCalendaring,
+    "anode_slitting": AnodeSlitting,
+    "cathode_slitting": CathodeSlitting,
+    "anode_inspection": AnodeInspection,
+    "cathode_inspection": CathodeInspection,
+    "rewinding": Rewinding,
+    "electrolyte_filling": ElectrolyteFilling,
+    "formation_cycling": FormationCycling,
+    "aging": Aging,
+}
+
+def serialize_row(row):
+    """Serialize a SQLAlchemy row to a dict."""
+    return {c.name: getattr(row, c.name) for c in row.__table__.columns}
 
 @app.get("/")
 def root():
@@ -312,12 +335,28 @@ async def startup_event():
     except Exception as e:
         logger.exception("[startup] Error initialising event-driven architecture")
         raise
-    # try:
-    #     database_helper.start_worker(lambda msg: print(msg))
-    #     logger.info("Successfully created database helper!")
-    # except Exception as e:
-    #     logger.error(f"Error creating database helper: {e}")
+    
+    try:
+         database_helper.start_worker(lambda msg: print(msg))
+         logger.info("Successfully created database helper!")
+    except Exception as e:
+         logger.error(f"Error creating database helper: {e}")
 
+@app.get("/api/db/{table_name}")
+def get_table_entries(table_name: str):
+    """Return all entries from the specified table."""
+    table_class = TABLE_MAP.get(table_name)
+    if not table_class:
+        return {"error": f"Table '{table_name}' not found."}
+    try:
+        db = SessionLocal()
+        rows = db.query(table_class).all()
+        db.close()
+        if not rows:
+            return {"message": f"No entries found in {table_name} table.", "data": []}
+        return {"data": [serialize_row(row) for row in rows]}
+    except Exception as e:
+        return {"error": f"Failed to fetch entries from {table_name}: {str(e)}"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
