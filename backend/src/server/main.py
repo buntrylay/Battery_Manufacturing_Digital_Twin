@@ -1,5 +1,7 @@
 import os
 import sys
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -22,19 +24,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from simulation.factory.PlantSimulation import PlantSimulation
 
 
-# initialise logging once for the server process
 configure_logging()
 logger = get_logger("server")
-# main FastAPI app
-app = FastAPI()
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
 # core plant simulation object
 battery_plant_simulation = PlantSimulation()
 # Initialise event handler with shared dependencies
@@ -42,6 +34,39 @@ event_handler = EventHandler(
     plant_simulation=battery_plant_simulation,
     websocket_manager=websocket_manager,
     database_helper=database_helper,
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage startup and shutdown tasks for the FastAPI application."""
+    try:
+        event_handler.initialise_system_subscriptions()
+        logger.info("[startup] Successfully initialised event-driven architecture!")
+        # try:
+        #     database_helper.start_worker(lambda msg: print(msg))
+        #     logger.info("Successfully created database helper!")
+        # except Exception as db_exc:
+        #     logger.error(f"Error creating database helper: {db_exc}")
+    except Exception:
+        logger.exception("[startup] Error initialising event-driven architecture")
+        raise
+    try:
+        yield
+    finally:
+        # Placeholder for future shutdown/cleanup logic.
+        pass
+
+
+# main FastAPI app
+app = FastAPI(lifespan=lifespan)
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -167,23 +192,6 @@ def reset_plant():
             status_code=400,
             detail=create_error_response(str(e), error_code="RESET_TIMEOUT"),
         )
-
-
-# Startup event to initialise event-driven architecture
-@app.on_event("startup")
-async def startup_event():
-    """Initialise the event-driven architecture."""
-    try:
-        event_handler.initialise_system_subscriptions()
-        logger.info("[startup] Successfully initialised event-driven architecture!")
-    except Exception as e:
-        logger.exception("[startup] Error initialising event-driven architecture")
-        raise
-    # try:
-    #     database_helper.start_worker(lambda msg: print(msg))
-    #     logger.info("Successfully created database helper!")
-    # except Exception as e:
-    #     logger.error(f"Error creating database helper: {e}")
 
 
 if __name__ == "__main__":
