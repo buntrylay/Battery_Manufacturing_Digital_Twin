@@ -1,0 +1,12 @@
+apiVersion: 1
+providers:
+  - name: "production-dashboards"
+    orgId: 1
+    folder: "Production Machines"
+    type: file
+    disableDeletion: true
+    # Allow saving changes in the UI (but they will be overwritten on restart if the file changes)
+    allowUiUpdates: true
+    options:
+      # Path to the directory where all your .json files are
+      path: /etc/grafana/provisioning/jsons

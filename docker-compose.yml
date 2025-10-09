@@ -88,6 +88,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=password
       - GF_PLUGINS_ALLOW_UNSIGNED=true
+      - GF_SECURITY_ALLOW_EMBEDDING=true
 
 volumes:
   postgres_data:

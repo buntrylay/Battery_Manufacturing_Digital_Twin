@@ -5,13 +5,16 @@ const Navbar = () => (
   <nav className="nav-container">
     <ul className="nav-links">
       <li>
-        <Link to="/">Flow Page</Link>
+        {/* Simulation Flow Page*/}
+        <Link to="/">Simulation</Link>
       </li>
+      {/* Live Logs of Simulation Page */}
       <li>
         <Link to="/logs">Live Logs</Link>
       </li>
+      {/* Real-Time Data Page */}
       <li>
-        <Link to="/realtime">Real-Time Data</Link>
+        <Link to="/realtime">Simulation Data</Link>
       </li>
     </ul>
   </nav>
