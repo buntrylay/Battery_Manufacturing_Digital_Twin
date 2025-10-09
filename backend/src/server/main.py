@@ -11,19 +11,18 @@ import uvicorn
 
 # --- Path and Simulation Module Imports ---
 # This points from `backend/src/server` up one level to `backend/src` so that `simulation` can be imported
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the core simulation class
 from simulation.factory.PlantSimulation import PlantSimulation
 
 # Import websocket manager & database helper (singletons)
-from websocket_manager import websocket_manager
-from db.db_helper import database_helper
+from server.websocket_manager import websocket_manager
+from server.db.db_helper import database_helper
 
 # Import event handlers
-from event_handler import EventHandler
+from server.event_handler import EventHandler
 
-from logging_helper import configure_logging, get_logger
+from server.logging_helper import configure_logging, get_logger
 
 # initialise logging once for the server process
 configure_logging()
@@ -168,11 +167,12 @@ async def startup_event():
     except Exception as e:
         logger.exception("[startup] Error initialising event-driven architecture")
         raise
-    # try:
-    #     database_helper.start_worker(lambda msg: print(msg))
-    #     logger.info("Successfully created database helper!")
-    # except Exception as e:
-    #     logger.error(f"Error creating database helper: {e}")
+    
+    try:
+         database_helper.start_worker(lambda msg: print(msg))
+         logger.info("Successfully created database helper!")
+    except Exception as e:
+         logger.error(f"Error creating database helper: {e}")
 
 
 if __name__ == "__main__":

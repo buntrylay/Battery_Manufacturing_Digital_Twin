@@ -21,7 +21,7 @@ def get_db():
 def user_connection():
     """Create a read-only user for Grafana with proper error handling."""
     commands = [
-        "CREATE USER grafana_reader WITH PASSWORD 'password' IF NOT EXISTS;",
+        "CREATE USER grafana_reader WITH PASSWORD 'password';",
         "GRANT CONNECT ON DATABASE postgres TO grafana_reader;",
         "GRANT ALL PRIVILEGES ON DATABASE postgres TO grafana_reader;",
         "GRANT USAGE ON SCHEMA public TO grafana_reader;",
