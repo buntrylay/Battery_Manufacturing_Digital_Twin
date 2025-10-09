@@ -29,7 +29,7 @@ class FormationCyclingMachine(BaseMachine):
     def step_logic(self, t: int, verbose: bool):
         if self.battery_model.voltage >= self.machine_parameters.charge_voltage_limit_V:
             if verbose: 
-                info(f"{self.process_name}: Voltage limit reached at step {t}")
+                print(f"{self.process_name}: Voltage limit reached at step {t}")
             raise RuntimeError("Voltage limit was reached")
 
     def validate_parameters(self, parameters: dict):

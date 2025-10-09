@@ -1,29 +1,28 @@
 import os
 import sys
+from typing import Any
 
-# for simulation & concurrency
-import threading
-
-# for API
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
+# Import websocket manager & database helper (singletons)
+from .websocket_manager import websocket_manager
+from .db.db_helper import database_helper
+
+# Import event handlers
+from .event_handler import EventHandler
+
+# Import helpers
+from .logging_helper import configure_logging, get_logger
+from .format_helper import create_success_response
+
 # --- Path and Simulation Module Imports ---
 # This points from `backend/src/server` up one level to `backend/src` so that `simulation` can be imported
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 # Import the core simulation class
 from simulation.factory.PlantSimulation import PlantSimulation
 
-# Import websocket manager & database helper (singletons)
-from websocket_manager import websocket_manager
-from db.db_helper import database_helper
-
-# Import event handlers
-from event_handler import EventHandler
-
-from logging_helper import configure_logging, get_logger
 
 # initialise logging once for the server process
 configure_logging()
@@ -40,10 +39,6 @@ app.add_middleware(
 )
 # core plant simulation object
 battery_plant_simulation = PlantSimulation()
-# regarding the simulation thread
-factory_run_thread = None
-out_of_batch_event = threading.Event()
-# WebSocket connection management
 # Initialise event handler with shared dependencies
 event_handler = EventHandler(
     plant_simulation=battery_plant_simulation,
@@ -54,7 +49,9 @@ event_handler = EventHandler(
 
 @app.get("/")
 def root():
-    return {"message": "This is the V2 API for the battery manufacturing digital twin!"}
+    return create_success_response(
+        "This is the V2 API for the battery manufacturing digital twin!"
+    )
 
 
 @app.websocket("/ws/status")
@@ -76,33 +73,23 @@ def get_plant_state():
     """Get the current state of the plant. Returns a dictionary with the current state of the plant."""
     # quite done, just some validation I think depending on my teammate's implementation of get_current_plant_state()
     global battery_plant_simulation
-    return battery_plant_simulation.get_current_plant_state()
+    plant_state = battery_plant_simulation.get_current_plant_state()
+    return create_success_response("Plant state retrieved", data=plant_state)
 
 
 @app.post("/api/simulation/start")
 def add_batch():
     """Add a batch to the plant."""
     global battery_plant_simulation
-    global factory_run_thread
-    global out_of_batch_event
     try:
-        battery_plant_simulation.add_batch()
+        batch_id = battery_plant_simulation.add_batch()
     except ValueError as e:
         # over limit of batches
         raise HTTPException(status_code=400, detail=str(e))
-    if factory_run_thread is None:
-        factory_run_thread = threading.Thread(
-            target=battery_plant_simulation.run, args=(out_of_batch_event,)
-        )
-        factory_run_thread.start()
-    elif out_of_batch_event.is_set():
-        factory_run_thread = None
-        out_of_batch_event.clear()
-        factory_run_thread = threading.Thread(
-            target=battery_plant_simulation.run, args=(out_of_batch_event,)
-        )
-        factory_run_thread.start()
-        return {"message": "Plant started successfully"}
+    return create_success_response(
+        "A new batch was received and added to processing queue",
+        batch_id=batch_id,
+    )
 
 
 @app.get("/api/machine/{line_type}/{machine_id}/status")
@@ -111,7 +98,13 @@ def get_machine_status(line_type: str, machine_id: str):
     # quite done, just some validation I think depending on my teammate's implementation of get_machine_status()
     global battery_plant_simulation
     try:
-        return battery_plant_simulation.get_machine_status(line_type, machine_id)
+        status = battery_plant_simulation.get_machine_status(line_type, machine_id)
+        return create_success_response(
+            "Machine status retrieved",
+            line_type=line_type,
+            machine_id=machine_id,
+            data=status,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -127,11 +120,11 @@ def update_machine_params(line_type: str, machine_id: str, parameters: dict):
         if battery_plant_simulation.update_machine_parameters(
             line_type, machine_id, parameters
         ):
-            return {
-                "message": f"Machine {machine_id} parameters updated successfully",
-                "line_type": line_type,
-                "machine_id": machine_id,
-            }
+            return create_success_response(
+                f"Machine {machine_id} parameters updated successfully",
+                line_type=line_type,
+                machine_id=machine_id,
+            )
     except TypeError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except ValueError as e:
@@ -144,18 +137,11 @@ def update_machine_params(line_type: str, machine_id: str, parameters: dict):
 def reset_plant():
     """Reset the plant."""
     global battery_plant_simulation
-    global factory_run_thread
-    global out_of_batch_event
-    # reset the factory run thread
-    if factory_run_thread:
-        factory_run_thread.join()
-        factory_run_thread = None
-    # reset the plant simulation object
-    battery_plant_simulation.reset_plant()
-    # reset the event
-    if out_of_batch_event.is_set():
-        out_of_batch_event.clear()
-    return {"message": "Plant reset successfully"}
+    try:
+        battery_plant_simulation.reset_plant()
+        return create_success_response("Plant was reset successfully!")
+    except TimeoutError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # Startup event to initialise event-driven architecture

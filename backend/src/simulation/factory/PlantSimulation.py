@@ -1,4 +1,3 @@
-from logging import info
 from threading import Condition, Event, Thread, Lock
 from typing import Callable, Optional
 import uuid
@@ -41,6 +40,7 @@ class PlantSimulation:
     """
 
     def __init__(self, listeners: list[Callable[[PlantSimulationEvent], None]] = None):
+        # Callables: regular function, method, lambda, functor object, taking an argument - PlantSimulation event
         # array of batches requests (to be processed). PROTECTED by pipeline_condition.
         self.__batch_request_list: list[Batch] = []
         # array of batches that are CURRENTLY BEING processed. PROTECTED by pipeline_condition.
@@ -78,13 +78,23 @@ class PlantSimulation:
         self.__event_bus = EventBus()
         # track the active batch associated with each machine
         self.__machine_batch_context: dict[str, str] = {}
+        # runner thread management for background processing loop
+        self.__runner_thread_lock = Lock()
+        # this object can be None. This thread is a monitoring thread to keep track of all batch threads,
+        # making sure the batch threads run with some sort of parent threads.
+        self.__runner_thread: Optional[Thread] = None
+        #
+        self.__plant_is_idle_event = Event()
+        # initially, no batch so that's why it is set
+        self.__plant_is_idle_event.set()
         """ 
             Condition object: initialises a shared Condition used in __process_batch_request 
             to block batch-worker threads until they reach the queue front and both mixing machines are idle, 
-            and to wake waiting workers when slots free up. 
+            and to wake waiting workers when slots free up.
             This object also prevents concurrent accesses to the batch_requests, running_batches, and batch_worker_threads.
         """
-        self.__pipeline_condition = Condition()
+        self.__access_pipeline_condition = Condition()
+        # better than check the states of the mixing machines, which might entail some delays.
         self.__pipeline_is_ready = True
         # initialise the factory structure with the default machines
         self.__initialise_default_factory_structure()
@@ -97,6 +107,7 @@ class PlantSimulation:
         self.auto_generated_batch_id = 1
 
     def __initialise_default_factory_structure(self):
+        # initialise the default parameters
         default_mixing_parameters_anode = MixingParameters(
             AM_ratio=0.495, CA_ratio=0.045, PVDF_ratio=0.05, solvent_ratio=0.41
         )
@@ -215,6 +226,7 @@ class PlantSimulation:
         # should have the machine_id
         if not "machine_id" in event.data:
             raise
+        # obtain the batch_id from the running machine
         batch_id_from_machine_batch_list = self.__machine_batch_context[
             event.data["machine_id"]
         ]
@@ -243,7 +255,8 @@ class PlantSimulation:
         batch: Batch,
         machine_list: Optional[list[str]],
     ):
-        """runs the batch across a number of machines, fails if the machine is not found or the machine list is not in the correct order"""
+        """runs the batch across a number of machines, fails
+        if the machine is not found or the machine list is not in the correct order"""
         model = batch.get_batch_model(line_type)
         for machine_id in machine_list:
             running_machine = self.__get_machine(line_type, machine_id)
@@ -251,7 +264,9 @@ class PlantSimulation:
             with machine_lock:
                 # attach batch information into machine-batch context
                 machine_name = running_machine.process_name
-                self.__machine_batch_context[machine_name] = batch.batch_id
+                self.__machine_batch_context[machine_name] = (
+                    batch.batch_id
+                )  # attach the current batch id associated with the machine
                 try:
                     running_machine.receive_model_from_previous_process(model)
                     running_machine.run_simulation(verbose=False)
@@ -261,7 +276,7 @@ class PlantSimulation:
                 model = running_machine.empty_model()
                 batch.update_batch_model(line_type, model)
 
-    def __run_pipeline_on_batch(self, batch: Batch, verbose: bool = True):
+    def __run_pipeline_on_batch(self, batch: Batch, verbose: bool = False):
         """
         wraps the initial notification phase in the condition so that the subsequent notify_all() is legal
         (Python requires the condition to be held when calling notify_all).
@@ -271,7 +286,7 @@ class PlantSimulation:
         def __notify_start_batch_processing(batch, verbose):
             # Batch started processing
             if verbose:
-                info(
+                print(
                     f"EMIT EVENT - BATCH_STARTED_PROCESSING: Batch processing started for batch {batch.batch_id}."
                 )
             # emit batch started processing event
@@ -302,7 +317,7 @@ class PlantSimulation:
             )
             # Batch started processing anode
             if verbose:
-                info(
+                print(
                     f"EMIT EVENT - BATCH_STARTED_ANODE_LINE: Anode processing started for batch {batch.batch_id}."
                 )
             # start anode thread
@@ -314,7 +329,7 @@ class PlantSimulation:
             )
             # Batch started processing cathode
             if verbose:
-                info(
+                print(
                     f"EMIT EVENT - BATCH_STARTED_CATHODE_LINE: Cathode processing started for batch {batch.batch_id}. Emitting event."
                 )
             # start cathode thread
@@ -327,20 +342,20 @@ class PlantSimulation:
             # Wait for anode & cathode processing finish
             run_anode_mixing_thread.join()
             if verbose:
-                info(
+                print(
                     f"NO EMIT: Anode mixing processing finished for batch {batch.batch_id}."
                 )
             # no emit as still in anode processing
             run_cathode_mixing_thread.join()
             if verbose:
-                info(
+                print(
                     f"NO EMIT: Cathode mixing processing finished for batch {batch.batch_id}."
                 )
             # no emit as still in anode processing
             # This is necessary to allow other thread to be executed straight away when mixing machines are available
-            with self.__pipeline_condition:
+            with self.__access_pipeline_condition:
                 self.__pipeline_is_ready = True
-                self.__pipeline_condition.notify_all()
+                self.__access_pipeline_condition.notify_all()
 
         def __run_remaining_stages_of_electrode_lines_on_batch(
             batch: Batch, verbose: bool
@@ -369,7 +384,7 @@ class PlantSimulation:
             run_anode_thread.join()
             # logging
             if verbose:
-                info(
+                print(
                     f"EMIT EVENT - BATCH_COMPLETED_ANODE_LINE: Anode processing done for batch {batch.batch_id}."
                 )
             # emit event - finish anode processing
@@ -380,7 +395,7 @@ class PlantSimulation:
             run_cathode_thread.join()
             # logging
             if verbose:
-                info(
+                print(
                     f"EMIT EVENT - BATCH_COMPLETED_CATHODE_LINE: Cathode processing done for batch {batch.batch_id}."
                 )
             # emit event - finish cathode processing
@@ -393,7 +408,7 @@ class PlantSimulation:
             # assemble anode-cathode
             batch.assemble_cell_line_model()
             if verbose:
-                info(
+                print(
                     f"EMIT EVENT - BATCH_ASSEMBLED: Assembled cell for batch {batch.batch_id}."
                 )
             # emit event - batch assembled to cell
@@ -410,7 +425,7 @@ class PlantSimulation:
             ]
             # Batch started processing cell line
             if verbose:
-                info(
+                print(
                     f"EMIT EVENT - BATCH_STARTED_CELL_LINE: Cell processing started for batch {batch.batch_id}"
                 )
             # emit event - start cell processing
@@ -421,7 +436,7 @@ class PlantSimulation:
             self.__run_batch_on_machines("cell", batch, stages_to_run)
             # Batch finished processing cell line
             if verbose:
-                info(
+                print(
                     f"EMIT EVENT - BATCH_COMPLETED_CELL_LINE: Cell processing finished for batch {batch.batch_id}"
                 )
             # emait event - finish cell processing
@@ -433,7 +448,7 @@ class PlantSimulation:
         def __notify_finish__batch__processing(batch, verbose):
             # Batch finished whole pipeline
             if verbose:
-                info(
+                print(
                     f"EMIT EVENT - BATCH_COMPLETED: Finished pipeline processing for batch {batch.batch_id}"
                 )
             # Emit event - finish batch processing
@@ -454,32 +469,34 @@ class PlantSimulation:
 
     def __process_batch_request(self, batch: Batch, verbose: bool = False):
         """
-        An internal operation of a worker. Efficiently check for the availability of the mixing machines.
+        An internal operation of a worker thread for one batch.
+        Efficiently check for the availability of the mixing machines and whether it is at the start of the queue.
         Then executes the pipeline operation and removes itself from the queue.
         """
         # acquire the condition's lock because of access to the list
         while True:
-            with self.__pipeline_condition:
+            with self.__access_pipeline_condition:
+                # if the batch is the start of the queue
                 batch_is_at_front = (
                     self.__batch_request_list[0].batch_id == batch.batch_id
-                )  # access to list
+                )
                 if batch_is_at_front and self.__pipeline_is_ready:
                     # get the first batch in the queue
                     self.__batch_request_list.pop(0)
                     # append it to the running batches
                     self.__running_batch_list.append(batch)
-                    # if the batch arrived first and the mixing machines are ready,
+                    # set the pipeline state to busy (mostly about the mixing machines being busy)
                     self.__pipeline_is_ready = False
                     break
                 else:
                     # else: tell the thread to wait
-                    self.__pipeline_condition.wait()
+                    self.__access_pipeline_condition.wait()
         try:
             # start simulation
             self.__run_pipeline_on_batch(batch, verbose=verbose)
         finally:
             # access queue/list
-            with self.__pipeline_condition:
+            with self.__access_pipeline_condition:
                 if batch in self.__running_batch_list:
                     self.__running_batch_list.remove(batch)
                 self.__batch_worker_thread_list.pop(batch.batch_id, None)
@@ -487,39 +504,89 @@ class PlantSimulation:
                 # this is necessary for the other thread to be processed. The parked thread will execute the check again
                 # self.__pipeline_condition.notify_all()
 
+    def __maintain_monitoring_thread(self):
+        """Ensure the background processing loop is running."""
+        # first obtain the lock for access to the monitoring thread
+        # the lock is initialised with the plant simulation object's initialisation
+        with self.__runner_thread_lock:
+            # indicates there should be a processing batch request
+            if self.__plant_is_idle_event.is_set:
+                self.__plant_is_idle_event.clear()
+            # if there is no active monitoring thread OR
+            # there hasn't been any monitoring thread
+            if self.__runner_thread is None or not self.__runner_thread.is_alive():
+                # create a monitoring thread
+                self.__runner_thread = Thread(
+                    target=self.__monitoring_loop,
+                    name="PlantSimulationRunner",
+                    daemon=True,
+                )
+                self.__runner_thread.start()
+                print("There is a monitoring thread creating")
+            # otherwise, just know that there is a running thread
+            else:
+                print("There is a monitoring thread running")
+
+    def __monitoring_loop(self, poll_interval: float = 0.5):
+        """
+            This loop ensures and maintains that any simulation running can be still running with along with this thread.
+            It also updates the event flag when there is no simulation left.
+        """
+        try:
+            # start the loop
+            while True:
+                with self.__access_pipeline_condition:
+                    # when there are no requests, no running batches, no processing threads
+                    if (
+                        not self.__batch_request_list
+                        and not self.__running_batch_list
+                        and not self.__batch_worker_thread_list
+                    ):
+                        break
+                    self.__access_pipeline_condition.wait(timeout=poll_interval)
+        finally:
+            # if there is no more processing, and this monitoring thread senses it.
+            # set the plant_is_idle flag to true
+            self.__plant_is_idle_event.set()
+            with self.__runner_thread_lock:
+                self.__runner_thread = None
+
     def add_batch(self, batch: Batch = None, verbose: bool = False):
         """
         Adds a new batch to the plant simulation (maximum number of threads is 3).
         This method performs the queue mutation under the same condition lock so no worker can read a half-updated queue.
-        The notify_all() here wakes any workers that might be idle, telling them a new batch has arrived.
+        Returns the identifier of the queued batch so callers can track it.
         """
         # make sure batch_requests, batch_worker_threads are only accessed atomically
-        # wait to obtain the lock
-        with self.__pipeline_condition:
+        # wait to obtain the lock to access the simulation pipeline
+        with self.__access_pipeline_condition:
+            # For testing only
             if batch is None:
+                # FOR TESTING ONLY
                 batch = Batch(batch_id=str(self.auto_generated_batch_id))
                 # FOR TESTING ONLY
                 self.auto_generated_batch_id += 1
+
             # only allows maximum 3 batches/threads at a time
-            if len(self.__batch_request_list) == 3:  # access queue list
+            if len(self.__batch_request_list) == 3:
                 raise ValueError("Maximum number of batches reached")
             # add batch (information to the list)
-            self.__batch_request_list.append(batch)  # modify queue list
+            self.__batch_request_list.append(batch)
+
             # wraps batch processing into a thread
             batch_processing_worker = Thread(
                 target=self.__process_batch_request,
-                args=(batch,),
+                args=(batch, verbose),
                 name=f"PlantBatchWorker-{batch.batch_id}",
             )
             # save batch processing thread to the thread list
             self.__batch_worker_thread_list[batch.batch_id] = batch_processing_worker
-            # notify the other threads to use the resources of plant simulation (may need it?)
-            # self.__pipeline_condition.notify_all()
-            # batch arrived and submitted to queue
+
             if verbose:
-                info(
+                print(
                     f"EMIT EVENT - BATCH_REQUESTED: Batch id: {batch.batch_id} has arrived."
                 )
+
             # emit event - batch requested
             self.__event_bus.emit_plant_simulation_event(
                 PlantSimulationEventType.BATCH_REQUESTED,
@@ -528,50 +595,51 @@ class PlantSimulation:
                     "message": f"Batch id {batch.batch_id} has been requested and added to the processing queue.",
                 },
             )
+
+            # notify all the batch processing threads (needs more testing)
+            # self.__access_pipeline_condition.notify_all()
+
         # start the batch processing request
         batch_processing_worker.start()
 
-    def run(
-        self,
-        out_of_batch_event: Optional[Event] = None,
-        poll_interval: float = 0.1,
-    ) -> bool:
-        while True:
-            with self.__pipeline_condition:
-                if (
-                    not self.__batch_request_list
-                    and not self.__running_batch_list
-                    and not self.__batch_worker_thread_list
-                ):
-                    break
-                self.__pipeline_condition.wait(timeout=poll_interval)
-        if out_of_batch_event is not None:
-            out_of_batch_event.set()
-        return True
+        # ensure the background processing loop is active
+        self.__maintain_monitoring_thread()
+
+        return batch.batch_id
 
     def get_machine_status(self, line_type: str, machine_id: str):
+        """Due to the real-time nature of this functionality, obtaining a lock is not needed!"""
         machine = self.__get_machine(line_type, machine_id)
         return machine.get_current_state()
 
     def get_current_plant_state(self):
-        batch_requests = [
-            batch.get_batch_state() for batch in self.__batch_request_list
-        ]
-        running_batches = [
-            batch.get_batch_state() for batch in self.__running_batch_list
-        ]
-        machine_statuses = [
-            self.__factory_structure[line_type][machine_id].get_current_state()
-            for line_type in self.__factory_structure
-            for machine_id in self.__factory_structure[line_type]
-        ]
+        """maybe for reporting functionalities"""
+        # obtain access to the pipeline infomation first
+        with self.__access_pipeline_condition:
+            batch_request_list_info = [
+                batch.get_batch_state() for batch in self.__batch_request_list
+            ]
+            running_batches = [
+                batch.get_batch_state() for batch in self.__running_batch_list
+            ]
+            machine_statuses = [
+                self.__factory_structure[line_type][machine_id].get_current_state()
+                for line_type in self.__factory_structure
+                for machine_id in self.__factory_structure[line_type]
+            ]
+
         return {
-            "batch_requests": batch_requests,
+            "batch_requests": batch_request_list_info,
             "running_batches": running_batches,
             "machine_statuses": machine_statuses,
         }
 
     def reset_plant(self):
+        if not self.wait_until_plant_simulation_is_idle(timeout=5):
+            raise TimeoutError(
+                "Cannot reset plant. Possibly because there are simulations still running."
+            )
+
         self.__factory_structure = {
             "anode": {
                 "mixing": None,
@@ -596,13 +664,16 @@ class PlantSimulation:
                 "aging": None,
             },
         }
+
         self.__initialise_default_factory_structure()
+        # reset the machine locks
         self.__machine_lock_structure = None
         self.__machine_lock_structure = {
             line_type: {stage: Lock() for stage in self.__factory_structure[line_type]}
             for line_type in self.__factory_structure
         }
-        with self.__pipeline_condition:
+        # empty the batch-related software memory
+        with self.__access_pipeline_condition:
             self.__batch_request_list = []
             self.__running_batch_list = []
             self.__batch_worker_thread_list = {}
@@ -617,8 +688,8 @@ class PlantSimulation:
             machine_lock.release()
             return True
         else:
-            raise RuntimeError(
-                "The machine is busy. Please change the parameters later."
+            raise TimeoutError(
+                "Cannot update machine parameters. Possibly because this machine is busy. Please update the parameters later."
             )
 
     def subscribe_to_event(
@@ -638,3 +709,9 @@ class PlantSimulation:
             self.__event_bus.subscribe(event_type, __callback_with_batch)
         else:
             self.__event_bus.subscribe(event_type, callback)
+
+    def wait_until_plant_simulation_is_idle(
+        self, timeout: Optional[float] = None
+    ) -> bool:
+        """Block until the plant has finished processing all batch simulation/processing."""
+        return self.__plant_is_idle_event.wait(timeout=timeout)

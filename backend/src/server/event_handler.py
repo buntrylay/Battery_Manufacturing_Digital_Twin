@@ -106,7 +106,7 @@ class EventHandler:
             # )
         except Exception as exc:
             error(
-                f"[{payload.get('timestamp', 'N/A Timestamp')}] POSTGRESQL - ERROR: Error enqueuing payload into database queue with event type: {payload.get('event_type')}"
+                f"POSTGRESQL - ERROR: Error enqueuing payload into database queue with event type: {payload.get('event_type')}"
             )
 
     # ------------------------------------------------------------------
@@ -150,11 +150,10 @@ class EventHandler:
             message = json.dumps(notification)
             await self.__websocket_manager.broadcast(message)
             # for testing only
-            # info(
-            #     (f"[{notification.get("timestamp")}] WEBSOCKET: Successfully broadcasting an event status: {notification.get("status")}",
-            #     f"from component {notification.get("process_name")} for batch - id: {notification.get("data").get("batch_id")}")
-            # )
+            info(
+                f"WEBSOCKET: Batch ({notification.get("data").get("batch_id")}) Successfully broadcasting an event - {notification.get("status")} from {notification.get("process_name")}",
+            )
         except Exception as exc:
             error(
-                f"[{notification.get("timestamp")}] WEBSOCKET: Error broadcasting an event status {notification.get("status")}: {exc}"
+                f"WEBSOCKET: Error broadcasting an event status {notification.get("status")}: {exc}"
             )
