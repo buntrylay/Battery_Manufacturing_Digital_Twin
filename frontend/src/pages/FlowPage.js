@@ -8,10 +8,11 @@ import { startSimulation, getPlantState, resetPlant } from "../services/api";
 
 const FlowPage = () => {
   const { setSelectedId, selectedStage } = useFlowPage();
-  const { clearLogs, addLog } = useLogs();
+  const { clearLogs } = useLogs();
   const [simulationStatus, setSimulationStatus] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [plantState, setPlantState] = useState(null);
+  const [animationTrigger, setAnimationTrigger] = useState(false);
 
   const handleClearLogs = () => {
     clearLogs();
@@ -33,6 +34,9 @@ const FlowPage = () => {
       } else {
         setSimulationStatus("✓ Plant simulation started successfully!");
       }
+      
+      // Trigger animation for the new batch
+      setAnimationTrigger(true);
       
       // Refresh plant state
       handleRefreshPlantState();
