@@ -12,7 +12,6 @@ function FlowPage() {
   const { clearLogs } = useLogs();
   const [simulationStatus, setSimulationStatus] = useState("");
   const [isRunning, setIsRunning] = useState(false);
-  const [plantState, setPlantState] = useState(null);
   const [animationTrigger, setAnimationTrigger] = useState(false);
   const [plantState, setPlantState] = useState(null);
 
