@@ -111,7 +111,7 @@ function FlowPage() {
             <div className="instructions">
               <p>1. Click on any machine to configure its parameters.</p>
               <p>
-                2. Use "Load Current" → "Validate" → "Apply Changes" workflow.
+                2. Use "Load Current" → "Apply Changes" workflow.
               </p>
               <p>
                 3. Click "Add Batch" to add a batch to the continuous plant
@@ -147,17 +147,7 @@ function FlowPage() {
           <button onClick={handleResetPlant} className="reset-plant-btn">
             Reset Plant
           </button>
-          <div className="instructions">
-            <p>1. Click on any machine to configure its parameters</p>
-            <p>2. Use "Load Current" → "Validate" → "Apply Changes" workflow</p>
-            <p>
-              3. Click "Add Batch" to add a batch to the continuous plant
-              simulation
-            </p>
-            <p>
-              4. Use "Refresh State" to check plant status and "Reset Plant" to
-              stop all simulations
-            </p>
+          <div className="status-display">
             {simulationStatus && (
               <p className="simulation-status">{simulationStatus}</p>
             )}
