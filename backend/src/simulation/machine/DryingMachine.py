@@ -25,7 +25,7 @@ class DryingMachine(BaseMachine):
         self.total_steps = int(residence_time / DELTA_T)
 
     def step_logic(self, t: int, verbose: bool):
-        self.evap_rate = self.battery_model.evaporation_rate()
+        pass
 
     def validate_parameters(self, parameters: dict):
         return DryingParameters(**parameters).validate_parameters()
