@@ -417,7 +417,7 @@ class DBHelper:
                     b_max=safe_float(machine_params.get("B_max", 0.0)),
                     d_surface_max=safe_float(machine_params.get("D_surface_max", 0.0)),
                 )
-            elif process_type == "rewinding":
+            elif process_type == "rewinding_cell":
                 return Rewinding(
                     batch=simulation_data.get("batch_id", 1),
                     state=simulation_data.get("state", "Unknown"),
@@ -456,7 +456,7 @@ class DBHelper:
                         machine_params.get("environment_humidity", 0.0)
                     ),
                 )
-            elif process_type == "electrolyte_filling":
+            elif process_type == "electrolyte_filling_cell":
                 return ElectrolyteFilling(
                     batch=simulation_data.get("batch_id", 1),
                     state=simulation_data.get("state", "Unknown"),
@@ -490,7 +490,7 @@ class DBHelper:
                     ),
                     soaking_time_s=safe_float(machine_params.get("Soaking_time", 0.0)),
                 )
-            elif process_type == "formation_cycling":
+            elif process_type == "formation_cycling_cell":
                 return FormationCycling(
                     batch=simulation_data.get("batch_id", 1),
                     state=simulation_data.get("state", "Unknown"),
@@ -524,7 +524,7 @@ class DBHelper:
                         machine_params.get("Formation_duration_s", 0.0)
                     ),
                 )
-            elif process_type == "aging":
+            elif process_type == "aging_cell":
                 return Aging(
                     batch=simulation_data.get("batch_id", 1),
                     state=simulation_data.get("state", "Unknown"),
