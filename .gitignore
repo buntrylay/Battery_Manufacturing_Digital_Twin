@@ -105,5 +105,5 @@
 **/.local/
 **/local_settings.py
 **/local.py 
-*.json
 */prometheus.yml
+package-lock.json
