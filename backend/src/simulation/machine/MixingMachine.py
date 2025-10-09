@@ -103,5 +103,10 @@ class MixingMachine(BaseMachine):
             if self.battery_model.AM < self.expected_total_amount_of_AM:
                 self.battery_model.add("AM", self.am_per_step)
 
-    def validate_parameters(self, parameters: dict):
-        return MixingParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, MixingParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return MixingParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected MixingParameters or dict, got {type(parameters)}")

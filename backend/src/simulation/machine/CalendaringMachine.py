@@ -29,5 +29,10 @@ class CalendaringMachine(BaseMachine):
     def step_logic(self, t: int, verbose: bool):
         pass
 
-    def validate_parameters(self, parameters: dict):
-        return CalendaringParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, CalendaringParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return CalendaringParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected CalendaringParameters or dict, got {type(parameters)}")

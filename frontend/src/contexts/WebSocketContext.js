@@ -43,7 +43,8 @@ export const WebSocketProvider = ({ children }) => {
       try {
         // Try to parse as JSON for machine notifications
         const data = JSON.parse(event.data);
-        const formattedMessage = `[${data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString()}] ${data.process_name || data.machine_id}: ${data.status} - ${data.data?.message || 'Status update'}`;
+        const batchInfo = data.data?.batch_id ? `(Batch ${data.data.batch_id}) ` : '';
+        const formattedMessage = `[${data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString()}] ${batchInfo}${data.process_name || data.machine_id}: ${data.status} - ${data.data?.message || 'Status update'}`;
         
         setStageLog((prev) => {
           const updated = [...prev, formattedMessage];

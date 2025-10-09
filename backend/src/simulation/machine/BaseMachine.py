@@ -117,8 +117,12 @@ class BaseMachine(ABC):
         pass
 
     @abstractmethod
-    def validate_parameters(self, parameters: dict):
-        """Validate the parameters."""
+    def validate_parameters(self, parameters):
+        """Validate the parameters.
+        
+        Args:
+            parameters: Either a dictionary of parameters or a parameter object
+        """
         pass
 
     def run_simulation(self, verbose: bool = True):

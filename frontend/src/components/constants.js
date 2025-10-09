@@ -39,28 +39,30 @@ export const inputsByStage = {
     "Coating Width",
   ],
 
-  "Anode Drying": ["Web Speed", "Drying Temp", "Drying Time"],
-  "Cathode Drying": ["Web Speed", "Drying Temp", "Drying Time"],
+  "Anode Drying": ["Web Speed"],
+  "Cathode Drying": ["Web Speed"],
 
-  "Anode Calendaring": ["Roll Gap", "Roll Pressure", "Roll Speed"],
-  "Cathode Calendaring": ["Roll Gap", "Roll Pressure", "Roll Speed"],
+  "Anode Calendaring": ["Roll Gap", "Roll Pressure", "Temperature", "Roll Speed", "Dry Thickness", "Initial Porosity"],
+  "Cathode Calendaring": ["Roll Gap", "Roll Pressure", "Temperature", "Roll Speed", "Dry Thickness", "Initial Porosity"],
 
-  "Anode Slitting": ["Blade Sharpness", "Slitting Speed", "Target Width"],
-  "Cathode Slitting": ["Blade Sharpness", "Slitting Speed", "Target Width"],
+  "Anode Slitting": ["Blade Sharpness", "Slitting Speed", "Target Width", "Slitting Tension"],
+  "Cathode Slitting": ["Blade Sharpness", "Slitting Speed", "Target Width", "Slitting Tension"],
 
   "Anode Inspection": [
     "Width Tolerance",
     "Thickness Tolerance",
+    "B Max",
     "Defects Allowed",
   ],
   "Cathode Inspection": [
     "Width Tolerance",
-    "Thickness Tolerance",
+    "Thickness Tolerance", 
+    "B Max",
     "Defects Allowed",
   ],
 
-  Rewinding: ["Rewinding Speed", "Initial Tension"],
+  Rewinding: ["Rewinding Speed", "Initial Tension", "Tapering Steps", "Environment Humidity"],
   "Electrolyte Filling": ["Vacuum Level", "Vacuum Filling", "Soaking Time"],
-  "Formation Cycling": ["Charge Current", "Voltage"],
+  "Formation Cycling": ["Charge Current", "Voltage", "Initial Voltage"],
   Aging: ["Leak Rate", "Temperature", "Aging Days"],
 };

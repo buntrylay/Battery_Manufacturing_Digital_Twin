@@ -24,5 +24,10 @@ class SlittingMachine(BaseMachine):
     def step_logic(self, t: int, verbose: bool):
         pass
 
-    def validate_parameters(self, parameters: dict):
-        return SlittingParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, SlittingParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return SlittingParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected SlittingParameters or dict, got {type(parameters)}")
