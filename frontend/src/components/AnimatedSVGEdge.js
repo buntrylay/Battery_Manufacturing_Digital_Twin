@@ -46,23 +46,32 @@ export function AnimatedSVGEdge({
         </circle>
       )}
       
-      {/* Progress indicator for material flow */}
+      {/* Progress indicator for material flow - Package animation */}
       {data?.showProgress && (
-        <path
-          d={edgePath}
-          fill="none"
-          stroke="#ffc107"
-          strokeWidth="4"
-          strokeDasharray="10,5"
-          opacity="0.8"
-        >
-          <animate
-            attributeName="stroke-dashoffset"
-            values="0;-15;0"
-            dur="2s"
-            repeatCount="indefinite"
-          />
-        </path>
+        <>
+          <path
+            d={edgePath}
+            fill="none"
+            stroke="#ffc107"
+            strokeWidth="4"
+            strokeDasharray="8,4"
+            opacity="0.7"
+          >
+            <animate
+              attributeName="stroke-dashoffset"
+              values="0;-12"
+              dur="2s"
+              repeatCount="1"
+            />
+          </path>
+          
+          {/* Package icon moving along the path */}
+          <g>
+            <rect x="-6" y="-4" width="12" height="8" fill="#ffc107" stroke="#ff8c00" strokeWidth="1" rx="2">
+              <animateMotion dur="2s" repeatCount="1" path={edgePath} />
+            </rect>
+          </g>
+        </>
       )}
     </>
   );

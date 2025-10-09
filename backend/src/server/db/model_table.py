@@ -1,6 +1,7 @@
-from backend.src.server.db.db import engine, Base
+from server.db.db import engine, Base
 from sqlalchemy import Column, Integer, Float, String, DateTime, Boolean
 from datetime import datetime
+
 
 class CathodeMixing(Base):
     __tablename__ = "mixing_cathode"
@@ -29,6 +30,7 @@ class CathodeMixing(Base):
     pvdf = Column(Float)
     solvent = Column(Float)
 
+
 class AnodeMixing(Base):
     __tablename__ = "mixing_anode"
     id = Column(Integer, primary_key=True, index=True)
@@ -54,7 +56,8 @@ class AnodeMixing(Base):
     ca = Column(Float)
     pvdf = Column(Float)
     solvent = Column(Float)
-    
+
+
 # --- Coating ---
 class CathodeCoating(Base):
     __tablename__ = "coating_cathode"
@@ -80,7 +83,8 @@ class CathodeCoating(Base):
     gap_height_um = Column(Float)
     flow_rate = Column(Float)
     coating_width_mm = Column(Float)
-    
+
+
 class AnodeCoating(Base):
     __tablename__ = "coating_anode"
 
@@ -129,8 +133,9 @@ class CathodeDrying(Base):
 
     # machine_parameters
     web_speed = Column(Float)
-    
-class AnodeDrying(Base):  
+
+
+class AnodeDrying(Base):
     __tablename__ = "drying_anode"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -151,7 +156,6 @@ class AnodeDrying(Base):
 
     # machine_parameters
     web_speed = Column(Float)
-    
 
 
 # --- Calendaring ---
@@ -178,7 +182,8 @@ class CathodeCalendaring(Base):
     roll_speed = Column(Float)
     dry_thickness_um = Column(Float)
     initial_porosity = Column(Float)
-    
+
+
 class AnodeCalendaring(Base):
     __tablename__ = "calendaring_anode"
 
@@ -228,7 +233,8 @@ class CathodeSlitting(Base):
     slitting_speed = Column(Float)
     target_width_mm = Column(Float)
     slitting_tension = Column(Float)
-    
+
+
 class AnodeSlitting(Base):
     __tablename__ = "slitting_anode"
 
@@ -285,6 +291,7 @@ class AnodeInspection(Base):
     epsilon_thickness_max = Column(Float)
     b_max = Column(Float)
     d_surface_max = Column(Float)
+
 
 class CathodeInspection(Base):
     __tablename__ = "inspection_cathode"
@@ -427,12 +434,17 @@ class Aging(Base):
     k_leak = Column(Float)
     temperature = Column(Float)
     aging_time_days = Column(Float)
-    
-    
+
+
 def create_tables():
     """Create all database tables and setup user permissions."""
     Base.metadata.create_all(bind=engine)
-    
+
     # Setup read-only user for Grafana
-    from backend.src.server.db.db import user_connection
+    from server.db.db import user_connection
+
     user_connection()
+
+if __name__ == "__main__":
+    create_tables()
+    print("Tables created.")

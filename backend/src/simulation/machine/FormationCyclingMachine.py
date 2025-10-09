@@ -1,3 +1,5 @@
+from logging import info
+from simulation.event_bus.events import EventBus
 from simulation.machine.BaseMachine import BaseMachine
 from simulation.process_parameters.Parameters import FormationCyclingParameters
 from simulation.battery_model.FormationCyclingModel import FormationCyclingModel
@@ -10,12 +12,10 @@ class FormationCyclingMachine(BaseMachine):
         process_name: str,
         formation_cycling_parameters: FormationCyclingParameters,
         formation_model: FormationCyclingModel = None,
-        connection_string=None,
+        event_bus: EventBus = None,
     ):
         super().__init__(
-            process_name,
-            formation_model,
-            formation_cycling_parameters,
+            process_name, formation_model, formation_cycling_parameters, event_bus
         )
 
     def receive_model_from_previous_process(
@@ -23,24 +23,17 @@ class FormationCyclingMachine(BaseMachine):
     ):
         self.battery_model = FormationCyclingModel(previous_model)
 
-    def run(self):
-        self.turn_on()
-        all_results = []
+    def calculate_total_steps(self):
+        self.total_steps = int(self.machine_parameters.formation_duration_s + 1)
 
-        for t in range(self.machine_parameters.Formation_duration_s + 1):
-            self.total_time = t
-            self.battery_model.update_properties(self.machine_parameters, t)
-            proc = self.battery_model.get_properties()
-            result = self.get_current_state(process_specifics=proc)
-            all_results.append(result)
-            self.save_data_to_local_folder()
+    def step_logic(self, t: int, verbose: bool):
+        if self.battery_model.voltage >= self.machine_parameters.charge_voltage_limit_V:
+            raise RuntimeError("Voltage limit was reached")
 
-            # stop early if reached voltage limit
-            if proc["Voltage_V"] >= self.machine_parameters.Charge_voltage_limit_V:
-                break
-
-        self.save_all_results(all_results)
-        self.turn_off()
-
-    def validate_parameters(self, parameters: dict):
-        return FormationCyclingParameters(**parameters).validate_parameters()
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, FormationCyclingParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return FormationCyclingParameters(**parameters).validate_parameters()
+        else:
+            raise TypeError(f"Expected FormationCyclingParameters or dict, got {type(parameters)}")

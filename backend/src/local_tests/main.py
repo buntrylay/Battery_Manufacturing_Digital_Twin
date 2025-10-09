@@ -77,14 +77,13 @@ user_input_formation = {
 # Aging's input parameters
 user_input_aging = {"k_leak": 1e-8, "temperature": 25, "aging_time_days": 10}
 
-
 plant_simulation = PlantSimulation()
 
 
 def test_run_simulation():
+    plant_simulation.reset_plant()
     batch_1 = Batch(batch_id="Batch_1")
     plant_simulation.add_batch(batch_1)
-    plant_simulation.run()
 
 
 def test_get_plant_state():
@@ -101,24 +100,51 @@ def test_update_machine_parameters():
                 "CA_ratio": 0.045,
                 "PVDF_ratio": 0.05,
                 "solvent_ratio": 0.442,
-            }
+            },
         )
         print(plant_simulation.get_machine_status("anode", "mixing"))
     except Exception as e:
         print(type(e))
         print(e)
 
+
 def test_two_batches():
+    plant_simulation.reset_plant()
     batch_1 = Batch(batch_id="Batch_1")
     batch_2 = Batch(batch_id="Batch_2")
     plant_simulation.add_batch(batch_1)
-    plant_simulation.run()
-    time.sleep(2) # wait for the first batch to run for some time
+    time.sleep(2)  # wait for the first batch to run for some time
     plant_simulation.add_batch(batch_2)
-    plant_simulation.run()
 
-def test_get_plant_state():
-    print(plant_simulation.get_current_plant_state())
+
+def test_four_batches_staggered():
+    plant_simulation.reset_plant()
+    arrivals = [
+        ("Batch_1", 0.0),
+        ("Batch_2", 1.0),
+        ("Batch_3", 4.0),
+        ("Batch_4", 6.0),
+        ("Batch_5", 6.5),
+        ("Batch_6", 6.7),
+    ]
+    start_time = time.perf_counter()
+    for batch_id, delay in arrivals:
+        elapsed = time.perf_counter() - start_time
+        if delay > elapsed:
+            time.sleep(delay - elapsed)
+        try:
+            plant_simulation.add_batch(Batch(batch_id=batch_id), verbose=True)
+        except:
+            print("maximum three batch requests in the queue. Please slow down.")
+    plant_simulation.wait_until_plant_simulation_is_idle()
+    print("Simulation finished!")
+
+
+def server_thread():
+    while True:
+        pass
+
 
 if __name__ == "__main__":
-    test_get_plant_state()
+    test_four_batches_staggered()
+    server_thread()

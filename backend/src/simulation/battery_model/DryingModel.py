@@ -1,3 +1,4 @@
+from simulation.process_parameters.Parameters import DryingParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.CoatingModel import CoatingModel
 
@@ -11,6 +12,8 @@ class DryingModel(BaseModel):
         self.dry_thickness = 0
         self.M_solvent = 0
         self.defect_risk = False
+        # newly added to the model properties
+        self.evap_rate = 0
         # constants
         self.temperature = 80
         self.V_air = 1.0
@@ -23,7 +26,7 @@ class DryingModel(BaseModel):
         self.AREA = self.COATING_WIDTH * 1  # length = 1m
         self.drying_length = 10
 
-    def evaporation_rate(self):
+    def calculate_evaporation_rate(self):
         k0 = 0.001
         mass_transfer_coeff = k0 * (self.V_air / (self.COATING_WIDTH * self.H_air))
         C_surface = 1.0
@@ -40,18 +43,17 @@ class DryingModel(BaseModel):
         residence_time = self.drying_length / web_speed
         return int(residence_time / delta_t)
 
-    def update_properties(self, params):
-        evap_rate = self.evaporation_rate()
-
+    def update_properties(
+        self, machine_parameters: DryingParameters, current_time_step: int = None
+    ):
+        # newly added to the model properties
+        self.evap_rate = self.calculate_evaporation_rate()
         if self.M_solvent == 0:
-            self.M_solvent = self.calculate_initial_solvent_mass()        
-
-        self.M_solvent -= (evap_rate / self.AREA) * self.DELTA_T
+            self.M_solvent = self.calculate_initial_solvent_mass()
+        self.M_solvent -= (self.evap_rate / self.AREA) * self.DELTA_T
         self.M_solvent = max(self.M_solvent, 0)
-
         self.dry_thickness = self.calculate_dry_thickness()
-        self.defect_risk = abs(evap_rate / self.AREA) > self.MAX_SAFE_EVAP_RATE
-
+        self.defect_risk = abs(self.evap_rate / self.AREA) > self.MAX_SAFE_EVAP_RATE
 
     def get_properties(self):
         return {
@@ -61,4 +63,6 @@ class DryingModel(BaseModel):
             "defect_risk": bool(self.defect_risk),
             "solid_content": float(self.solid_content),
             "temperature": float(self.temperature),
+            # newly added to the model properties
+            "evaporation_rate": float(self.calculate_evaporation_rate)
         }

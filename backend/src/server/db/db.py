@@ -21,14 +21,13 @@ def get_db():
 def user_connection():
     """Create a read-only user for Grafana with proper error handling."""
     commands = [
-        "CREATE USER grafana_reader WITH PASSWORD 'password' IF NOT EXISTS;",
+        "CREATE USER grafana_reader WITH PASSWORD 'password';",
         "GRANT CONNECT ON DATABASE postgres TO grafana_reader;",
         "GRANT ALL PRIVILEGES ON DATABASE postgres TO grafana_reader;",
         "GRANT USAGE ON SCHEMA public TO grafana_reader;",
         "GRANT SELECT ON ALL TABLES IN SCHEMA public TO grafana_reader;",
         "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO grafana_reader;"
     ]
-    
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
@@ -40,9 +39,10 @@ def user_connection():
                         # Skip if user already exists or other expected errors
                         if "already exists" in str(e):
                             print(f"User already exists, skipping: {command}")
+                            conn.rollback()  # Rollback only this command, continue with others
                         else:
                             print(f"Error executing {command}: {e}")
-                            # Don't raise, continue with other commands
+                            conn.rollback()
                 conn.commit()
                 print("User connection setup completed")
     except Exception as e:

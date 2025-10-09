@@ -22,7 +22,7 @@ services:
     depends_on:
       - fastapi
 
-  ##` Backend service
+  ## Backend service
   fastapi:
     build:
       context: ./backend
@@ -30,10 +30,13 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/workspaces/app
-    working_dir: /workspaces/app
+      - ./backend:/app
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app/src
     depends_on:
       - db
+      - db-init
     networks:
       - app-net
 
@@ -52,6 +55,22 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
+  db-init:
+    build:
+      context: ./backend
+    command: ["python", "src/server/db/model_table.py"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-net
+  
   ## Grafana service
   grafana:
     image: grafana/grafana

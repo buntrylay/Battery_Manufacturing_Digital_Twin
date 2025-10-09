@@ -1,211 +1,112 @@
-import time
-import numpy as np
+from simulation.event_bus.events import EventBus, PlantSimulationEventType
 from simulation.process_parameters.Parameters import MixingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.BaseMachine import BaseMachine
 from dataclasses import asdict
-import sys
-import os
-
-# Import notification functions
-try:
-    # Try multiple import paths to handle different environments
-    try:
-        from server.notification_queue import notify_machine_status
-    except ImportError:
-        from backend.src.server.notification_queue import notify_machine_status
-except ImportError:
-    # Fallback if import fails
-    def notify_machine_status(*args, **kwargs):
-        print(f"MixingMachine Notification: {args}")
-        pass
 
 
 class MixingMachine(BaseMachine):
-    """
-    A machine class for simulating the mixing of battery slurry components.
-
-    This class handles the stepwise addition of components to a slurry, simulates
-    process parameters (temperature, pressure, RPM), and generates real-time
-    simulation data in JSON format. Utility methods are used for formatting results,
-    writing output files, and printing process information.
-
-    """
 
     def __init__(
         self,
         process_name: str,
         mixing_model: MixingModel = None,
         mixing_parameters: MixingParameters = None,
-        connection_string=None,
+        event_bus: EventBus = None,
     ):
-        """
-        Initialise a new MixingMachine instance.
-
-        Args:
-            mixing_model (MixingModel): The mixing model to be used.
-            mixing_parameters (MixingParameters): The mixing parameters to be used.
-        """
-        super().__init__(
-            process_name, mixing_model, mixing_parameters, connection_string
-        )
+        super().__init__(process_name, mixing_model, mixing_parameters, event_bus)
         self.mixing_tank_volume = 200
+        self.duration_secs = {"PVDF": 8, "CA": 8, "AM": 10}
+        self.expected_total_amount_of_solvent = None
+        self.expected_total_amount_of_PVDF = None
+        self.expected_total_amount_of_CA = None
+        self.expected_total_amount_of_AM = None
+        self.pvdf_per_step = None
+        self.ca_per_step = None
+        self.am_per_step = None
+        self.solvent_step = 1
+        self.pvdf_step = None
+        self.ca_step = None
+        self.am_step = None
 
     def receive_model_from_previous_process(self, initial_mixing_model: MixingModel):
         self.battery_model = initial_mixing_model
 
-    def __mix_component(
-        self,
-        material_type,
-        step_percent=0.02,
-        pause_sec=0.1,
-        duration_sec=10,
-        results_list=None,
-    ):
-        total_volume_of_material_to_add = self.mixing_tank_volume * getattr(
-            self.machine_parameters, f"{material_type}_ratio"
+    def calculate_total_steps(self):
+        def calc_steps(sec):
+            return int(sec / self.pause_between_steps)
+        DURATION_SECS = {"PVDF": 8, "CA": 8, "AM": 10}
+        self.solvent_step = 1
+        self.pvdf_step = calc_steps(DURATION_SECS["PVDF"])
+        self.ca_step = calc_steps(DURATION_SECS["CA"])
+        self.am_step = calc_steps(DURATION_SECS["AM"])
+        self.total_steps = (
+            self.solvent_step + self.pvdf_step + self.ca_step + self.am_step
         )
-        volume_added_in_each_step = step_percent * total_volume_of_material_to_add
-        added_volume = 0.0
-        comp_start_time = self.total_time
-        last_saved_time = time.time()
-        last_saved_result = None
-        while self.total_time - comp_start_time < duration_sec:
-            self.total_time += pause_sec
-            if added_volume < total_volume_of_material_to_add:
-                add_amt = min(
-                    volume_added_in_each_step,
-                    total_volume_of_material_to_add - added_volume,
-                )
-                self.battery_model.add(material_type, add_amt)
-                added_volume += add_amt
-            self.battery_model.update_properties()
-            result = self.get_current_state()
-            results_list.append(result)
-            # Attempt real-time broadcast (throttled by BaseMachine)
-            try:
-                self._maybe_broadcast_data(result)
-            except Exception:
-                pass
-            now = time.time()
-            if (
-                now - last_saved_time >= 0.1 and result != last_saved_result
-            ):  # Check if data has changed
-                # self.send_json_to_iothub(result)  # Send to IoT Hub
-                self.save_data_to_local_folder()  # Print to console
-                last_saved_time = now
-                last_saved_result = result
-            time.sleep(pause_sec)
 
-    def run(self):
-        if self.pre_run_check():
-            self.turn_on()
-            
-            # Notify start of mixing process
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
-                process_name=self.process_name,
-                status="mixing_started",
-                data={"message": f"Starting {self.process_name} mixing process", "tank_volume": self.mixing_tank_volume}
-            )
-            
-            # Add initial solvent
-            solvent_volume = self.mixing_tank_volume * self.machine_parameters.solvent_ratio
-            self.battery_model.add("solvent", solvent_volume)
-            
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
-                process_name=self.process_name,
-                status="solvent_added",
-                data={"message": f"Added {solvent_volume:.2f}L solvent", "volume": solvent_volume}
-            )
-            
-            all_results = []
-            
-            # Mix PVDF
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
-                process_name=self.process_name,
-                status="component_mixing",
-                data={"message": "Starting PVDF mixing", "component": "PVDF", "duration": 8}
-            )
-            self.__mix_component("PVDF", duration_sec=8, results_list=all_results)
-            
-            # Mix CA
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
-                process_name=self.process_name,
-                status="component_mixing",
-                data={"message": "Starting CA mixing", "component": "CA", "duration": 8}
-            )
-            self.__mix_component("CA", duration_sec=8, results_list=all_results)
-            
-            # Mix AM
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
-                process_name=self.process_name,
-                status="component_mixing",
-                data={"message": "Starting AM mixing", "component": "AM", "duration": 10}
-            )
-            self.__mix_component("AM", duration_sec=10, results_list=all_results)
-            
-            # Save results
-            self.save_all_results(all_results)
-            
-            # Notify completion
-            notify_machine_status(
-                machine_id=self.process_name,
-                line_type=self.process_name.split('_')[-1],
-                process_name=self.process_name,
-                status="mixing_completed",
-                data={
-                    "message": f"{self.process_name} mixing completed successfully",
-                    "total_results": len(all_results),
-                    "final_state": self.get_current_state()
-                }
-            )
-            
-            self.turn_off()
+    def reset_addition_configuration(self):
+        self.expected_total_amount_of_solvent = None
+        self.expected_total_amount_of_PVDF = None
+        self.expected_total_amount_of_CA = None
+        self.expected_total_amount_of_AM = None
+        self.pvdf_per_step = None
+        self.ca_per_step = None
+        self.am_per_step = None
 
-    def validate_parameters(self, parameters: dict):
-        # Convert API format (AM, CA, PVDF, solvent) to internal format (AM_ratio, CA_ratio, etc.)
-        converted_params = {}
-        if "AM" in parameters:
-            converted_params["AM_ratio"] = parameters["AM"]
-        if "CA" in parameters:
-            converted_params["CA_ratio"] = parameters["CA"]
-        if "PVDF" in parameters:
-            converted_params["PVDF_ratio"] = parameters["PVDF"]
-        if "solvent" in parameters:
-            converted_params["solvent_ratio"] = parameters["solvent"]
-        
-        # Use the converted parameters or fall back to the original if already in correct format
-        params_to_use = converted_params if converted_params else parameters
-        return MixingParameters(**params_to_use).validate_parameters()
+    def check_addition_configuration(self):
+        return (
+            self.expected_total_amount_of_solvent is not None
+            or self.expected_total_amount_of_PVDF is not None
+            or self.expected_total_amount_of_CA is not None
+            or self.expected_total_amount_of_AM is not None
+            or self.pvdf_per_step is not None
+            or self.ca_per_step is not None
+            or self.am_per_step is not None
+        )
 
-    def update_machine_parameters(self, parameters):
-        """Update machine parameters, handling both dict and MixingParameters objects."""
-        if isinstance(parameters, dict):
-            # Convert API format (AM, CA, PVDF, solvent) to internal format (AM_ratio, CA_ratio, etc.)
-            converted_params = {}
-            if "AM" in parameters:
-                converted_params["AM_ratio"] = parameters["AM"]
-            if "CA" in parameters:
-                converted_params["CA_ratio"] = parameters["CA"]
-            if "PVDF" in parameters:
-                converted_params["PVDF_ratio"] = parameters["PVDF"]
-            if "solvent" in parameters:
-                converted_params["solvent_ratio"] = parameters["solvent"]
-            
-            # Use the converted parameters or fall back to the original if already in correct format
-            params_to_use = converted_params if converted_params else parameters
-            mixing_params = MixingParameters(**params_to_use)
-            super().update_machine_parameters(mixing_params)
+    def pre_run_check(self):
+        super().pre_run_check()
+        self.reset_addition_configuration()
+        self.calculate_total_amount_to_add_for_each_material()
+        self.calculate_per_step_additions()
+        return self.check_addition_configuration()
+
+    def calculate_total_amount_to_add_for_each_material(self):
+        self.expected_total_amount_of_solvent = (
+            self.mixing_tank_volume * self.machine_parameters.solvent_ratio
+        )
+        self.expected_total_amount_of_PVDF = (
+            self.mixing_tank_volume * self.machine_parameters.PVDF_ratio
+        )
+        self.expected_total_amount_of_CA = (
+            self.mixing_tank_volume * self.machine_parameters.CA_ratio
+        )
+        self.expected_total_amount_of_AM = (
+            self.mixing_tank_volume * self.machine_parameters.AM_ratio
+        )
+
+    def calculate_per_step_additions(self):
+        self.pvdf_per_step = self.expected_total_amount_of_PVDF / max(1, self.pvdf_step)
+        self.ca_per_step = self.expected_total_amount_of_CA / max(1, self.ca_step)
+        self.am_per_step = self.expected_total_amount_of_AM / max(1, self.am_step)
+
+    def step_logic(self, t: int, verbose=False):
+        if t == 0:
+            self.battery_model.add("solvent", self.expected_total_amount_of_solvent)
+        elif 1 <= t <= self.pvdf_step:
+            if self.battery_model.PVDF < self.expected_total_amount_of_PVDF:
+                self.battery_model.add("PVDF", self.pvdf_per_step)
+        elif self.pvdf_step < t <= self.pvdf_step + self.ca_step:
+            if self.battery_model.CA < self.expected_total_amount_of_CA:
+                self.battery_model.add("CA", self.ca_per_step)
+        elif self.pvdf_step + self.ca_step < t <= self.total_steps:
+            if self.battery_model.AM < self.expected_total_amount_of_AM:
+                self.battery_model.add("AM", self.am_per_step)
+
+    def validate_parameters(self, parameters):
+        if isinstance(parameters, MixingParameters):
+            return parameters.validate_parameters()
+        elif isinstance(parameters, dict):
+            return MixingParameters(**parameters).validate_parameters()
         else:
-            # Already a MixingParameters object
-            super().update_machine_parameters(parameters)
+            raise TypeError(f"Expected MixingParameters or dict, got {type(parameters)}")
