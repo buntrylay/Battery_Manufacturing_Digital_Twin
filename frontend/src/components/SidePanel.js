@@ -103,35 +103,7 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
     );
   };
 
-  const handleValidateInputs = async () => {
-    try {
-      setStatus("Validating parameters...");
 
-      // Convert input values to numbers for validation
-      const parametersToValidate = {};
-      Object.keys(inputValues).forEach((field) => {
-        if (inputValues[field] !== "") {
-          parametersToValidate[field] = parseFloat(inputValues[field]);
-        }
-      });
-
-      const response = await validateParameters(
-        selectedStage.id,
-        parametersToValidate
-      );
-
-      if (response.data.valid) {
-        setStatus("✓ Parameters are valid and ready to apply");
-      } else {
-        setStatus(`❌ Validation failed: ${response.data.error}`);
-      }
-    } catch (error) {
-      console.error("Parameter validation error:", error);
-      setStatus(
-        `❌ Validation error: ${error.response?.data?.detail || error.message}`
-      );
-    }
-  };
 
   const handleSaveInputs = async () => {
     // Validate mixing inputs if it's a mixing stage
@@ -416,15 +388,6 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
                 title="Load current machine parameters"
               >
                 Load Current
-              </button>
-
-              <button
-                onClick={handleValidateInputs}
-                className="validate-btn"
-                title="Validate parameter values"
-                disabled={!hasRequiredInputs()}
-              >
-                Validate
               </button>
 
               <button
