@@ -446,7 +446,7 @@ class PlantSimulation:
                 {"batch_id": batch.batch_id},
             )
 
-        def __notify_finish__batch__processing(batch, verbose):
+        def __notify_finish_batch_processing(batch, verbose):
             # Batch finished whole pipeline
             if verbose:
                 print(
@@ -465,7 +465,7 @@ class PlantSimulation:
         __run_remaining_stages_of_electrode_lines_on_batch(batch, verbose)
         __assemble_batch_to_cell(batch, verbose)
         __run_cell_line_on_batch(batch, verbose)
-        __notify_finish__batch__processing(batch, verbose)
+        __notify_finish_batch_processing(batch, verbose)
         return True
 
     def __process_batch_request(self, batch: Batch, verbose: bool = False):
