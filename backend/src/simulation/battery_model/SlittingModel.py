@@ -1,18 +1,19 @@
+from simulation.process_parameters.Parameters import SlittingParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.CalendaringModel import CalendaringModel
 import numpy as np
+
+
 class SlittingModel(BaseModel):
     def __init__(self, calendaring_model: CalendaringModel):
         # from calendaring
         self.dry_thickness = calendaring_model.dry_thickness
         self.porosity = calendaring_model.porosity
-       
         # state
         self.width_final = 0
         self.epsilon_width = 0
         self.burr_factor = 0
         self.defect_risk = False
-
         # material constant
         self.C = 1.0
         self.v_ref = 1.0
@@ -30,14 +31,28 @@ class SlittingModel(BaseModel):
         return (self.C / S) * (v_slit / self.v_ref) * (tau_slit / self.tau_ref)
 
     def defect_check(self, epsilon_width, burr_factor):
-        return abs(epsilon_width) > self.max_width_deviation or burr_factor > self.max_burr_threshold
+        return (
+            abs(epsilon_width) > self.max_width_deviation
+            or burr_factor > self.max_burr_threshold
+        )
 
-    def update_properties(self, params):
-        self.width_final = self.simulate_width_variation(params.target_width)
-        self.epsilon_width = self.calculate_epsilon_width(self.width_final, params.target_width)
-        self.burr_factor = self.calculate_burr_factor(params.blade_sharpness, params.slitting_speed, params.slitting_tension)
+    def update_properties(
+        self, machine_parameters: SlittingParameters, current_time_step: int = None
+    ):
+        self.width_final = self.simulate_width_variation(
+            machine_parameters.target_width
+        )
+        self.epsilon_width = self.calculate_epsilon_width(
+            self.width_final, machine_parameters.target_width
+        )
+        self.burr_factor = self.calculate_burr_factor(
+            machine_parameters.blade_sharpness,
+            machine_parameters.slitting_speed,
+            machine_parameters.slitting_tension,
+        )
         self.defect_risk = self.defect_check(self.epsilon_width, self.burr_factor)
-        self.final_thickness = self.dry_thickness  # assuming no thickness change during slitting
+        # assuming no thickness change during slitting
+        self.final_thickness = self.dry_thickness
 
     def get_properties(self):
         return {

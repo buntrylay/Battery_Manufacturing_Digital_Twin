@@ -1,5 +1,5 @@
+from simulation.event_bus.events import EventBus
 from simulation.machine.BaseMachine import BaseMachine
-from dataclasses import dataclass
 from simulation.process_parameters.Parameters import SlittingParameters
 from simulation.battery_model import CalendaringModel
 from simulation.battery_model.SlittingModel import SlittingModel
@@ -11,27 +11,19 @@ class SlittingMachine(BaseMachine):
         process_name: str,
         slitting_parameters: SlittingParameters,
         slitting_model: SlittingModel = None,
-        connection_string=None,
+        event_bus: EventBus = None,
     ):
-        super().__init__(
-            process_name, slitting_model, slitting_parameters, connection_string
-        )
+        super().__init__(process_name, slitting_model, slitting_parameters, event_bus)
+        # self.total_steps = 30
 
     def receive_model_from_previous_process(self, previous_model: CalendaringModel):
         self.battery_model = SlittingModel(previous_model)
 
-    def run(self):
-        self.turn_on()
-        all_results = []
+    def calculate_total_steps(self):
+        self.total_steps = 10  # default
 
-        for t in range(30):
-            self.total_time = t
-            self.battery_model.update_properties(self.machine_parameters)
-            result = self.get_current_state()
-            all_results.append(result)
-            self.save_data_to_local_folder()
-        self.save_all_results(all_results)
-        self.turn_off()
+    def step_logic(self, t: int, verbose: bool):
+        pass
 
     def validate_parameters(self, parameters: dict):
         return SlittingParameters(**parameters).validate_parameters()

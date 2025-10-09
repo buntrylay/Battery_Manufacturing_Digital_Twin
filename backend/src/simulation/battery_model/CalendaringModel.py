@@ -1,6 +1,8 @@
+from simulation.process_parameters.Parameters import CalendaringParameters
 from simulation.battery_model.BaseModel import BaseModel
 from simulation.battery_model.DryingModel import DryingModel
 import numpy as np
+
 
 class CalendaringModel(BaseModel):
     def __init__(self, drying_model: DryingModel, initial_porosity: float):
@@ -32,12 +34,16 @@ class CalendaringModel(BaseModel):
     def defect_check(self, applied_sigma, theoretical_sigma):
         return applied_sigma > 2 * theoretical_sigma
 
-    def update_properties(self, params):
-        self.epsilon_val = self.epsilon(params.roll_gap)
+    def update_properties(
+        self, machine_parameters: CalendaringParameters, current_time_step: int = None
+    ):
+        self.epsilon_val = self.epsilon(machine_parameters.roll_gap)
         self.sigma_theory = self.sigma_calc(self.epsilon_val)
         self.porosity = self.porosity_reduction(self.epsilon_val)
-        self.final_thickness = params.roll_gap
-        self.defect_risk = self.defect_check(params.roll_pressure, self.sigma_theory)
+        self.final_thickness = machine_parameters.roll_gap
+        self.defect_risk = self.defect_check(
+            machine_parameters.roll_pressure, self.sigma_theory
+        )
 
     def get_properties(self):
         return {
