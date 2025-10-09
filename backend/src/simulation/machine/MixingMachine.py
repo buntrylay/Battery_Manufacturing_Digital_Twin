@@ -1,19 +1,11 @@
-from simulation.event_bus.events import EventBus
+from simulation.event_bus.events import EventBus, PlantSimulationEventType
 from simulation.process_parameters.Parameters import MixingParameters
 from simulation.battery_model.MixingModel import MixingModel
 from simulation.machine.BaseMachine import BaseMachine
+from dataclasses import asdict
 
 
 class MixingMachine(BaseMachine):
-    """
-    A machine class for simulating the mixing of battery slurry components.
-
-    This class handles the stepwise addition of components to a slurry, simulates
-    process parameters (temperature, pressure, RPM), and generates real-time
-    simulation data in JSON format. Utility methods are used for formatting results,
-    writing output files, and printing process information.
-
-    """
 
     def __init__(
         self,
@@ -22,65 +14,90 @@ class MixingMachine(BaseMachine):
         mixing_parameters: MixingParameters = None,
         event_bus: EventBus = None,
     ):
-        """
-        Initialise a new MixingMachine instance.
-
-        Args:
-            mixing_model (MixingModel): The mixing model to be used.
-            mixing_parameters (MixingParameters): The mixing parameters to be used.
-        """
         super().__init__(process_name, mixing_model, mixing_parameters, event_bus)
         self.mixing_tank_volume = 200
+        self.pause_secs = 0.1
+        self.duration_secs = {"PVDF": 8, "CA": 8, "AM": 10}
 
     def receive_model_from_previous_process(self, initial_mixing_model: MixingModel):
         self.battery_model = initial_mixing_model
 
     def calculate_total_steps(self):
-        self.solvent_step = 0
-        self.pvdf_step = 100
-        self.ca_step = 100
-        self.am_step = 100
+        def calc_steps(sec): return int(sec / self.pause_secs)
+        self.solvent_step = 1
+        self.pvdf_step = calc_steps(self.duration_secs["PVDF"])
+        self.ca_step = calc_steps(self.duration_secs["CA"])
+        self.am_step = calc_steps(self.duration_secs["AM"])
         self.total_steps = (
             self.solvent_step + self.pvdf_step + self.ca_step + self.am_step
         )
 
-    def step_logic(self, t: int, verbose: bool):
-        solvent_volume = self.mixing_tank_volume * self.machine_parameters.solvent_ratio
-        pvdf_volume = self.mixing_tank_volume * self.machine_parameters.PVDF_ratio
-        ca_volume = self.mixing_tank_volume * self.machine_parameters.CA_ratio
-        am_volume = self.mixing_tank_volume * self.machine_parameters.AM_ratio
+    def step_logic(self, t: int, verbose=False):
+        if not hasattr(self, "total_steps") or self.total_steps is None:
+            self.calculate_total_steps()
 
-        pvdf_per_step = pvdf_volume / max(1, self.pvdf_step)
-        ca_per_step = ca_volume / max(1, self.ca_step)
-        am_per_step = am_volume / max(1, self.am_step)
+        # Get ratios
+        solvent_ratio = self.machine_parameters.solvent_ratio
+        pvdf_ratio = self.machine_parameters.PVDF_ratio
+        ca_ratio = self.machine_parameters.CA_ratio
+        am_ratio = self.machine_parameters.AM_ratio
 
-        # first add solvent
+        # Calculate total material amounts
+        total_solvent = self.mixing_tank_volume * solvent_ratio
+        total_pvdf = self.mixing_tank_volume * pvdf_ratio
+        total_ca = self.mixing_tank_volume * ca_ratio
+        total_am = self.mixing_tank_volume * am_ratio
+
+        # Calculate per-step addition
+        pvdf_per_step = total_pvdf / max(1, self.pvdf_step)
+        ca_per_step = total_ca / max(1, self.ca_step)
+        am_per_step = total_am / max(1, self.am_step)
+
+        # Step-by-step simulation
         if t == 0:
-            self.battery_model.add("solvent", solvent_volume)
-            pass
-        # then add pvdf
-        elif self.solvent_step <= t < self.solvent_step + self.pvdf_step:
-            if t == self.solvent_step:
-                pass
+            self.battery_model.add("solvent", total_solvent)
+
+        elif 1 <= t <= self.pvdf_step:
             self.battery_model.add("PVDF", pvdf_per_step)
-        # then ca
-        elif (
-            self.solvent_step + self.pvdf_step
-            <= t
-            < self.solvent_step + self.pvdf_step + self.ca_step
-        ):
-            if t == self.solvent_step + self.pvdf_step:
-                pass
+            self.battery_model.update_properties(self.machine_parameters)
+
+        elif self.pvdf_step < t <= self.pvdf_step + self.ca_step:
             self.battery_model.add("CA", ca_per_step)
-        # then am
-        elif (
-            self.solvent_step + self.pvdf_step + self.ca_step
-            <= t
-            < self.solvent_step + self.pvdf_step + self.ca_step + self.am_step
-        ):
-            if t == self.solvent_step + self.pvdf_step + self.ca_step:
-                pass
+            self.battery_model.update_properties(self.machine_parameters)
+
+        elif self.pvdf_step + self.ca_step < t <= self.total_steps:
             self.battery_model.add("AM", am_per_step)
+            self.battery_model.update_properties(self.machine_parameters)
+
+        # Emit completion event at the end
+        if t == self.total_steps - 1:
+            try:
+                state = self.get_current_state()
+                if not isinstance(state, dict):
+                    try:
+                        state = asdict(state)
+                    except Exception:
+                        state = state.__dict__
+
+                if self.event_bus:
+                    self.event_bus.emit_plant_simulation_event(
+                        PlantSimulationEventType.MACHINE_TURNED_OFF,
+                        {
+                            "machine": self.process_name,
+                            "message": "Mixing completed successfully",
+                            "state": state,
+                        },
+                    )
+
+            except Exception as e:
+                if self.event_bus:
+                    self.event_bus.emit_plant_simulation_event(
+                        PlantSimulationEventType.MACHINE_SIMULATION_ERROR,
+                        {
+                            "machine": self.process_name,
+                            "error": str(e),
+                        },
+                    )
 
     def validate_parameters(self, parameters: dict):
         return MixingParameters(**parameters).validate_parameters()

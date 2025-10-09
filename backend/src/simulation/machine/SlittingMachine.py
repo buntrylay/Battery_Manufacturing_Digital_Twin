@@ -14,13 +14,12 @@ class SlittingMachine(BaseMachine):
         event_bus: EventBus = None,
     ):
         super().__init__(process_name, slitting_model, slitting_parameters, event_bus)
-        # self.total_steps = 30
 
     def receive_model_from_previous_process(self, previous_model: CalendaringModel):
         self.battery_model = SlittingModel(previous_model)
 
     def calculate_total_steps(self):
-        self.total_steps = 10  # default
+        self.total_steps = 30 # placeholder for a fixed number of steps
 
     def step_logic(self, t: int, verbose: bool):
         pass

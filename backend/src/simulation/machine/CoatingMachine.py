@@ -71,13 +71,12 @@ class CoatingMachine(BaseMachine):
             coating_parameters,
             event_bus,
         )
-        # self.total_steps = 20
 
     def receive_model_from_previous_process(self, previous_model: MixingModel):
         self.battery_model = CoatingModel(previous_model)
 
     def calculate_total_steps(self):
-        self.total_steps = 20
+        self.total_steps = 20  # b/c originally, there is duration_secs = 100 and time steps = 5
 
     def step_logic(self, t: int, verbose: bool):
         # update shear rate and wet thickness first to trigger changes in other properties

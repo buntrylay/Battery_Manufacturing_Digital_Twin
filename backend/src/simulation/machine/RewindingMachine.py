@@ -13,7 +13,6 @@ class RewindingMachine(BaseMachine):
         event_bus: EventBus = None,
     ):
         super().__init__(process_name, rewinding_model, rewinding_parameters, event_bus)
-        # self.total_steps = 120 // 5
 
     def receive_model_from_previous_process(
         self,
@@ -22,7 +21,7 @@ class RewindingMachine(BaseMachine):
         self.battery_model = assembled_rewinding_model
 
     def calculate_total_steps(self):
-        self.total_steps = 10
+        self.total_steps = 24 # placeholder for a fixed number of steps
 
     def step_logic(self, t: int, verbose: bool):
         pass
