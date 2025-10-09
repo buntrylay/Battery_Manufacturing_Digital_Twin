@@ -171,16 +171,15 @@ function FlowPage() {
           }`}
         >
           <MachineFlowDiagram animationTrigger={animationTrigger} />
+          {selectedStage && (
+            <SidePanel
+              selectedStage={selectedStage}
+              onClose={() => setSelectedId(null)}
+              isOpen={!!selectedStage}
+            />
+          )}
         </div>
       </div>
-
-      {selectedStage && (
-        <SidePanel
-          selectedStage={selectedStage}
-          onClose={() => setSelectedId(null)}
-          isOpen={!!selectedStage}
-        />
-      )}
     </div>
   );
 }
