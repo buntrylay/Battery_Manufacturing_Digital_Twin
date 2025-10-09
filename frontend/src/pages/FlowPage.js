@@ -1,76 +1,58 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useFlowPage } from "../contexts/FlowPageContext";
 import SidePanel from "../components/SidePanel";
 import MachineFlowDiagram from "../components/MachineFlowDiagram";
 import "../styles/FlowPage.css";
 import { useLogs } from "../contexts/WebSocketContext";
-import { startSimulation } from "../services/api";
 import ToggleSwitch from "../components/ToggleSwitch";
-const FlowPage = () => {
+import { startSimulation } from "../services/api";
+
+function FlowPage() {
   const { setSelectedId, selectedStage } = useFlowPage();
-  const { clearLogs, addLog } = useLogs();
+  const { clearLogs } = useLogs();
   const [simulationStatus, setSimulationStatus] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [animationTrigger, setAnimationTrigger] = useState(false);
+  const [plantState, setPlantState] = useState(null);
+
+  // Effect to check localStorage on component mount to maintain animation state on refresh
+  useEffect(() => {
+    if (localStorage.getItem("simulationRunning") === "true") {
+      setAnimationTrigger(true);
+    }
+  }, []);
 
   const handleClearLogs = () => {
     clearLogs();
     setAnimationTrigger(false); // Reset animation when clearing logs
+    localStorage.removeItem("simulationRunning"); // Clear persisted state
   };
 
   const handleStartFullSimulation = async () => {
     setIsRunning(true);
     setAnimationTrigger(true);
-    setSimulationStatus("Starting full simulation...");
+    localStorage.setItem("simulationRunning", "true"); // Persist animation state
+    setSimulationStatus("Starting full plant simulation...");
     clearLogs();
 
     try {
-      // Get saved inputs from localStorage
-      const anodeInputs = localStorage.getItem("mixingInputs_Anode Mixing");
-      const cathodeInputs = localStorage.getItem("mixingInputs_Cathode Mixing");
+      // This API call aligns with adding a batch to a continuous simulation
+      const response = await startSimulation();
 
-      if (!anodeInputs || !cathodeInputs) {
-        setSimulationStatus(
-          "Error: Please configure both Anode and Cathode mixing inputs first"
-        );
-        setIsRunning(false);
-        return;
+      if (response.data && response.data.message) {
+        setSimulationStatus(`✓ ${response.data.message}`);
+      } else {
+        setSimulationStatus("✓ Plant simulation started successfully!");
       }
 
-      const anodeData = JSON.parse(anodeInputs);
-      const cathodeData = JSON.parse(cathodeInputs);
-
-      // Prepare simulation data with both anode and cathode parameters
-      const simulationData = {
-        anode_params: {
-          AM: anodeData.AM,
-          CA: anodeData.CA,
-          PVDF: anodeData.PVDF,
-          Solvent: anodeData.Solvent,
-        },
-        cathode_params: {
-          AM: cathodeData.AM,
-          CA: cathodeData.CA,
-          PVDF: cathodeData.PVDF,
-          Solvent: cathodeData.Solvent,
-        },
-      };
-
-      setSimulationStatus(
-        "Starting complete battery manufacturing simulation..."
-      );
-      const response = await startSimulation(simulationData);
-
-      setSimulationStatus(
-        `Full simulation started successfully! Batch ID: ${response.data.batch_id}`
-      );
+      // Refresh plant state after starting
     } catch (error) {
+      console.error("Simulation start error:", error);
       setSimulationStatus(
-        "Error: " + (error.response?.data?.detail || error.message)
+        `❌ Error: ${error.response?.data?.detail || error.message}`
       );
     } finally {
       setIsRunning(false);
-      // Keep animation trigger active to show ongoing simulation
     }
   };
 
@@ -84,16 +66,22 @@ const FlowPage = () => {
           label="Quick Tips"
           infoContent={
             <div className="instructions">
-              <p>Instructions:</p>
-              <p>1. Configure inputs by clicking on Machines.</p>
-              <p>2. Save inputs in each machine's side panel.</p>
+              <p>1. Click on any machine to configure its parameters.</p>
               <p>
-                3. Click "Start Full Simulation" to run the complete battery
-                manufacturing process.
+                2. Use "Load Current" → "Validate" → "Apply Changes" workflow.
+              </p>
+              <p>
+                3. Click "Add Batch" to add a batch to the continuous plant
+                simulation.
+              </p>
+              <p>
+                4. Use "Refresh State" to check plant status and "Reset Plant"
+                to stop all simulations.
               </p>
             </div>
           }
         />
+        {/* This container correctly uses the '.controls' class from your CSS */}
         <div className="controls">
           <button onClick={handleClearLogs} className="clear-logs-button">
             Clear Logs
@@ -105,46 +93,40 @@ const FlowPage = () => {
             }`}
             disabled={isRunning}
           >
-            {isRunning ? "Running..." : "Start Full Simulation"}
+            {isRunning ? "Adding Batch..." : "Add Batch"}
           </button>
         </div>
-        <div className="instructions">
+
+        {/* This wrapper for status and plant state matches your CSS structure */}
+        <div className="status-messages">
           {simulationStatus && (
-            <ToggleSwitch
-              label="Simulation Status"
-              infoContent={
-                <div className="instructions">
-                  {simulationStatus && (
-                    <p className="simulation-status">{simulationStatus}</p>
-                  )}
-                  {animationTrigger && (
-                    <p style={{ color: "green", fontWeight: "bold" }}>
-                      Animations Active
-                    </p>
-                  )}
-                </div>
-              }
-            />
+            <p className="simulation-status">{simulationStatus}</p>
+          )}
+          {plantState && (
+            <div className="plant-state">
+              <strong>Plant Status:</strong>{" "}
+              <pre>{JSON.stringify(plantState, null, 2)}</pre>
+            </div>
           )}
         </div>
+
         <div
           className={`flow-canvas ${
             animationTrigger ? "simulation-started" : ""
           }`}
         >
           <MachineFlowDiagram animationTrigger={animationTrigger} />
+          {selectedStage && (
+            <SidePanel
+              selectedStage={selectedStage}
+              onClose={() => setSelectedId(null)}
+              isOpen={!!selectedStage}
+            />
+          )}
         </div>
       </div>
-
-      {selectedStage && (
-        <SidePanel
-          selectedStage={selectedStage}
-          onClose={() => setSelectedId(null)}
-          isOpen={!!selectedStage}
-        />
-      )}
     </div>
   );
-};
+}
 
 export default FlowPage;

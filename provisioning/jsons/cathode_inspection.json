@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 9,
   "links": [],
   "panels": [
     {
@@ -470,12 +470,12 @@
     "list": []
   },
   "time": {
-    "from": "now-6h",
-    "to": "now"
+    "from": "2025-10-09T05:38:51.535Z",
+    "to": "2025-10-09T06:01:40.791Z"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Cathode Inspection Dashboard",
   "uid": "cathode-inspection-uid",
-  "version": 7
+  "version": 2
 }

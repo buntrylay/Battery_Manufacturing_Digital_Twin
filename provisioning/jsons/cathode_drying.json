@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 10,
+  "id": 15,
   "links": [],
   "panels": [
     {
@@ -265,28 +265,16 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 80,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
             },
             "thresholdsStyle": {
               "mode": "off"
@@ -305,7 +293,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "short"
         },
         "overrides": []
       },
@@ -317,17 +306,26 @@
       },
       "id": 2,
       "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom",
+          "placement": "right",
           "showLegend": true
         },
+        "orientation": "auto",
+        "showValue": "never",
+        "stacking": "none",
         "tooltip": {
           "hideZeros": false,
           "mode": "single",
           "sort": "none"
-        }
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
       },
       "pluginVersion": "12.1.1",
       "targets": [
@@ -361,7 +359,7 @@
         }
       ],
       "title": "Defect_Rate",
-      "type": "timeseries"
+      "type": "barchart"
     },
     {
       "datasource": {
@@ -485,12 +483,12 @@
     "list": []
   },
   "time": {
-    "from": "2025-10-09T00:41:11.434Z",
-    "to": "2025-10-09T02:02:12.916Z"
+    "from": "2025-10-09T05:48:21.190Z",
+    "to": "2025-10-09T05:50:19.536Z"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Cathode Drying Dashboard",
   "uid": "cathode-drying-uid",
-  "version": 4
+  "version": 3
 }
