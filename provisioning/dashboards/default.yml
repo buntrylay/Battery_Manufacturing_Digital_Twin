@@ -4,8 +4,7 @@ providers:
     orgId: 1
     folder: "Production Machines"
     type: file
-    disableDeletion: true
-    # Allow saving changes in the UI (but they will be overwritten on restart if the file changes)
+    disableDeletion: false
     allowUiUpdates: true
     options:
       # Path to the directory where all your .json files are
