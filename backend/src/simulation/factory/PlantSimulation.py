@@ -687,15 +687,57 @@ class PlantSimulation:
         """Update parameters for a specific machine."""
         machine_lock = self.__get_machine_lock(line_type, machine_id)
         if machine_lock.acquire(timeout=5):
-            machine = self.__get_machine(line_type, machine_id)
-            machine.validate_parameters(parameters)
-            machine.update_machine_parameters(parameters)
-            machine_lock.release()
-            return True
+            try:
+                machine = self.__get_machine(line_type, machine_id)
+                
+                # Validate parameters and get the proper parameter object
+                machine.validate_parameters(parameters)
+                
+                # If parameters is a dict, convert it to the proper parameter object
+                if isinstance(parameters, dict):
+                    # Each machine's validate_parameters method can convert dict to parameter object
+                    # We need to create the parameter object based on machine type
+                    parameter_obj = self._create_parameter_object(machine_id, parameters)
+                    machine.update_machine_parameters(parameter_obj)
+                else:
+                    # If it's already a parameter object, use it directly
+                    machine.update_machine_parameters(parameters)
+                    
+                return True
+            finally:
+                machine_lock.release()
         else:
             raise TimeoutError(
                 "Cannot update machine parameters. Possibly because this machine is busy. Please update the parameters later."
             )
+    
+    def _create_parameter_object(self, machine_id: str, parameters: dict):
+        """Create the appropriate parameter object based on machine ID."""
+        from simulation.process_parameters import (
+            MixingParameters, CoatingParameters, DryingParameters, 
+            CalendaringParameters, SlittingParameters, ElectrodeInspectionParameters,
+            RewindingParameters, ElectrolyteFillingParameters, 
+            FormationCyclingParameters, AgingParameters
+        )
+        
+        parameter_classes = {
+            "mixing": MixingParameters,
+            "coating": CoatingParameters,
+            "drying": DryingParameters,
+            "calendaring": CalendaringParameters,
+            "slitting": SlittingParameters,
+            "inspection": ElectrodeInspectionParameters,
+            "rewinding": RewindingParameters,
+            "electrolyte_filling": ElectrolyteFillingParameters,
+            "formation_cycling": FormationCyclingParameters,
+            "aging": AgingParameters,
+        }
+        
+        if machine_id not in parameter_classes:
+            raise ValueError(f"Unknown machine ID: {machine_id}")
+        
+        parameter_class = parameter_classes[machine_id]
+        return parameter_class(**parameters)
 
     def subscribe_to_event(
         self,

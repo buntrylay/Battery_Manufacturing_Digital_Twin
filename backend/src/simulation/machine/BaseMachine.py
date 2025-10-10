@@ -86,14 +86,35 @@ class BaseMachine(ABC):
 
     def get_current_state(self, process_specifics=None):
         """Get the current properties of the machine."""
+        # Safely handle machine_parameters
+        machine_params_dict = {}
+        if self.machine_parameters is not None:
+            try:
+                machine_params_dict = asdict(self.machine_parameters)
+            except TypeError:
+                # Fallback: if not a dataclass, try to get dict representation
+                if hasattr(self.machine_parameters, 'get_parameters_dict'):
+                    machine_params_dict = self.machine_parameters.get_parameters_dict()
+                elif hasattr(self.machine_parameters, '__dict__'):
+                    machine_params_dict = self.machine_parameters.__dict__.copy()
+                else:
+                    machine_params_dict = {"error": "Unable to serialize parameters"}
+        
         if self.state:
+            battery_model_props = {}
+            if self.battery_model is not None:
+                try:
+                    battery_model_props = self.battery_model.get_properties()
+                except Exception:
+                    battery_model_props = {"error": "Unable to get battery model properties"}
+            
             return {
                 "timestamp": datetime.now().isoformat(),
                 "state": "On",
                 "duration": round(self.current_time_step, 2),
                 "process": self.process_name,
-                "battery_model": self.battery_model.get_properties(),
-                "machine_parameters": asdict(self.machine_parameters),
+                "battery_model": battery_model_props,
+                "machine_parameters": machine_params_dict,
                 "process_specifics": process_specifics,
             }
         else:
@@ -101,7 +122,7 @@ class BaseMachine(ABC):
                 "timestamp": datetime.now().isoformat(),
                 "process": self.process_name,
                 "state": "Off",
-                "machine_parameters": asdict(self.machine_parameters),
+                "machine_parameters": machine_params_dict,
                 "process_specifics": process_specifics,
             }
 

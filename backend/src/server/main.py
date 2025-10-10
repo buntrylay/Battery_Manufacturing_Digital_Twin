@@ -19,6 +19,7 @@ from server.event_handler import EventHandler
 
 # Import parameter mapping utilities
 from server.logging_helper import configure_logging, get_logger
+from server.parameter_mapper import ParameterMapper
 
 # import format utilities
 from server.format_helper import create_error_response, create_success_response
@@ -239,6 +240,220 @@ def get_table_entries(table_name: str):
         return {"data": [serialize_row(row) for row in rows]}
     except Exception as e:
         return {"error": f"Failed to fetch entries from {table_name}: {str(e)}"}
+
+
+# === New Parameter Management Endpoints ===
+
+@app.post("/api/parameters/validate")
+def validate_parameters(request_data: dict):
+    """Validate machine parameters using frontend stage names."""
+    try:
+        stage = request_data.get("stage")
+        parameters = request_data.get("parameters", {})
+        
+        if not stage:
+            raise HTTPException(
+                status_code=400,
+                detail=create_error_response("Stage name is required", error_code="MISSING_STAGE")
+            )
+        
+        # Use ParameterMapper to validate
+        validation_result = ParameterMapper.validate_frontend_parameters(parameters, stage)
+        
+        if validation_result["valid"]:
+            return create_success_response(
+                validation_result["message"],
+                data={
+                    "valid": True,
+                    "line_type": validation_result["line_type"],
+                    "machine_id": validation_result["machine_id"]
+                }
+            )
+        else:
+            return create_error_response(
+                validation_result["message"],
+                error_code="VALIDATION_FAILED",
+                errors=validation_result.get("error")
+            )
+            
+    except Exception as e:
+        logger.error(f"Parameter validation error: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(
+                f"Parameter validation failed: {str(e)}",
+                error_code="VALIDATION_ERROR"
+            )
+        )
+
+
+@app.post("/api/parameters/update")
+def update_parameters_by_stage(request_data: dict):
+    """Update machine parameters using frontend stage names."""
+    global battery_plant_simulation
+    
+    try:
+        stage = request_data.get("stage")
+        parameters = request_data.get("parameters", {})
+        
+        if not stage:
+            raise HTTPException(
+                status_code=400,
+                detail=create_error_response("Stage name is required", error_code="MISSING_STAGE")
+            )
+        
+        # First validate the parameters
+        validation_result = ParameterMapper.validate_frontend_parameters(parameters, stage)
+        
+        if not validation_result["valid"]:
+            raise HTTPException(
+                status_code=400,
+                detail=create_error_response(
+                    validation_result["message"],
+                    error_code="VALIDATION_FAILED",
+                    errors=validation_result.get("error")
+                )
+            )
+        
+        # Convert frontend parameters to backend format
+        line_type, machine_id = ParameterMapper.stage_to_machine_info(stage)
+        backend_params = ParameterMapper.frontend_to_backend_parameters(parameters, machine_id)
+        
+        # Update the machine parameters
+        if battery_plant_simulation.update_machine_parameters(line_type, machine_id, backend_params):
+            return create_success_response(
+                f"Parameters for {stage} updated successfully",
+                data={
+                    "stage": stage,
+                    "line_type": line_type,
+                    "machine_id": machine_id,
+                    "updated_parameters": list(backend_params.keys())
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=create_error_response(
+                    "Failed to update machine parameters",
+                    error_code="UPDATE_FAILED"
+                )
+            )
+            
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(
+                str(e),
+                error_code="PARAMETER_VALUE_ERROR"
+            )
+        )
+    except TimeoutError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(
+                str(e),
+                error_code="MACHINE_BUSY"
+            )
+        )
+    except Exception as e:
+        logger.error(f"Parameter update error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=create_error_response(
+                f"Parameter update failed: {str(e)}",
+                error_code="UPDATE_ERROR"
+            )
+        )
+
+
+@app.get("/api/parameters/current/{stage}")
+def get_current_parameters(stage: str):
+    """Get current parameters for a machine stage."""
+    global battery_plant_simulation
+    
+    try:
+        # Convert stage name to line_type and machine_id
+        line_type, machine_id = ParameterMapper.stage_to_machine_info(stage)
+        
+        # Get machine status which includes current parameters
+        machine_status = battery_plant_simulation.get_machine_status(line_type, machine_id)
+        
+        return create_success_response(
+            f"Current parameters for {stage} retrieved successfully",
+            data={
+                "stage": stage,
+                "line_type": line_type,
+                "machine_id": machine_id,
+                "parameters": machine_status.get("parameters", {}),
+                "status": machine_status
+            }
+        )
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(
+                str(e),
+                error_code="INVALID_STAGE"
+            )
+        )
+    except Exception as e:
+        logger.error(f"Get current parameters error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=create_error_response(
+                f"Failed to get current parameters: {str(e)}",
+                error_code="GET_PARAMETERS_ERROR"
+            )
+        )
+
+
+@app.post("/api/simulation/mixing/start") 
+def start_mixing_simulation(request_data: dict = None):
+    """Start mixing simulation for specific electrode type."""
+    global battery_plant_simulation
+    
+    try:
+        # For now, this will work the same as regular simulation start
+        # In the future, you could add specific mixing logic here
+        electrode_type = request_data.get("electrode_type") if request_data else None
+        
+        batch_id = battery_plant_simulation.add_batch()
+        
+        message = "Mixing simulation started successfully"
+        if electrode_type:
+            message = f"Mixing simulation for {electrode_type} started successfully"
+            
+        return create_success_response(
+            message,
+            data={
+                "batch_id": batch_id,
+                "electrode_type": electrode_type
+            }
+        )
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=create_error_response(str(e), error_code="BATCH_LIMIT")
+        )
+    except Exception as e:
+        logger.error(f"Mixing simulation start error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=create_error_response(
+                f"Failed to start mixing simulation: {str(e)}",
+                error_code="MIXING_START_ERROR"
+            )
+        )
+
+
+# === Backward Compatibility Endpoints ===
+
+@app.post("/reset")
+def reset_simulation_legacy():
+    """Legacy reset endpoint for backward compatibility."""
+    return reset_plant()
 
 
 if __name__ == "__main__":
