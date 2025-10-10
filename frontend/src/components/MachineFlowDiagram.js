@@ -9,6 +9,8 @@ import {
   Controls,
 } from "@xyflow/react";
 
+import { useFactorySimulation } from "../contexts/FactorySimulationContext";
+
 import "@xyflow/react/dist/style.css";
 import { useFlowPage } from "../contexts/FlowPageContext";
 import { useLogs } from "../contexts/WebSocketContext";
@@ -196,10 +198,14 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(defaultNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(defaultEdges);
-  const [machineStatusByBatch, setMachineStatusByBatch] = useState({});
-  const [activeFlows, setActiveFlows] = useState(new Set());
-  const [simulationStarted, setSimulationStarted] = useState(false);
-
+  const {
+    machineStatusByBatch,
+    setMachineStatusByBatch,
+    activeFlows,
+    setActiveFlows,
+    simulationStarted,
+    setSimulationStarted,
+  } = useFactorySimulation();
   /* ---------------------- Animation & Flow Utilities ---------------------- */
 
   const activateFlowEdge = (from, to) => {

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useFlowPage } from "../contexts/FlowPageContext";
 import SidePanel from "../components/SidePanel";
 import MachineFlowDiagram from "../components/MachineFlowDiagram";
 import "../styles/FlowPage.css";
 import { useLogs } from "../contexts/WebSocketContext";
 import ToggleSwitch from "../components/ToggleSwitch";
-import { startSimulation, getPlantState, resetPlant } from "../services/api";
+import { startSimulation, getPlantState } from "../services/api";
+import { useFactorySimulation } from "../contexts/FactorySimulationContext"; // ✅ Added context import
 
 function FlowPage() {
   const { setSelectedId, selectedStage } = useFlowPage();
@@ -14,6 +15,12 @@ function FlowPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [animationTrigger, setAnimationTrigger] = useState(false);
   const [plantState, setPlantState] = useState(null);
+
+  // ✅ Persistent simulation state (global)
+  const { setMachineStatusByBatch } = useFactorySimulation();
+
+  // 🕒 Throttle control for backend re-sync
+  const lastSyncTime = useRef(0);
 
   // Effect to check localStorage on component mount to maintain animation state on refresh
   useEffect(() => {
@@ -24,8 +31,8 @@ function FlowPage() {
 
   const handleClearLogs = () => {
     clearLogs();
-    setAnimationTrigger(false); // Reset animation when clearing logs
-    localStorage.removeItem("simulationRunning"); // Clear persisted state
+    setAnimationTrigger(false);
+    localStorage.removeItem("simulationRunning");
   };
 
   const handleStartFullSimulation = async () => {
@@ -33,7 +40,6 @@ function FlowPage() {
     setSimulationStatus("Starting full plant simulation...");
 
     try {
-      // Use the new continuous batch simulation API from your team lead's backend
       const response = await startSimulation();
 
       if (response.data && response.data.message) {
@@ -42,16 +48,11 @@ function FlowPage() {
         setSimulationStatus("✓ Plant simulation started successfully!");
       }
 
-      // Trigger animation for the new batch
       setAnimationTrigger(true);
+      localStorage.setItem("simulationRunning", "true");
 
-      // Refresh plant state
       handleRefreshPlantState();
     } catch (error) {
-      console.error("Simulation start error:", error);
-      setSimulationStatus(
-        `❌ Error: ${error.response?.data?.detail || error.message}`
-      );
       console.error("Simulation start error:", error);
       setSimulationStatus(
         `❌ Error: ${error.response?.data?.detail || error.message}`
@@ -65,39 +66,40 @@ function FlowPage() {
     try {
       const response = await getPlantState();
       setPlantState(response.data);
+
+      // ✅ Sync global machine state for visual consistency
+      if (response.data.machineStates) {
+        setMachineStatusByBatch(response.data.machineStates);
+      }
     } catch (error) {
       console.error("Plant state error:", error);
     }
   };
 
-  const handleResetPlant = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to reset the plant? This will stop all running simulations."
-      )
-    ) {
-      return;
-    }
+  // 🧠 Auto re-sync backend plant state when returning/focusing Flow Page (3s throttle)
+  useEffect(() => {
+    const handleFocus = async () => {
+      const now = Date.now();
+      if (now - lastSyncTime.current < 3000) return; // throttle (3s)
+      lastSyncTime.current = now;
 
-    try {
-      setSimulationStatus("Resetting plant...");
-      const response = await resetPlant();
+      try {
+        const res = await getPlantState();
+        setPlantState(res.data);
 
-      if (response.data && response.data.message) {
-        setSimulationStatus(`✓ ${response.data.message}`);
-      } else {
-        setSimulationStatus("✓ Plant reset successfully!");
+        if (res.data.machineStates) {
+          setMachineStatusByBatch(res.data.machineStates);
+        }
+      } catch (err) {
+        console.warn("⚠️ Failed to refresh plant state:", err);
       }
+    };
 
-      setPlantState(null);
-      clearLogs();
-    } catch (error) {
-      console.error("Plant reset error:", error);
-      setSimulationStatus(
-        `❌ Reset error: ${error.response?.data?.detail || error.message}`
-      );
-    }
-  };
+    window.addEventListener("focus", handleFocus);
+    handleFocus(); // run immediately on mount
+
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [setMachineStatusByBatch]);
 
   return (
     <div className={`flow-layout ${selectedStage ? "with-panel" : "full"}`}>
@@ -110,42 +112,32 @@ function FlowPage() {
           infoContent={
             <div className="instructions">
               <p>1. Click on any machine to configure its parameters.</p>
-              <p>
-                2. Use "Load Current" → "Apply Changes" workflow.
-              </p>
-              <p>
-                3. Click "Add Batch" to add a batch to the continuous plant
-                simulation.
-              </p>
-              <p>
-                4. Use "Reset Plant" to stop all simulations.
-              </p>
+              <p>2. Use "Load Current" → "Apply Changes" workflow.</p>
+              <p>3. Click "Add Batch" to add a batch to the continuous plant simulation.</p>
+              <p>4. Use "Reset Plant" to stop all simulations.</p>
             </div>
           }
         />
-        {/* This container correctly uses the '.controls' class from your CSS */}
+
         <div className="controls">
           <button onClick={handleClearLogs} className="clear-logs-button">
             Clear Logs
           </button>
           <button
             onClick={handleStartFullSimulation}
-            className={`start-full-simulation-btn ${
-              isRunning ? "running" : ""
-            }`}
+            className={`start-full-simulation-btn ${isRunning ? "running" : ""}`}
             disabled={isRunning}
           >
             {isRunning ? "Adding Batch..." : "Add Batch"}
           </button>
-          <button onClick={handleResetPlant} className="reset-plant-btn">
-            Reset Plant
-          </button>
+
           <div className="status-display">
             {simulationStatus && (
               <p className="simulation-status">{simulationStatus}</p>
             )}
           </div>
         </div>
+
         <div
           className={`flow-canvas ${
             animationTrigger ? "simulation-started" : ""
