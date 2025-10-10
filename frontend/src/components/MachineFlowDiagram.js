@@ -148,7 +148,12 @@ const CATHODE_FLOW = [
   "Cathode Inspection",
 ];
 
-const SHARED_FLOW = ["Rewinding", "Electrolyte Filling", "Formation Cycling", "Aging"];
+const SHARED_FLOW = [
+  "Rewinding",
+  "Electrolyte Filling",
+  "Formation Cycling",
+  "Aging",
+];
 
 const nextOf = (flow, current) => {
   const i = flow.indexOf(current);
@@ -161,7 +166,8 @@ const whichFlow = (machine) => {
   return SHARED_FLOW;
 };
 
-const isInspection = (m) => m === "Anode Inspection" || m === "Cathode Inspection";
+const isInspection = (m) =>
+  m === "Anode Inspection" || m === "Cathode Inspection";
 
 /* ------------------------------ Component ---------------------------------- */
 
@@ -260,8 +266,10 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
       const nextStage = nextOf(flow, completedMachine);
 
       const pairStages = (stage) => {
-        if (stage.startsWith("Anode")) return [stage, stage.replace("Anode", "Cathode")];
-        if (stage.startsWith("Cathode")) return [stage.replace("Cathode", "Anode"), stage];
+        if (stage.startsWith("Anode"))
+          return [stage, stage.replace("Anode", "Cathode")];
+        if (stage.startsWith("Cathode"))
+          return [stage.replace("Cathode", "Anode"), stage];
         return [stage];
       };
 
@@ -272,7 +280,7 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
 
         setSingleActive(batchMap, "Rewinding");
         activateFlowEdge("Cathode Inspection", "Rewinding");
-        
+
         next[batchId] = batchMap;
         return next;
       }
@@ -291,7 +299,6 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
 
           setSingleActive(batchMap, a);
           setSingleActive(batchMap, c);
-
         }
         next[batchId] = batchMap;
         return next;
@@ -364,11 +371,14 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
       return null;
     };
 
-    if (latestLog.includes("batch_requested") || latestLog.includes("batch_started_processing")) {
+    if (
+      latestLog.includes("batch_requested") ||
+      latestLog.includes("batch_started_processing")
+    ) {
       startBatchIfNew(batchId);
       return;
     }
-/*
+    /*
     if (latestLog.includes("machine_turned_off")) {
       const machine = findMachine();
       if (machine) advanceWithinBatch(batchId, machine);
@@ -391,7 +401,6 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
       return;
     }
 
-
     if (
       latestLog.includes("batch_completed") &&
       !latestLog.includes("batch_completed_anode_line") &&
@@ -409,7 +418,10 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
 
   /* ------------------------------- Render -------------------------------- */
 
-  const onNodeClick = useCallback((_e, node) => setSelectedId(node.id), [setSelectedId]);
+  const onNodeClick = useCallback(
+    (_e, node) => setSelectedId(node.id),
+    [setSelectedId]
+  );
 
   return (
     <div style={{ width: "100%", height: "600px" }}>
@@ -423,7 +435,6 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
         edgeTypes={edgeTypes}
         fitView
       >
-        <Background variant="dots" gap={12} size={1} />
         <MiniMap />
         <Controls />
       </ReactFlow>
