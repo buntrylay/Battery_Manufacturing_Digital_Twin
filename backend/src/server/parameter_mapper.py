@@ -237,6 +237,17 @@ class ParameterMapper:
         try:
             line_type, machine_id = cls.stage_to_machine_info(stage_name)
             backend_params = cls.frontend_to_backend_parameters(frontend_data, machine_id)
+            
+            # Handle empty parameters case
+            if not backend_params:
+                return {
+                    "valid": True,
+                    "line_type": line_type,
+                    "machine_id": machine_id,
+                    "parameters": None,
+                    "message": "No parameters to validate (empty input)"
+                }
+            
             param_obj = cls.create_parameter_object(backend_params, machine_id)
             
             return {

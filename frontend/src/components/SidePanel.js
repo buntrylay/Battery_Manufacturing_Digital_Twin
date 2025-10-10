@@ -132,14 +132,33 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
         }
       });
 
+      // Check if we have any parameters to update
+      if (Object.keys(parametersToUpdate).length === 0) {
+        setStatus("❌ Please enter at least one parameter value");
+        return;
+      }
+
       // First validate the parameters
       const validationResponse = await validateParameters(
         selectedStage.id,
         parametersToUpdate
       );
 
-      if (!validationResponse.data.valid) {
-        setStatus(`❌ Validation failed: ${validationResponse.data.error}`);
+      // Check if validation succeeded
+      if (!validationResponse.data?.success) {
+        const errorMsg = validationResponse.data?.message || 
+                        validationResponse.data?.errors || 
+                        'Unknown validation error';
+        setStatus(`❌ Validation failed: ${errorMsg}`);
+        return;
+      }
+      
+      // Additional check for the 'valid' field in the data
+      if (validationResponse.data?.data && !validationResponse.data.data.valid) {
+        const errorMsg = validationResponse.data.data.error || 
+                        validationResponse.data.message || 
+                        'Parameters are invalid';
+        setStatus(`❌ Validation failed: ${errorMsg}`);
         return;
       }
 
@@ -190,7 +209,7 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
       setStatus("Loading current parameters...");
 
       const response = await getCurrentParameters(selectedStage.id);
-      const currentParams = response.data.parameters;
+      const currentParams = response.data.data?.parameters || {};
 
       // Map backend parameters to frontend field names
       const newInputValues = {};
@@ -281,7 +300,7 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
 
       setInputValues(newInputValues);
       setStatus(
-        `✓ Loaded current parameters (Machine state: ${response.data.machine_state})`
+        `✓ Loaded current parameters (Machine state: ${response.data.data?.status?.state || 'Unknown'})`
       );
     } catch (error) {
       console.error("Load parameters error:", error);

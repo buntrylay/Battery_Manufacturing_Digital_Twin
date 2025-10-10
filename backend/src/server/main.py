@@ -251,6 +251,9 @@ def validate_parameters(request_data: dict):
         stage = request_data.get("stage")
         parameters = request_data.get("parameters", {})
         
+        # Log the incoming request for debugging
+        logger.info(f"Validation request - Stage: {stage}, Parameters: {parameters}")
+        
         if not stage:
             raise HTTPException(
                 status_code=400,
@@ -259,6 +262,9 @@ def validate_parameters(request_data: dict):
         
         # Use ParameterMapper to validate
         validation_result = ParameterMapper.validate_frontend_parameters(parameters, stage)
+        
+        # Log the validation result
+        logger.info(f"Validation result: {validation_result}")
         
         if validation_result["valid"]:
             return create_success_response(
@@ -384,7 +390,7 @@ def get_current_parameters(stage: str):
                 "stage": stage,
                 "line_type": line_type,
                 "machine_id": machine_id,
-                "parameters": machine_status.get("parameters", {}),
+                "parameters": machine_status.get("machine_parameters", {}),
                 "status": machine_status
             }
         )
