@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { inputsByStage, stageDescriptions } from "./constants";
+import { inputsByStage, stageDescriptions, parameterUnits } from "./constants";
 import {
   validateParameters,
   updateParameters,
@@ -370,13 +370,19 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
                 delete inputProps.max;
               }
 
+              const unit = parameterUnits[f] || "";
+              
               return (
                 <label key={f} className="side-field">
-                  <span>{f}</span>
+                  <span className="parameter-label">
+                    {f}
+                    {unit && <span className="parameter-unit">({unit})</span>}
+                  </span>
                   <input
                     {...inputProps}
                     value={inputValues[f] || ""}
                     onChange={(e) => handleInputChange(f, e.target.value)}
+                    placeholder={unit ? `Enter value in ${unit}` : "Enter value"}
                   />
                 </label>
               );

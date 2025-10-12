@@ -280,6 +280,7 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
 
         setSingleActive(batchMap, "Rewinding");
         activateFlowEdge("Cathode Inspection", "Rewinding");
+        activateFlowEdge("Anode Inspection", "Rewinding");
 
         next[batchId] = batchMap;
         return next;

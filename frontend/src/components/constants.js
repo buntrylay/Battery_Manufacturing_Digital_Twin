@@ -66,3 +66,65 @@ export const inputsByStage = {
   "Formation Cycling": ["Charge Current", "Voltage", "Initial Voltage"],
   Aging: ["Leak Rate", "Temperature", "Aging Days"],
 };
+
+// Units mapping for each parameter
+export const parameterUnits = {
+  // Mixing parameters (ratios - dimensionless, sum to 1.0)
+  "Anode PVDF": "fraction",
+  "Anode CA": "fraction", 
+  "Anode AM": "fraction",
+  "Anode Solvent": "fraction",
+  "Cathode PVDF": "fraction",
+  "Cathode CA": "fraction",
+  "Cathode AM": "fraction", 
+  "Cathode Solvent": "fraction",
+
+  // Coating parameters
+  "Coating Speed": "m/min",
+  "Gap Height": "μm",
+  "Flow Rate": "mL/min",
+  "Coating Width": "mm",
+
+  // Drying parameters
+  "Web Speed": "m/min",
+
+  // Calendaring parameters  
+  "Roll Gap": "μm",
+  "Roll Pressure": "MPa",
+  "Temperature": "°C",
+  "Roll Speed": "m/min", 
+  "Dry Thickness": "μm",
+  "Initial Porosity": "%",
+
+  // Slitting parameters
+  "Blade Sharpness": "units",
+  "Slitting Speed": "m/min",
+  "Target Width": "mm", 
+  "Slitting Tension": "N/m",
+
+  // Inspection parameters
+  "Width Tolerance": "mm",
+  "Thickness Tolerance": "μm",
+  "B Max": "T", // Tesla for magnetic field
+  "Defects Allowed": "count",
+
+  // Rewinding parameters
+  "Rewinding Speed": "m/min",
+  "Initial Tension": "N/m",
+  "Tapering Steps": "count",
+  "Environment Humidity": "%",
+
+  // Electrolyte Filling parameters
+  "Vacuum Level": "Pa",
+  "Vacuum Filling": "units",
+  "Soaking Time": "min",
+
+  // Formation Cycling parameters
+  "Charge Current": "A",
+  "Voltage": "V", 
+  "Initial Voltage": "V",
+
+  // Aging parameters
+  "Leak Rate": "1/s",
+  "Aging Days": "days"
+};

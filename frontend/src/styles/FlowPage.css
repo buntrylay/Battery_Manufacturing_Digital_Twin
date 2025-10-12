@@ -416,6 +416,23 @@ body {
   color: var(--muted);
 }
 
+.parameter-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.parameter-unit {
+  font-size: 11px;
+  color: #6c757d;
+  font-weight: 400;
+  background-color: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
 .side-field input[type="number"] {
   padding: 8px;
   border-radius: 8px;
