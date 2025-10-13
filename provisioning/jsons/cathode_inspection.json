@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "fieldConfig": {
         "defaults": {
@@ -236,7 +236,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "fieldConfig": {
         "defaults": {
@@ -350,7 +350,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "fieldConfig": {
         "defaults": {

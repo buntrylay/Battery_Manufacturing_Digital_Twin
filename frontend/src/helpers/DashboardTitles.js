@@ -4,6 +4,7 @@ export const MACHINE_DASHBOARD_MAP = {
   "Cathode Drying": "cathode-drying-uid",
   "Cathode Calendaring": "cathode-calendaring-uid",
   "Cathode Inspection": "cathode-inspection-uid",
+  "Cathode Slitting": "cathode-slitting-uid",
   "Anode Mixing": "anode-mixing-uid",
   "Anode Coating": "anode-coating-uid",
   "Anode Drying": "anode-drying-uid",

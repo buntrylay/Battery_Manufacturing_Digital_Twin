@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "Wound length in meteres(m)",
       "fieldConfig": {
@@ -102,7 +102,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "Percentage of wetting efficiency ",
       "fieldConfig": {
@@ -181,7 +181,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "Shows machine being filled over time for electrolyte filling step",
       "fieldConfig": {
@@ -268,7 +268,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P44368ADAD746BC27"
+            "uid": "main-postgres-db"
           },
           "editorMode": "code",
           "format": "table",
