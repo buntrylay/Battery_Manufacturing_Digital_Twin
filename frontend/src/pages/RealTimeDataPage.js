@@ -5,7 +5,7 @@ import { GrafanaMachineDisplay } from "../components/GrafanaMachineDisplay";
 import { MACHINE_DASHBOARD_MAP } from "../helpers/DashboardTitles";
 import ToggleSwitch from "../components/ToggleSwitch";
 const GRAFANA_DASHBOARD_URL =
-  process.env.REACT_APP_GRAFANA_DASHBOARD_URL || "http://localhost:3001/";
+  process.env.REACT_APP_GRAFANA_DASHBOARD_URL || "http://localhost:3001/d/";
 
 function RealTimeDataPage() {
   const { MACHINE_FLOW } = useFlowPage();
@@ -22,7 +22,7 @@ function RealTimeDataPage() {
   const grafanaUrl = dashboardUid
     ? `${GRAFANA_DASHBOARD_URL}${dashboardUid}/${dashboardSlug}?orgId=1&kiosk&from=now-30s&to=now&timezone=browser`
     : null;
-
+  
   return (
     <div className="realtime-page">
       <h2 className="page-title">Real-Time Data</h2>
