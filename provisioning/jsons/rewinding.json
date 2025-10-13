@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "fieldConfig": {
         "defaults": {
@@ -101,7 +101,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "Roll diameter in millimeters (mm)",
       "fieldConfig": {
@@ -212,7 +212,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "Wen tension over time",
       "fieldConfig": {
@@ -323,7 +323,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "Roll hardness over time",
       "fieldConfig": {
@@ -406,7 +406,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P44368ADAD746BC27"
+            "uid": "main-postgres-db"
           },
           "editorMode": "code",
           "format": "table",
