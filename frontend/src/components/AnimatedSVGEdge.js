@@ -9,6 +9,7 @@ export function AnimatedSVGEdge({
   targetY,
   sourcePosition,
   targetPosition,
+  data,
 }) {
   const [edgePath] = getSmoothStepPath({
     sourceX,
@@ -19,14 +20,66 @@ export function AnimatedSVGEdge({
     targetPosition,
   });
 
+  const isActive = data?.isActive;
+  const showProgress = data?.showProgress;
+
   return (
     <>
-      {/* The base line of the edge */}
-      <BaseEdge id={id} path={edgePath} />
-      {/* TODO: Add in animation time updates once flow been updated*/}
-      <circle r="4" fill="#007bff">
-        <animateMotion dur="4s" repeatCount="indefinite" path={edgePath} />
-      </circle>
+      {/* 🖤 Always-visible base connection (thin black line) */}
+      <BaseEdge
+        id={`${id}-base`}
+        path={edgePath}
+        style={{
+          stroke: "#222",
+          strokeWidth: 1.5,
+          opacity: 0.4,
+        }}
+      />
+
+      {/* 🟢 Animated overlay only when active */}
+      {isActive && (
+        <>
+          <BaseEdge
+            id={id}
+            path={edgePath}
+            style={{
+              stroke: "#28a745",
+              strokeWidth: 3,
+              opacity: 0.9,
+            }}
+          />
+          <circle r="6" fill="#28a745">
+            <animateMotion dur="1.5s" repeatCount="indefinite" path={edgePath} />
+          </circle>
+          <circle r="3" fill="#28a745" opacity="0.6">
+            <animateMotion dur="1.5s" repeatCount="indefinite" path={edgePath} begin="0.3s" />
+          </circle>
+        </>
+      )}
+
+      {/* ⚡ Quick package transition pulse */}
+      {showProgress && (
+        <>
+          <path
+            d={edgePath}
+            fill="none"
+            stroke="#ffc107"
+            strokeWidth="4"
+            strokeDasharray="8,4"
+            opacity="0.9"
+          >
+            <animate
+              attributeName="stroke-dashoffset"
+              values="0;-12"
+              dur="2s"
+              repeatCount="1"
+            />
+          </path>
+          <circle r="5" fill="#ffcc00">
+            <animateMotion dur="2s" repeatCount="1" path={edgePath} />
+          </circle>
+        </>
+      )}
     </>
   );
 }

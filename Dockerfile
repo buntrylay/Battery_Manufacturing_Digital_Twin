@@ -14,6 +14,10 @@ COPY requirements.txt .
 RUN python -m pip install -r requirements.txt
 
 WORKDIR /app
+
+# Set PYTHONPATH to include the backend source directory
+ENV PYTHONPATH=/app/backend/src
+
 COPY . /app
 
 # Creates a non-root user with an explicit UID and adds permission to access the /app folder
@@ -22,7 +26,7 @@ RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /
 USER appuser
 
 # During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker", "backend.src.server.main:app"]
+CMD ["uvicorn", "src.server.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 FROM grafana/grafana:8.2.3-ubuntu
 

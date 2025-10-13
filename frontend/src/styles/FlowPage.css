@@ -2,11 +2,24 @@
   --bg: #f5f6fa;
   --text: #111827;
   --muted: #6b7280;
-  --card: #ffffff;
+  --card: #f8f9fa;
   --border: #d1d5db;
   --ring: #2563eb;
   --shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   --radius: 12px;
+}
+
+/* Animation keyframes for machine status */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 25px rgba(40, 167, 69, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(40, 167, 69, 1);
+  }
+  100% {
+    box-shadow: 0 0 25px rgba(40, 167, 69, 0.8);
+  }
 }
 
 body {
@@ -17,31 +30,11 @@ body {
 }
 
 .flow-layout {
-  display: grid;
-  grid-template-rows: 1fr;
-
-  padding: 20px;
-  gap: 40px;
-  box-sizing: border-box;
-  overflow: hidden;
-
-  /* smooth column resize */
-  transition: grid-template-columns 0.3s ease;
-}
-
-/* With side panel visible */
-.flow-layout.with-panel {
-  grid-template-columns: 1fr minmax(250px, 350px);
-}
-
-/* Without side panel */
-.flow-layout.full {
-  grid-template-columns: 1fr;
-}
-.flow-layout {
   display: flex;
   height: 100vh;
   width: 100vw;
+  position: relative;
+  overflow: hidden;
 }
 
 /* This new wrapper will manage the vertical layout of the button and the canvas */
@@ -54,8 +47,6 @@ body {
 
 .controls {
   padding: 10px;
-  background-color: #f4f4f7;
-  border-bottom: 1px solid #ddd;
   display: flex;
   align-items: center;
   gap: 20px;
@@ -95,6 +86,90 @@ body {
   cursor: not-allowed;
 }
 
+.refresh-state-btn {
+  padding: 8px 16px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.refresh-state-btn:hover {
+  background: #138496;
+}
+
+.reset-plant-btn {
+  padding: 8px 16px;
+  background: #ffc107;
+  color: #212529;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.reset-plant-btn:hover {
+  background: #e0a800;
+}
+
+.plant-state {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.refresh-state-btn {
+  padding: 8px 16px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.refresh-state-btn:hover {
+  background: #138496;
+}
+
+.reset-plant-btn {
+  padding: 8px 16px;
+  background: #ffc107;
+  color: #212529;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.reset-plant-btn:hover {
+  background: #e0a800;
+}
+
+.plant-state {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 .instructions {
   color: #6c757d;
   font-size: 14px;
@@ -105,12 +180,10 @@ body {
 }
 
 .simulation-status {
-  color: #007bff;
+  color: #218838;
   font-weight: 500;
 }
 
-/* This is the most important part:
-   Make the canvas grow to fill all remaining vertical space */
 .flow-canvas {
   flex-grow: 1;
   width: 100%;
@@ -119,7 +192,6 @@ body {
 .flow-canvas {
   display: flex;
   flex-direction: column;
-  gap: 40px;
   justify-content: flex-start;
   align-items: center;
   background: var(--bg);
@@ -131,6 +203,9 @@ body {
   min-height: auto;
   height: auto;
   box-sizing: border-box;
+  border-top: 1px solid #ddd;
+  border-radius: 0%;
+  position: relative; /* Add relative positioning for side panel containment */
 }
 
 /* Each group box */
@@ -185,7 +260,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   width: 220px;
-  background: #ffffff;
+  background: #f8f9fa;
   color: #000000;
   font-size: 12px;
   padding: 8px 10px;
@@ -222,27 +297,34 @@ body {
 /* ===================== */
 /* Side Panel Styling    */
 /* ===================== */
+
 .side-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  box-sizing: border-box;
+  width: 350px;
+  height: 70vh;
   background: #f9fafb;
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 16px 0 0 16px;
+  padding: 34px;
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  height: calc(100vh - 40px);
-  overflow-y: auto;
-
-  /* start hidden offscreen */
+  gap: 10px;
   transform: translateX(100%);
-  opacity: 0;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1000;
 }
-
-/* slide in when visible */
-.flow-layout.with-panel .side-panel {
-  transform: translateX(0);
+.side-panel.open {
   opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
 }
 
 /* Panel header */
@@ -253,6 +335,45 @@ body {
   border-bottom: 1px solid var(--border);
   padding-bottom: 12px;
   margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+/* Panel content - scrollable area */
+.side-panel-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+}
+
+/* Custom scrollbar styling */
+.side-panel-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.side-panel-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.side-panel-content::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.side-panel-content::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* Simulation info message */
+.simulation-info {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #e8f4f8;
+  border: 1px solid #b8dce8;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #2c5aa0;
+  line-height: 1.4;
 }
 
 .side-title {
@@ -295,6 +416,23 @@ body {
   color: var(--muted);
 }
 
+.parameter-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.parameter-unit {
+  font-size: 11px;
+  color: #6c757d;
+  font-weight: 400;
+  background-color: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
 .side-field input[type="number"] {
   padding: 8px;
   border-radius: 8px;
@@ -309,8 +447,8 @@ body {
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
 }
 
-/* Mixing controls */
-.mixing-controls {
+/* Machine controls */
+.machine-controls {
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
@@ -330,89 +468,490 @@ body {
   font-size: 12px;
 }
 
-.save-inputs-btn {
-  width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
+/* Enhanced input fields with validation */
+.side-field {
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.side-field.error {
+  margin-bottom: 20px;
+}
+
+.field-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.field-name {
   font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  font-size: 14px;
+  color: var(--text);
 }
 
-.save-inputs-btn:hover {
-  background: #0056b3;
+.field-unit {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: normal;
 }
 
-.status-message {
-  margin-top: 8px;
-  padding: 8px;
+.side-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.side-field input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.side-field input.input-error {
+  border-color: #dc3545;
+  background-color: #f8f9fa;
+}
+
+.side-field input.input-error:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.error-message::before {
+  content: "⚠️";
+  font-size: 10px;
+}
+
+.field-description {
+  color: #6c757d;
+  font-size: 12px;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Preset Management */
+.preset-controls {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.preset-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preset-btn {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.default-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.default-btn:hover {
+  background: #545b62;
+}
+
+.save-preset-btn {
+  background: #17a2b8;
+  color: white;
+}
+
+.save-preset-btn:hover {
+  background: #117a8b;
+}
+
+.load-preset-btn {
+  background: #ffc107;
+  color: #212529;
+}
+
+.load-preset-btn:hover {
+  background: #e0a800;
+}
+
+.preset-menu {
+  margin-top: 8px;
   background: #f8f9fa;
   border: 1px solid #dee2e6;
-  color: #495057;
+  border-radius: 4px;
+  max-height: 120px;
+  overflow-y: auto;
 }
 
-/* Mixing controls */
-.mixing-controls {
+.preset-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.preset-item:last-child {
+  border-bottom: none;
+}
+
+.preset-name {
+  cursor: pointer;
+  flex: 1;
+  font-size: 13px;
+}
+
+.preset-name:hover {
+  color: #007bff;
+  text-decoration: underline;
+}
+
+.delete-preset-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+/* Parameter controls for all machine types */
+.parameter-controls {
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
 }
 
-.ratio-sum {
+.control-buttons {
   display: flex;
-  align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  font-weight: 500;
+  margin-top: 12px;
 }
 
-.error-text {
-  color: #dc3545;
-  font-size: 12px;
-}
-
-.save-inputs-btn {
-  width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
-  border: none;
+.load-params-btn,
+.validate-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
-.save-inputs-btn:hover {
-  background: #0056b3;
-}
-
-.status-message {
-  margin-top: 8px;
-  padding: 8px;
-  border-radius: 6px;
-  font-size: 13px;
+.load-params-btn {
   background: #f8f9fa;
-  border: 1px solid #dee2e6;
   color: #495057;
 }
 
-/* ===================== */
-/* React Flow Styling   */
-/* ===================== */
-/* These styles are necessary for React Flow to display correctly */
-.react-flow {
-  /* Custom Variables */
-  --xy-theme-selected: #f57dbd;
-  --xy-theme-hover: #c5c5c5;
-  --xy-theme-edge-hover: black;
-  --xy-theme-color-focus: #e8e8e8;
+.load-params-btn:hover {
+  background: #e9ecef;
+  border-color: #6c757d;
+}
+
+.validate-btn {
+  background: #ffc107;
+  color: #212529;
+  border-color: #ffc107;
+}
+
+.validate-btn:hover {
+  background: #e0a800;
+  border-color: #d39e00;
+}
+
+.delete-preset-btn:hover {
+  background: #f8d7da;
+}
+
+.no-presets {
+  padding: 12px;
+  text-align: center;
+  color: #6c757d;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Control buttons */
+.control-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.save-inputs-btn {
+  flex: 1;
+  padding: 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+}
+
+.load-params-btn,
+.validate-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 8px;
+}
+
+.save-inputs-btn:hover {
+  background: #218838;
+  .load-params-btn:hover {
+    background: #e9ecef;
+    border-color: #6c757d;
+  }
+
+  .validate-btn {
+    background: #ffc107;
+    color: #212529;
+    border-color: #ffc107;
+  }
+
+  .validate-btn:hover {
+    background: #e0a800;
+    border-color: #d39e00;
+  }
+
+  .run-simulation-btn {
+    flex: 1;
+    padding: 12px;
+    background: #28a745;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 8px;
+  }
+
+  .run-simulation-btn:hover {
+    background: #1e7e34;
+  }
+
+  .run-simulation-btn:disabled,
+  .run-simulation-btn.running {
+    background: #6c757d;
+    cursor: not-allowed;
+  }
+
+  .run-simulation-btn.running {
+    background: #ffc107;
+    color: #212529;
+  }
+
+  /* Status messages */
+  .status-message {
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid transparent;
+  }
+
+  .status-message.success {
+    background: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+  }
+
+  .status-message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+  }
+
+  /* Stage info description */
+  .stage-description {
+    display: block;
+    color: var(--muted);
+    font-style: italic;
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  /* Button disabled states */
+  .load-params-btn:disabled,
+  .validate-btn:disabled,
+  .save-inputs-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #e9ecef;
+    color: #6c757d;
+    border-color: #ced4da;
+  }
+
+  .load-params-btn:disabled:hover,
+  .validate-btn:disabled:hover,
+  .save-inputs-btn:disabled:hover {
+    background: #e9ecef;
+    border-color: #ced4da;
+  }
+
+  /* Status message improvements */
+  .load-params-btn:disabled:hover,
+  .validate-btn:disabled:hover,
+  .save-inputs-btn:disabled:hover {
+    background: #e9ecef;
+    border-color: #ced4da;
+  }
+
+  /* Status message improvements */
+  .status-message {
+    margin-top: 12px;
+    padding: 10px;
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    line-height: 1.4;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    word-wrap: break-word;
+  }
+
+  /* Success status (contains checkmark) */
+  .status-message {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    color: #495057;
+  }
+
+  .status-message:contains("✓") {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+  }
+
+  /* Error status (contains X mark) */
+  .status-message:contains("❌") {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+    word-wrap: break-word;
+  }
+
+  /* Success status (contains checkmark) */
+  .status-message {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    color: #495057;
+  }
+
+  .status-message:contains("✓") {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+  }
+
+  /* Error status (contains X mark) */
+  .status-message:contains("❌") {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+  }
+
+  /* ===================== */
+  /* React Flow Styling   */
+  /* ===================== */
+  /* These styles are necessary for React Flow to display correctly */
+  .react-flow {
+    /* Custom Variables */
+    --xy-theme-selected: #f57dbd;
+    --xy-theme-hover: #c5c5c5;
+    --xy-theme-edge-hover: black;
+    --xy-theme-color-focus: #e8e8e8;
+  }
+
+  /* ===================== */
+  /* Animation Keyframes   */
+  /* ===================== */
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+      transform: scale(1.05);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(40, 167, 69, 0.8);
+      transform: scale(1.08);
+    }
+    100% {
+      box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+      transform: scale(1.05);
+    }
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes progressFlow {
+    0% {
+      stroke-dashoffset: 100%;
+    }
+    100% {
+      stroke-dashoffset: 0%;
+    }
+  }
+
+  /* Simulation start button animation */
+  .start-full-simulation-btn.running {
+    animation: buttonPulse 1.5s infinite;
+  }
+
+  @keyframes buttonPulse {
+    0%,
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+  }
+
+  /* Flow diagram startup animation */
+  .flow-canvas.simulation-started {
+    animation: slideIn 0.5s ease-out;
+  }
 }

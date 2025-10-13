@@ -1,101 +1,160 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useFlowPage } from "../contexts/FlowPageContext";
 import SidePanel from "../components/SidePanel";
 import MachineFlowDiagram from "../components/MachineFlowDiagram";
 import "../styles/FlowPage.css";
 import { useLogs } from "../contexts/WebSocketContext";
-import { startSimulation } from "../services/api";
+import ToggleSwitch from "../components/ToggleSwitch";
+import { startSimulation, getPlantState } from "../services/api";
+import { useFactorySimulation } from "../contexts/FactorySimulationContext"; // ✅ Added context import
 
-const FlowPage = () => {
+function FlowPage() {
   const { setSelectedId, selectedStage } = useFlowPage();
   const { clearLogs } = useLogs();
   const [simulationStatus, setSimulationStatus] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [animationTrigger, setAnimationTrigger] = useState(false);
+  const [plantState, setPlantState] = useState(null);
+
+  // ✅ Persistent simulation state (global)
+  const { setMachineStatusByBatch } = useFactorySimulation();
+
+  // 🕒 Throttle control for backend re-sync
+  const lastSyncTime = useRef(0);
+
+  // Effect to check localStorage on component mount to maintain animation state on refresh
+  useEffect(() => {
+    if (localStorage.getItem("simulationRunning") === "true") {
+      setAnimationTrigger(true);
+    }
+  }, []);
 
   const handleClearLogs = () => {
     clearLogs();
+    setAnimationTrigger(false);
+    localStorage.removeItem("simulationRunning");
   };
 
   const handleStartFullSimulation = async () => {
     setIsRunning(true);
-    setSimulationStatus("Starting full simulation...");
-    clearLogs();
+    setSimulationStatus("Starting full plant simulation...");
 
     try {
-      // Get saved inputs from localStorage
-      const anodeInputs = localStorage.getItem('mixingInputs_Anode Mixing');
-      const cathodeInputs = localStorage.getItem('mixingInputs_Cathode Mixing');
+      const response = await startSimulation();
 
-      if (!anodeInputs || !cathodeInputs) {
-        setSimulationStatus("Error: Please configure both Anode and Cathode mixing inputs first");
-        setIsRunning(false);
-        return;
+      if (response.data && response.data.message) {
+        setSimulationStatus(`✓ ${response.data.message}`);
+      } else {
+        setSimulationStatus("✓ Plant simulation started successfully!");
       }
 
-      const anodeData = JSON.parse(anodeInputs);
-      const cathodeData = JSON.parse(cathodeInputs);
+      setAnimationTrigger(true);
+      localStorage.setItem("simulationRunning", "true");
 
-      // Prepare simulation data with both anode and cathode parameters
-      const simulationData = {
-        anode_params: {
-          AM: anodeData.AM,
-          CA: anodeData.CA,
-          PVDF: anodeData.PVDF,
-          Solvent: anodeData.Solvent
-        },
-        cathode_params: {  
-          AM: cathodeData.AM,
-          CA: cathodeData.CA,
-          PVDF: cathodeData.PVDF,
-          Solvent: cathodeData.Solvent
-        }
-      };
-
-      setSimulationStatus("Starting complete battery manufacturing simulation...");
-      const response = await startSimulation(simulationData);
-      
-      setSimulationStatus(`Full simulation started successfully! Batch ID: ${response.data.batch_id}`);
+      handleRefreshPlantState();
     } catch (error) {
-      setSimulationStatus("Error: " + (error.response?.data?.detail || error.message));
+      console.error("Simulation start error:", error);
+      setSimulationStatus(
+        `❌ Error: ${error.response?.data?.detail || error.message}`
+      );
     } finally {
       setIsRunning(false);
     }
   };
 
+  const handleRefreshPlantState = async () => {
+    try {
+      const response = await getPlantState();
+      setPlantState(response.data);
+
+      // ✅ Sync global machine state for visual consistency
+      if (response.data.machineStates) {
+        setMachineStatusByBatch(response.data.machineStates);
+      }
+    } catch (error) {
+      console.error("Plant state error:", error);
+    }
+  };
+
+  // 🧠 Auto re-sync backend plant state when returning/focusing Flow Page (3s throttle)
+  useEffect(() => {
+    const handleFocus = async () => {
+      const now = Date.now();
+      if (now - lastSyncTime.current < 3000) return; // throttle (3s)
+      lastSyncTime.current = now;
+
+      try {
+        const res = await getPlantState();
+        setPlantState(res.data);
+
+        if (res.data.machineStates) {
+          setMachineStatusByBatch(res.data.machineStates);
+        }
+      } catch (err) {
+        console.warn("⚠️ Failed to refresh plant state:", err);
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    handleFocus(); // run immediately on mount
+
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [setMachineStatusByBatch]);
+
   return (
     <div className={`flow-layout ${selectedStage ? "with-panel" : "full"}`}>
       <div className="main-content">
+        <h2 className="page-title">
+          Lithium-Ion Battery Manufacturing Simulation
+        </h2>
+        <ToggleSwitch
+          label="Quick Tips"
+          infoContent={
+            <div className="instructions">
+              <p>1. Click on any machine to configure its parameters.</p>
+              <p>2. Use "Load Current" → "Apply Changes" workflow.</p>
+              <p>3. Click "Add Batch" to add a batch to the continuous plant simulation.</p>
+              <p>4. Use "Reset Plant" to stop all simulations.</p>
+            </div>
+          }
+        />
+
         <div className="controls">
           <button onClick={handleClearLogs} className="clear-logs-button">
             Clear Logs
           </button>
-          <button 
-            onClick={handleStartFullSimulation} 
-            className="start-full-simulation-btn"
+          <button
+            onClick={handleStartFullSimulation}
+            className={`start-full-simulation-btn ${isRunning ? "running" : ""}`}
             disabled={isRunning}
           >
-            {isRunning ? "Running..." : "Start Full Simulation"}
+            {isRunning ? "Adding Batch..." : "Add Batch"}
           </button>
-          <div className="instructions">
-            <p>1. Configure mixing inputs by clicking on Anode/Cathode Mixing machines</p>
-            <p>2. Save inputs in each machine's side panel</p>
-            <p>3. Click "Start Full Simulation" to run the complete manufacturing process from mixing to aging</p>
-            {simulationStatus && <p className="simulation-status">{simulationStatus}</p>}
+
+          <div className="status-display">
+            {simulationStatus && (
+              <p className="simulation-status">{simulationStatus}</p>
+            )}
           </div>
         </div>
-        <div className="flow-canvas">
-          <MachineFlowDiagram />
+
+        <div
+          className={`flow-canvas ${
+            animationTrigger ? "simulation-started" : ""
+          }`}
+        >
+          <MachineFlowDiagram animationTrigger={animationTrigger} />
+          {selectedStage && (
+            <SidePanel
+              selectedStage={selectedStage}
+              onClose={() => setSelectedId(null)}
+              isOpen={!!selectedStage}
+            />
+          )}
         </div>
       </div>
-
-      {selectedStage && (
-        <SidePanel
-          selectedStage={selectedStage}
-          onClose={() => setSelectedId(null)}
-        />
-      )}
     </div>
   );
-};
+}
 
 export default FlowPage;
