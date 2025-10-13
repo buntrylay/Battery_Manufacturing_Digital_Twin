@@ -2,6 +2,7 @@ apiVersion: 1
 
 datasources:
   - name: Postgres
+    uid: main-postgres-db
     type: postgres
     access: proxy
     url: postgres_db:5432
@@ -12,3 +13,4 @@ datasources:
     jsonData:
       sslmode: "disable"
       timescaledb: false
+    isDefault: true

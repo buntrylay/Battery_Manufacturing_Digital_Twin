@@ -25,7 +25,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "All mixing machine inputs",
       "fieldConfig": {
@@ -78,7 +78,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P44368ADAD746BC27"
+            "uid": "main-postgres-db"
           },
           "editorMode": "code",
           "format": "table",
@@ -111,7 +111,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "volume in litres(L)",
       "fieldConfig": {
@@ -170,7 +170,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P44368ADAD746BC27"
+            "uid": "main-postgres-db"
           },
           "editorMode": "code",
           "format": "table",
@@ -202,7 +202,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "Viscosity over duration",
       "fieldConfig": {
@@ -285,7 +285,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P44368ADAD746BC27"
+            "uid": "main-postgres-db"
           },
           "editorMode": "code",
           "format": "table",
@@ -317,7 +317,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "Yield Stress over duration",
       "fieldConfig": {
@@ -423,7 +423,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P44368ADAD746BC27"
+            "uid": "main-postgres-db"
           },
           "editorMode": "code",
           "format": "table",
@@ -455,7 +455,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "Density over duration",
       "fieldConfig": {
@@ -544,7 +544,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P44368ADAD746BC27"
+            "uid": "main-postgres-db"
           },
           "editorMode": "code",
           "format": "table",

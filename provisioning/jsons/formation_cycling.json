@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "fieldConfig": {
         "defaults": {
@@ -102,7 +102,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "Voltage added over time",
       "fieldConfig": {
@@ -152,7 +152,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P44368ADAD746BC27"
+            "uid": "main-postgres-db"
           },
           "editorMode": "code",
           "format": "table",
@@ -184,7 +184,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "description": "Monitoring the charge/discharge cycle over time",
       "fieldConfig": {
@@ -296,7 +296,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P44368ADAD746BC27"
+        "uid": "main-postgres-db"
       },
       "fieldConfig": {
         "defaults": {
