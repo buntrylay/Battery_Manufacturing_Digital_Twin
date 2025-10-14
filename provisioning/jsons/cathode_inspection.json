@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 9,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -29,19 +29,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "continuous-GrYlRd"
-          },
-          "custom": {
-            "axisPlacement": "auto",
-            "fillOpacity": 70,
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineWidth": 0,
-            "spanNulls": false
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
@@ -68,20 +56,21 @@
       },
       "id": 3,
       "options": {
-        "alignValue": "left",
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
         },
-        "mergeValues": true,
-        "rowHeight": 0.9,
-        "showValue": "auto",
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
       },
       "pluginVersion": "12.1.1",
       "targets": [
@@ -93,7 +82,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  $__timeGroup(timestamp, '1h') AS time,\r\n  CASE \r\n    WHEN pass_width_mm = FALSE THEN 'Defective' \r\n    ELSE 'OK' \r\n  END AS acceptable_width,\r\n  COUNT(*) AS count\r\nFROM inspection_anode \r\nWHERE\r\n  $__timeFilter(timestamp)\r\nGROUP BY \r\n  time, acceptable_width\r\nORDER BY \r\n  time;",
+          "rawSql": "SELECT\r\n pass_width_mm \r\nFROM inspection_cathode;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -122,7 +111,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  CASE \r\n  WHEN pass_thickness_um = FALSE THEN 'Defective' ELSE 'OK\" END AS acceptable_thickness,\r\n  COUNT(*) AS count\r\nFROM inspection_anode \r\nGROUP BY acceptable_thickness;",
+          "rawSql": "SELECT\r\n  CASE \r\n  WHEN pass_thickness_um = FALSE THEN 'Defective' ELSE 'OK' END AS acceptable_thickness\r\nFROM inspection_cathode\r\nGROUP BY acceptable_thickness;",
           "refId": "B",
           "sql": {
             "columns": [
@@ -151,7 +140,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  CASE \r\n  WHEN pass_burr = FALSE THEN 'Defective' ELSE 'OK\" END AS acceptable_burr,\r\n  COUNT(*) AS count\r\nFROM inspection_cathode \r\nGROUP BY acceptable_burr;",
+          "rawSql": "SELECT\r\n  CASE \r\n  WHEN pass_burr = FALSE THEN 'Defective' ELSE 'OK' END AS acceptable_burr\r\nFROM inspection_cathode \r\nGROUP BY acceptable_burr;",
           "refId": "C",
           "sql": {
             "columns": [
@@ -180,7 +169,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  CASE \r\n  WHEN pass_surface = FALSE THEN 'Defective' ELSE 'OK\" END AS acceptable_surface,\r\n  COUNT(*) AS count\r\nFROM inspection_cathode \r\nGROUP BY acceptable_surface;",
+          "rawSql": "SELECT\r\n  CASE \r\n  WHEN pass_surface = FALSE THEN 'Defective' ELSE 'OK' END AS acceptable_surface\r\nFROM inspection_anode \r\nGROUP BY acceptable_surface;",
           "refId": "D",
           "sql": {
             "columns": [
@@ -209,7 +198,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  CASE \r\n  WHEN overall = FALSE THEN 'Defective' ELSE 'OK\" END AS overall,\r\n  COUNT(*) AS count\r\nFROM inspection_cathode \r\nGROUP BY overall;",
+          "rawSql": "SELECT\r\n  CASE \r\n  WHEN overall = FALSE THEN 'Defective' ELSE 'OK' END AS overall\r\nFROM inspection_anode \r\nGROUP BY overall;",
           "refId": "E",
           "sql": {
             "columns": [
@@ -231,7 +220,7 @@
         }
       ],
       "title": "Analysis Description",
-      "type": "state-timeline"
+      "type": "stat"
     },
     {
       "datasource": {
@@ -463,19 +452,19 @@
     }
   ],
   "preload": false,
-  "refresh": "",
+  "refresh": "5s",
   "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "2025-10-09T05:38:51.535Z",
-    "to": "2025-10-09T06:01:40.791Z"
+    "from": "now-30m",
+    "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Cathode Inspection Dashboard",
   "uid": "cathode-inspection-uid",
-  "version": 2
+  "version": 3
 }
