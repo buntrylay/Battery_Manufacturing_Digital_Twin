@@ -11,6 +11,7 @@ datasources:
     secureJsonData:
       password: "password"
     jsonData:
+      database: "postgres"
       sslmode: "disable"
       timescaledb: false
     isDefault: true
