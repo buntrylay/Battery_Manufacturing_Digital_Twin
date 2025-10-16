@@ -9,18 +9,9 @@
   --radius: 12px;
 }
 
-/* Animation keyframes for machine status */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 25px rgba(40, 167, 69, 0.8);
-  }
-  50% {
-    box-shadow: 0 0 35px rgba(40, 167, 69, 1);
-  }
-  100% {
-    box-shadow: 0 0 25px rgba(40, 167, 69, 0.8);
-  }
-}
+/* =================================== */
+/* Base & Layout             */
+/* =================================== */
 
 body {
   margin: 0;
@@ -37,13 +28,16 @@ body {
   overflow: hidden;
 }
 
-/* This new wrapper will manage the vertical layout of the button and the canvas */
 .main-content {
   display: flex;
-  flex-direction: column; /* Stack children vertically */
+  flex-direction: column;
   flex-grow: 1;
   height: 100%;
 }
+
+/* =================================== */
+/* Main Controls             */
+/* =================================== */
 
 .controls {
   padding: 10px;
@@ -128,48 +122,6 @@ body {
   overflow-y: auto;
 }
 
-.refresh-state-btn {
-  padding: 8px 16px;
-  background: #17a2b8;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.refresh-state-btn:hover {
-  background: #138496;
-}
-
-.reset-plant-btn {
-  padding: 8px 16px;
-  background: #ffc107;
-  color: #212529;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.reset-plant-btn:hover {
-  background: #e0a800;
-}
-
-.plant-state {
-  margin-top: 10px;
-  padding: 10px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-family: monospace;
-  font-size: 12px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
 .instructions {
   color: #6c757d;
   font-size: 14px;
@@ -184,31 +136,24 @@ body {
   font-weight: 500;
 }
 
+/* =================================== */
+/* Flow Canvas & Nodes          */
+/* =================================== */
+
 .flow-canvas {
   flex-grow: 1;
   width: 100%;
-}
-/* Main flow area */
-.flow-canvas {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
   background: var(--bg);
-  border-radius: var(--radius);
   padding: 20px;
-
-  /* remove forced scrollbars */
-  overflow: visible;
-  min-height: auto;
-  height: auto;
   box-sizing: border-box;
   border-top: 1px solid #ddd;
-  border-radius: 0%;
-  position: relative; /* Add relative positioning for side panel containment */
+  position: relative;
 }
 
-/* Each group box */
 .flow-group {
   background: var(--card);
   border: 1px solid var(--border);
@@ -223,7 +168,6 @@ body {
   gap: 20px;
 }
 
-/* Group titles */
 .flow-group-title {
   font-size: 18px;
   font-weight: 600;
@@ -231,7 +175,6 @@ body {
   margin: 0;
 }
 
-/* Each row */
 .flow-row {
   display: flex;
   flex-direction: row;
@@ -240,12 +183,11 @@ body {
   align-items: center;
 }
 
-/* Machine nodes */
 .machine-node {
   text-align: center;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative; /* for tooltip positioning */
+  position: relative;
 }
 
 .machine-node:hover {
@@ -253,10 +195,24 @@ body {
   z-index: 10;
 }
 
-/* Tooltip styling */
+.machine-node img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+.machine-node p {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
 .machine-tooltip {
   position: absolute;
-  bottom: 140px; /* above the image */
+  bottom: 140px;
   left: 50%;
   transform: translateX(-50%);
   width: 220px;
@@ -277,38 +233,20 @@ body {
   transform: translate(-50%, -5px);
 }
 
-/* Machine images */
-.machine-node img {
-  width: 120px;
-  height: 120px;
-  object-fit: contain;
-  display: block;
-  margin: 0 auto;
-}
-
-/* Machine labels */
-.machine-node p {
-  margin-top: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-/* ===================== */
-/* Side Panel Styling    */
-/* ===================== */
+/* =================================== */
+/* Side Panel               */
+/* =================================== */
 
 .side-panel {
   position: absolute;
   top: 0;
   right: 0;
-  background: var(--card);
-  border-left: 1px solid var(--border);
-  box-sizing: border-box;
   width: 350px;
   height: 70vh;
   background: #f9fafb;
+  border-left: 1px solid var(--border);
   border-radius: 16px 0 0 16px;
+  box-sizing: border-box;
   padding: 34px;
   box-shadow: var(--shadow);
   display: flex;
@@ -321,13 +259,13 @@ body {
   overflow-x: hidden;
   z-index: 1000;
 }
+
 .side-panel.open {
   opacity: 1;
   transform: translateX(0);
   pointer-events: auto;
 }
 
-/* Panel header */
 .side-panel-header {
   display: flex;
   justify-content: space-between;
@@ -338,7 +276,26 @@ body {
   flex-shrink: 0;
 }
 
-/* Panel content - scrollable area */
+.side-title {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+  color: var(--text);
+}
+
 .side-panel-content {
   flex: 1;
   overflow-y: auto;
@@ -364,114 +321,21 @@ body {
   background: #a0aec0;
 }
 
-/* Simulation info message */
-.simulation-info {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: #e8f4f8;
-  border: 1px solid #b8dce8;
-  border-radius: 6px;
-  font-size: 12px;
-  color: #2c5aa0;
-  line-height: 1.4;
-}
+/* =================================== */
+/* Side Panel Input Fields        */
+/* =================================== */
 
-.side-title {
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--text);
-}
-
-/* Close button */
-.close-btn {
-  background: transparent;
-  border: none;
-  font-size: 22px;
-  font-weight: bold;
-  color: var(--muted);
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.close-btn:hover {
-  color: var(--text);
-}
-
-/* Input grid */
 .side-grid {
   display: grid;
   gap: 12px;
 }
 
 .side-field {
+  margin-bottom: 16px;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 13px;
-  color: var(--text);
-}
-
-.side-field span {
-  font-weight: 500;
-  color: var(--muted);
-}
-
-.parameter-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.parameter-unit {
-  font-size: 11px;
-  color: #6c757d;
-  font-weight: 400;
-  background-color: #f8f9fa;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid #dee2e6;
-}
-
-.side-field input[type="number"] {
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.side-field input[type="number"]:focus {
-  border-color: var(--ring);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
-}
-
-/* Machine controls */
-.machine-controls {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-
-.ratio-sum {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.error-text {
-  color: #dc3545;
-  font-size: 12px;
-}
-
-/* Enhanced input fields with validation */
-.side-field {
-  margin-bottom: 16px;
-  position: relative;
 }
 
 .side-field.error {
@@ -491,10 +355,15 @@ body {
   color: var(--text);
 }
 
-.field-unit {
-  font-size: 12px;
+.field-unit,
+.parameter-unit {
+  font-size: 11px;
   color: #6c757d;
-  font-weight: normal;
+  font-weight: 400;
+  background-color: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
 }
 
 .side-field input {
@@ -504,6 +373,7 @@ body {
   border-radius: 6px;
   font-size: 14px;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box; /* Ensures padding doesn't affect width */
 }
 
 .side-field input:focus {
@@ -514,7 +384,7 @@ body {
 
 .side-field input.input-error {
   border-color: #dc3545;
-  background-color: #f8f9fa;
+  background-color: #f8d7da;
 }
 
 .side-field input.input-error:focus {
@@ -536,14 +406,19 @@ body {
   font-size: 10px;
 }
 
-.field-description {
+.field-description,
+.stage-description {
   color: #6c757d;
   font-size: 12px;
   margin-top: 4px;
   font-style: italic;
+  line-height: 1.3;
 }
 
-/* Preset Management */
+/* =================================== */
+/* Side Panel Preset & Controls    */
+/* =================================== */
+
 .preset-controls {
   margin-bottom: 16px;
   padding: 12px;
@@ -609,7 +484,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  border-bottom: 1px solid #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .preset-item:last-child {
@@ -635,8 +510,25 @@ body {
   border-radius: 3px;
   font-size: 12px;
 }
-/* Parameter controls for all machine types */
-.parameter-controls {
+
+.delete-preset-btn:hover {
+  background: #f8d7da;
+}
+
+.no-presets {
+  padding: 12px;
+  text-align: center;
+  color: #6c757d;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* =================================== */
+/* Side Panel Simulation Buttons     */
+/* =================================== */
+
+.parameter-controls,
+.machine-controls {
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
@@ -681,25 +573,7 @@ body {
   border-color: #d39e00;
 }
 
-.delete-preset-btn:hover {
-  background: #f8d7da;
-}
-
-.no-presets {
-  padding: 12px;
-  text-align: center;
-  color: #6c757d;
-  font-size: 12px;
-  font-style: italic;
-}
-
-/* Control buttons */
-.control-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
+.run-simulation-btn,
 .save-inputs-btn {
   flex: 1;
   padding: 12px;
@@ -707,251 +581,162 @@ body {
   color: white;
   border: none;
   border-radius: 8px;
-}
-
-.load-params-btn,
-.validate-btn {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
   margin-top: 8px;
 }
 
-.save-inputs-btn:hover {
+.run-simulation-btn:hover:not(:disabled),
+.save-inputs-btn:hover:not(:disabled) {
   background: #218838;
-  .load-params-btn:hover {
-    background: #e9ecef;
-    border-color: #6c757d;
-  }
+}
 
-  .validate-btn {
-    background: #ffc107;
-    color: #212529;
-    border-color: #ffc107;
-  }
+.run-simulation-btn:disabled,
+.run-simulation-btn.running,
+.save-inputs-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
 
-  .validate-btn:hover {
-    background: #e0a800;
-    border-color: #d39e00;
-  }
+.run-simulation-btn.running {
+  background: #ffc107;
+  color: #212529;
+}
 
-  .run-simulation-btn {
-    flex: 1;
-    padding: 12px;
-    background: #28a745;
-    background: #28a745;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    margin-top: 8px;
-  }
+.load-params-btn:disabled,
+.validate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #e9ecef;
+  color: #6c757d;
+  border-color: #ced4da;
+}
 
-  .run-simulation-btn:hover {
-    background: #1e7e34;
-  }
+.load-params-btn:disabled:hover,
+.validate-btn:disabled:hover {
+  background: #e9ecef;
+  border-color: #ced4da;
+}
 
-  .run-simulation-btn:disabled,
-  .run-simulation-btn.running {
-    background: #6c757d;
-    cursor: not-allowed;
-  }
+/* =================================== */
+/* Side Panel Info & Status       */
+/* =================================== */
 
-  .run-simulation-btn.running {
-    background: #ffc107;
-    color: #212529;
-  }
+.simulation-info {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #e8f4f8;
+  border: 1px solid #b8dce8;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #2c5aa0;
+  line-height: 1.4;
+}
 
-  /* Status messages */
-  .status-message {
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 500;
-    border: 1px solid transparent;
-  }
+.ratio-sum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
 
-  .status-message.success {
-    background: #d4edda;
-    color: #155724;
-    border-color: #c3e6cb;
-  }
+.status-message {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  border: 1px solid #dee2e6;
+  background: #f8f9fa;
+  color: #495057;
+  word-wrap: break-word;
+}
 
-  .status-message.error {
-    background: #f8d7da;
-    color: #721c24;
-    border-color: #f5c6cb;
-  }
+.status-message.success {
+  background: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+}
 
-  /* Stage info description */
-  .stage-description {
-    display: block;
-    color: var(--muted);
-    font-style: italic;
-    margin-bottom: 12px;
-    line-height: 1.3;
-  }
+.status-message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border-color: #f5c6cb;
+}
 
-  /* Button disabled states */
-  .load-params-btn:disabled,
-  .validate-btn:disabled,
-  .save-inputs-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: #e9ecef;
-    color: #6c757d;
-    border-color: #ced4da;
-  }
+/* =================================== */
+/* React Flow Base            */
+/* =================================== */
 
-  .load-params-btn:disabled:hover,
-  .validate-btn:disabled:hover,
-  .save-inputs-btn:disabled:hover {
-    background: #e9ecef;
-    border-color: #ced4da;
-  }
+.react-flow {
+  --xy-theme-selected: #f57dbd;
+  --xy-theme-hover: #c5c5c5;
+  --xy-theme-edge-hover: black;
+  --xy-theme-color-focus: #e8e8e8;
+}
 
-  /* Status message improvements */
-  .load-params-btn:disabled:hover,
-  .validate-btn:disabled:hover,
-  .save-inputs-btn:disabled:hover {
-    background: #e9ecef;
-    border-color: #ced4da;
-  }
+/* =================================== */
+/* Animation Keyframes          */
+/* =================================== */
 
-  /* Status message improvements */
-  .status-message {
-    margin-top: 12px;
-    padding: 10px;
-    margin-top: 12px;
-    padding: 10px;
-    border-radius: 6px;
-    font-size: 13px;
-    line-height: 1.4;
-    line-height: 1.4;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    color: #495057;
-    word-wrap: break-word;
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 25px rgba(40, 167, 69, 0.8);
   }
+  50% {
+    box-shadow: 0 0 35px rgba(40, 167, 69, 1);
+  }
+  100% {
+    box-shadow: 0 0 25px rgba(40, 167, 69, 0.8);
+  }
+}
 
-  /* Success status (contains checkmark) */
-  .status-message {
-    background: #f8f9fa;
-    border-color: #dee2e6;
-    color: #495057;
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-  .status-message:contains("✓") {
-    background: #d4edda;
-    border-color: #c3e6cb;
-    color: #155724;
+@keyframes progressFlow {
+  from {
+    stroke-dashoffset: 100%;
   }
+  to {
+    stroke-dashoffset: 0%;
+  }
+}
 
-  /* Error status (contains X mark) */
-  .status-message:contains("❌") {
-    background: #f8d7da;
-    border-color: #f5c6cb;
-    color: #721c24;
-    word-wrap: break-word;
+@keyframes buttonPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
   }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+  }
+}
 
-  /* Success status (contains checkmark) */
-  .status-message {
-    background: #f8f9fa;
-    border-color: #dee2e6;
-    color: #495057;
-  }
+/* =================================== */
+/* Animation Classes           */
+/* =================================== */
 
-  .status-message:contains("✓") {
-    background: #d4edda;
-    border-color: #c3e6cb;
-    color: #155724;
-  }
+.start-full-simulation-btn.running {
+  animation: buttonPulse 1.5s infinite;
+}
 
-  /* Error status (contains X mark) */
-  .status-message:contains("❌") {
-    background: #f8d7da;
-    border-color: #f5c6cb;
-    color: #721c24;
-  }
-
-  /* ===================== */
-  /* React Flow Styling   */
-  /* ===================== */
-  /* These styles are necessary for React Flow to display correctly */
-  .react-flow {
-    /* Custom Variables */
-    --xy-theme-selected: #f57dbd;
-    --xy-theme-hover: #c5c5c5;
-    --xy-theme-edge-hover: black;
-    --xy-theme-color-focus: #e8e8e8;
-  }
-
-  /* ===================== */
-  /* Animation Keyframes   */
-  /* ===================== */
-  @keyframes pulse {
-    0% {
-      box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
-      transform: scale(1.05);
-    }
-    50% {
-      box-shadow: 0 0 30px rgba(40, 167, 69, 0.8);
-      transform: scale(1.08);
-    }
-    100% {
-      box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
-      transform: scale(1.05);
-    }
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes progressFlow {
-    0% {
-      stroke-dashoffset: 100%;
-    }
-    100% {
-      stroke-dashoffset: 0%;
-    }
-  }
-
-  /* Simulation start button animation */
-  .start-full-simulation-btn.running {
-    animation: buttonPulse 1.5s infinite;
-  }
-
-  @keyframes buttonPulse {
-    0%,
-    100% {
-      transform: scale(1);
-      box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
-    }
-    50% {
-      transform: scale(1.05);
-      box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
-    }
-  }
-
-  /* Flow diagram startup animation */
-  .flow-canvas.simulation-started {
-    animation: slideIn 0.5s ease-out;
-  }
+.flow-canvas.simulation-started {
+  animation: slideIn 0.5s ease-out;
 }

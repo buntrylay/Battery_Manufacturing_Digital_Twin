@@ -14,12 +14,9 @@ function FlowPage() {
   const [simulationStatus, setSimulationStatus] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [animationTrigger, setAnimationTrigger] = useState(false);
-  const [plantState, setPlantState] = useState(null);
-
-  // ✅ Persistent simulation state (global)
+  const [, setPlantState] = useState(null);
   const { setMachineStatusByBatch } = useFactorySimulation();
 
-  // 🕒 Throttle control for backend re-sync
   const lastSyncTime = useRef(0);
 
   // Effect to check localStorage on component mount to maintain animation state on refresh
@@ -76,7 +73,7 @@ function FlowPage() {
     }
   };
 
-  // 🧠 Auto re-sync backend plant state when returning/focusing Flow Page (3s throttle)
+  // Auto re-sync backend plant state when returning/focusing Flow Page (3s throttle)
   useEffect(() => {
     const handleFocus = async () => {
       const now = Date.now();
@@ -105,7 +102,7 @@ function FlowPage() {
     <div className={`flow-layout ${selectedStage ? "with-panel" : "full"}`}>
       <div className="main-content">
         <h2 className="page-title">
-          Lithium-Ion Battery Manufacturing Simulation
+          Lithium-Ion Digital Twin Battery Manufacturing Plant
         </h2>
         <ToggleSwitch
           label="Quick Tips"
@@ -113,7 +110,10 @@ function FlowPage() {
             <div className="instructions">
               <p>1. Click on any machine to configure its parameters.</p>
               <p>2. Use "Load Current" → "Apply Changes" workflow.</p>
-              <p>3. Click "Add Batch" to add a batch to the continuous plant simulation.</p>
+              <p>
+                3. Click "Add Batch" to add a batch to the continuous plant
+                simulation.
+              </p>
               <p>4. Use "Reset Plant" to stop all simulations.</p>
             </div>
           }
@@ -125,7 +125,9 @@ function FlowPage() {
           </button>
           <button
             onClick={handleStartFullSimulation}
-            className={`start-full-simulation-btn ${isRunning ? "running" : ""}`}
+            className={`start-full-simulation-btn ${
+              isRunning ? "running" : ""
+            }`}
             disabled={isRunning}
           >
             {isRunning ? "Adding Batch..." : "Add Batch"}

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "../styles/ToggleSwitch.css";
-
+//handle toggle switch for displaying additional information and icons shown
 function ToggleSwitch({ label, infoContent }) {
   const [isToggled, setIsToggled] = useState(false);
 

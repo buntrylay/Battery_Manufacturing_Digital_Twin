@@ -2,6 +2,7 @@ import React from "react";
 import "../styles/Footer.css";
 import swinLogo from "../assets/swinburneLogo.jpg";
 import syncLogo from "../assets/syncrowinLogo.png";
+
 //Footer component with logos and links
 function Footer() {
   return (

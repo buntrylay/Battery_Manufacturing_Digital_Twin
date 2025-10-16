@@ -8,6 +8,8 @@ import {
 
 import "@xyflow/react/dist/style.css";
 import { AnimatedSVGEdge } from "./AnimatedSVGEdge";
+
+//Justifies node positions
 const defaultNodes = [
   { id: "1", position: { x: -100, y: -200 }, data: { label: "A" } },
   { id: "2", position: { x: 100, y: 200 }, data: { label: "B" } },
@@ -16,7 +18,7 @@ const defaultNodes = [
 const edgeTypes = {
   animatedSvg: AnimatedSVGEdge,
 };
-
+//Adding edges between nodes
 const defaultEdges = [
   {
     id: "1->2",

@@ -4,6 +4,7 @@ import { useFlowPage } from "../contexts/FlowPageContext";
 import { GrafanaMachineDisplay } from "../components/GrafanaMachineDisplay";
 import { MACHINE_DASHBOARD_MAP } from "../helpers/DashboardTitles";
 import ToggleSwitch from "../components/ToggleSwitch";
+
 const GRAFANA_DASHBOARD_URL =
   process.env.REACT_APP_GRAFANA_DASHBOARD_URL || "http://localhost:3001/d/";
 
@@ -16,16 +17,16 @@ function RealTimeDataPage() {
   const handleMachineChange = (event) => {
     setMachineStage(event.target.value);
   };
-
+  //Construct Grafana URL based on selected machine and mapping
   const dashboardUid = MACHINE_DASHBOARD_MAP[selectedMachine];
   const dashboardSlug = dashboardUid ? dashboardUid.replace(/-uid/g, "") : null;
   const grafanaUrl = dashboardUid
     ? `${GRAFANA_DASHBOARD_URL}${dashboardUid}/${dashboardSlug}?orgId=1&kiosk&from=now-30s&to=now&timezone=browser`
     : null;
-  
+
   return (
     <div className="realtime-page">
-      <h2 className="page-title">Real-Time Data</h2>
+      <h2 className="page-title">Real-Time Simulation Data</h2>
       <ToggleSwitch
         label="Quick Tips"
         infoContent={

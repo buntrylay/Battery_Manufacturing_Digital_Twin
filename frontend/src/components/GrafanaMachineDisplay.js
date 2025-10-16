@@ -1,5 +1,5 @@
 import React from "react";
-
+//Component to display Grafana dashboard in an iframe
 export function GrafanaMachineDisplay({ name, url }) {
   return (
     <div>

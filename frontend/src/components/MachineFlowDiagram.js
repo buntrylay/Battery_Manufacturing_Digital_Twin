@@ -1,10 +1,9 @@
 // src/components/MachineFlowDiagram.js
-import React, { useMemo, useEffect, useState, useCallback } from "react";
+import React, { useMemo, useEffect, useCallback } from "react";
 import {
   ReactFlow,
   useNodesState,
   useEdgesState,
-  Background,
   MiniMap,
   Controls,
 } from "@xyflow/react";
@@ -229,7 +228,6 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
   };
 
   const setSingleActive = (batchMap, machine) => {
-    const flow = whichFlow(machine);
     Object.keys(batchMap).forEach((m) => {
       const sameLine =
         (m.startsWith("Anode") && machine.startsWith("Anode")) ||
@@ -355,7 +353,7 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
 
   useEffect(() => {
     if (animationTrigger) setSimulationStarted(true);
-  }, [animationTrigger]);
+  }, [animationTrigger, setSimulationStarted]);
 
   /* ------------------------------ WebSocket ------------------------------- */
 
@@ -391,7 +389,6 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
       if (machine) {
         advanceWithinBatch(batchId, machine);
 
-        // 🔹 fallback: ensure shared stages never stop mid-flow
         if (machine === "Electrolyte Filling") {
           // if Formation Cycling log never appears, move forward automatically
           setTimeout(() => {
@@ -415,6 +412,7 @@ const MachineFlowDiagram = ({ animationTrigger }) => {
       });
       return;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageLog, processToMachineMap]);
 
   /* ------------------------------- Render -------------------------------- */

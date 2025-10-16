@@ -45,8 +45,9 @@
   opacity: 1;
   max-height: 100px; /* or whatever fits your content */
 }
-
-/* Info Icon */
+/* =================================== */
+/* Icon Information           */
+/* =================================== */
 .mdi--information-outline {
   display: inline-block;
   width: 24px;
