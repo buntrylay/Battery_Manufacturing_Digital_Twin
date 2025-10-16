@@ -69,7 +69,6 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
         setStatus("");
       }
     } else {
-      // Initialize with empty values
       fields.forEach((field) => {
         initialValues[field] = "";
       });
@@ -97,13 +96,10 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
   };
 
   const hasRequiredInputs = () => {
-    // Check if at least some inputs are provided
     return Object.values(inputValues).some(
       (value) => value !== "" && !isNaN(parseFloat(value))
     );
   };
-
-
 
   const handleSaveInputs = async () => {
     // Validate mixing inputs if it's a mixing stage
@@ -146,18 +142,23 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
 
       // Check if validation succeeded
       if (!validationResponse.data?.success) {
-        const errorMsg = validationResponse.data?.message || 
-                        validationResponse.data?.errors || 
-                        'Unknown validation error';
+        const errorMsg =
+          validationResponse.data?.message ||
+          validationResponse.data?.errors ||
+          "Unknown validation error";
         setStatus(`❌ Validation failed: ${errorMsg}`);
         return;
       }
-      
+
       // Additional check for the 'valid' field in the data
-      if (validationResponse.data?.data && !validationResponse.data.data.valid) {
-        const errorMsg = validationResponse.data.data.error || 
-                        validationResponse.data.message || 
-                        'Parameters are invalid';
+      if (
+        validationResponse.data?.data &&
+        !validationResponse.data.data.valid
+      ) {
+        const errorMsg =
+          validationResponse.data.data.error ||
+          validationResponse.data.message ||
+          "Parameters are invalid";
         setStatus(`❌ Validation failed: ${errorMsg}`);
         return;
       }
@@ -217,7 +218,6 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
         newInputValues[field] = "";
       });
 
-      // Create comprehensive parameter mapping
       const mapParameters = (params, mappings) => {
         Object.entries(mappings).forEach(([frontendField, backendField]) => {
           if (params[backendField] !== undefined) {
@@ -300,7 +300,9 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
 
       setInputValues(newInputValues);
       setStatus(
-        `✓ Loaded current parameters (Machine state: ${response.data.data?.status?.state || 'Unknown'})`
+        `✓ Loaded current parameters (Machine state: ${
+          response.data.data?.status?.state || "Unknown"
+        })`
       );
     } catch (error) {
       console.error("Load parameters error:", error);
@@ -371,7 +373,7 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
               }
 
               const unit = parameterUnits[f] || "";
-              
+
               return (
                 <label key={f} className="side-field">
                   <span className="parameter-label">
@@ -382,7 +384,9 @@ const SidePanel = ({ selectedStage, onClose, isOpen }) => {
                     {...inputProps}
                     value={inputValues[f] || ""}
                     onChange={(e) => handleInputChange(f, e.target.value)}
-                    placeholder={unit ? `Enter value in ${unit}` : "Enter value"}
+                    placeholder={
+                      unit ? `Enter value in ${unit}` : "Enter value"
+                    }
                   />
                 </label>
               );

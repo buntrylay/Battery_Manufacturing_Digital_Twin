@@ -1,6 +1,7 @@
 import React from "react";
 import { stageIcons, stageDescriptions } from "./constants";
 
+//define node component with icon, label, group, and tooltip
 const NodeComp = ({ m, onClick }) => (
   <div className="flow-node" data-group={m.group} onClick={() => onClick(m.id)}>
     <div className="node-icon">{stageIcons[m.id]}</div>

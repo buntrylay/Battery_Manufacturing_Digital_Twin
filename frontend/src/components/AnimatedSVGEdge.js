@@ -36,7 +36,7 @@ export function AnimatedSVGEdge({
         }}
       />
 
-      {/* 🟢 Animated overlay only when active */}
+      {/* When machine is active Animation Overlay */}
       {isActive && (
         <>
           <BaseEdge
@@ -49,15 +49,24 @@ export function AnimatedSVGEdge({
             }}
           />
           <circle r="6" fill="#28a745">
-            <animateMotion dur="1.5s" repeatCount="indefinite" path={edgePath} />
+            <animateMotion
+              dur="1.5s"
+              repeatCount="indefinite"
+              path={edgePath}
+            />
           </circle>
           <circle r="3" fill="#28a745" opacity="0.6">
-            <animateMotion dur="1.5s" repeatCount="indefinite" path={edgePath} begin="0.3s" />
+            <animateMotion
+              dur="1.5s"
+              repeatCount="indefinite"
+              path={edgePath}
+              begin="0.3s"
+            />
           </circle>
         </>
       )}
 
-      {/* ⚡ Quick package transition pulse */}
+      {/*  Represents the package transition between Nodes */}
       {showProgress && (
         <>
           <path
